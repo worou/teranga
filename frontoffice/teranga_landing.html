@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Téranga — Rencontrez la personne qui compte.</title>
+<meta name="description" content="Téranga réunit des femmes et des hommes prêts à s'engager, à fonder un foyer, à bâtir une vie à deux. Rencontres sérieuses en Afrique francophone.">
+
+<!-- Favicon SVG intégré (32×32) -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z' fill='%23D49060'/><path d='M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z' fill='%23B8691A'/><path d='M32 40 L32 54 Q32 58 28 54 L18 44 Z' fill='%23D49060'/><path d='M32 40 L32 54 Q32 58 36 54 L46 44 Z' fill='%23B8691A'/><circle cx='32' cy='28' r='4' fill='%23F5E6D3'/></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #F5E6D3;
+    --sand-light: #FAF1E3;
+    --cream: #FDF8F0;
+    --ocre: #D49060;
+    --ocre-deep: #B8691A;
+    --terra: #8B4513;
+    --terra-deep: #5B2E0C;
+    --ink: #2B1605;
+    --ink-soft: #4A2A12;
+    --copper: #C87533;
+    --green: #5D7246;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.65;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    z-index: 1000;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.28 0 0 0 0 0.12 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ——— LOGO STYLES ——— */
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .logo svg {
+    flex-shrink: 0;
+    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .logo:hover svg {
+    transform: rotate(-6deg) scale(1.05);
+  }
+  .logo-text {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+    line-height: 1;
+    color: var(--terra-deep);
+    display: flex;
+    flex-direction: column;
+  }
+  .logo-text em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ocre-deep);
+  }
+  .logo-text .tagline {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 9.5px;
+    font-weight: 400;
+    letter-spacing: 0.22em;
+    color: var(--ocre-deep);
+    margin-top: 4px;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  /* ——— NAV ——— */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 22px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    transition: background 0.4s, padding 0.4s, box-shadow 0.4s;
+  }
+  nav.scrolled {
+    background: rgba(253, 248, 240, 0.95);
+    backdrop-filter: blur(20px);
+    padding: 14px 48px;
+    box-shadow: 0 1px 0 rgba(184, 105, 26, 0.12);
+  }
+  nav .logo-text { font-size: 24px; }
+  nav .logo-text .tagline { display: none; }
+
+  nav .links { display: flex; gap: 36px; align-items: center; font-size: 14px; }
+  nav .links a {
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: color 0.2s;
+    position: relative;
+  }
+  nav .links a:not(.btn)::after {
+    content: "";
+    position: absolute;
+    bottom: -4px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: var(--ocre-deep);
+    transition: width 0.3s;
+  }
+  nav .links a:not(.btn):hover { color: var(--ocre-deep); }
+  nav .links a:not(.btn):hover::after { width: 100%; }
+
+  .btn {
+    padding: 13px 28px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    display: inline-block;
+  }
+  .btn-primary {
+    background: var(--terra-deep);
+    color: var(--sand);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--ink);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--terra-deep);
+    border: 1.5px solid var(--terra-deep);
+  }
+  .btn-ghost:hover {
+    background: var(--terra-deep);
+    color: var(--sand);
+  }
+
+  /* ——— HERO ——— */
+  .hero {
+    min-height: 100vh;
+    padding: 140px 48px 80px;
+    position: relative;
+    background:
+      radial-gradient(ellipse at 80% 10%, rgba(212, 144, 96, 0.22) 0%, transparent 55%),
+      radial-gradient(ellipse at 20% 90%, rgba(184, 105, 26, 0.14) 0%, transparent 55%),
+      var(--cream);
+    overflow: hidden;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    top: 8%;
+    right: -8%;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--ocre) 0%, var(--ocre-deep) 65%, transparent 80%);
+    opacity: 0.1;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .hero-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 70px;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--ocre-deep);
+    margin-bottom: 36px;
+    font-weight: 600;
+  }
+  .eyebrow::before {
+    content: "";
+    width: 36px;
+    height: 2px;
+    background: var(--ocre-deep);
+  }
+
+  h1.hero-title {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(48px, 6.2vw, 92px);
+    line-height: 0.96;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 32px;
+  }
+  h1.hero-title em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--ocre-deep);
+    font-variation-settings: "opsz" 144;
+  }
+
+  .hero-lead {
+    font-size: 20px;
+    line-height: 1.55;
+    color: var(--ink-soft);
+    max-width: 540px;
+    margin-bottom: 44px;
+    font-weight: 300;
+  }
+
+  .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+
+  .hero-sub {
+    margin-top: 28px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    opacity: 0.75;
+    font-style: italic;
+  }
+
+  /* HERO VISUAL */
+  .hero-visual {
+    position: relative;
+    height: 600px;
+  }
+
+  .meeting-card {
+    position: absolute;
+    width: 240px;
+    border-radius: 16px;
+    background: var(--cream);
+    box-shadow:
+      0 30px 70px rgba(43, 22, 5, 0.25),
+      0 10px 25px rgba(43, 22, 5, 0.12),
+      inset 0 0 0 1px rgba(184, 105, 26, 0.1);
+    overflow: hidden;
+  }
+  .meeting-card .mc-photo {
+    width: 100%;
+    height: 280px;
+    position: relative;
+    overflow: hidden;
+    background: var(--sand);
+  }
+  .meeting-card .mc-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s ease;
+  }
+  .meeting-card:hover .mc-photo img { transform: scale(1.05); }
+  .meeting-card .mc-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(43, 22, 5, 0.25) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .meeting-card .mc-info { padding: 18px 20px 20px; position: relative; }
+  .meeting-card .mc-tag {
+    display: inline-block;
+    font-size: 9px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ocre-deep);
+    background: rgba(184, 105, 26, 0.1);
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .meeting-card .mc-name {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .meeting-card .mc-meta {
+    font-size: 13px;
+    color: var(--ink-soft);
+  }
+  .meeting-card .mc-verified {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(253, 248, 240, 0.95);
+    padding: 4px 9px;
+    border-radius: 100px;
+    font-size: 10px;
+    color: var(--terra-deep);
+    font-weight: 600;
+    backdrop-filter: blur(6px);
+    z-index: 3;
+  }
+  .mc-verified::before {
+    content: "✓";
+    color: var(--ocre-deep);
+    font-weight: 700;
+  }
+
+  .card-her {
+    top: 20px;
+    left: 0;
+    transform: rotate(-5deg);
+    z-index: 2;
+  }
+
+  .card-him {
+    bottom: 20px;
+    right: 0;
+    transform: rotate(4deg);
+    z-index: 2;
+  }
+
+  /* Central logo-heart connector (re-uses brand symbol) */
+  .heart-connector {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    background: var(--cream);
+    border-radius: 50%;
+    box-shadow: 0 15px 40px rgba(184, 105, 26, 0.25), inset 0 0 0 1px rgba(184, 105, 26, 0.2);
+  }
+  .heart-connector svg {
+    width: 60%;
+    height: 60%;
+    filter: drop-shadow(0 4px 10px rgba(184, 105, 26, 0.3));
+  }
+
+  .meeting-label {
+    position: absolute;
+    bottom: 85px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 16px;
+    color: var(--terra-deep);
+    background: var(--cream);
+    padding: 7px 18px;
+    border-radius: 100px;
+    border: 1px solid rgba(184, 105, 26, 0.3);
+    z-index: 4;
+    white-space: nowrap;
+    box-shadow: 0 4px 12px rgba(43, 22, 5, 0.08);
+  }
+  .meeting-label::before { content: "— "; color: var(--ocre-deep); }
+  .meeting-label::after { content: " —"; color: var(--ocre-deep); }
+
+  /* ——— SECTIONS ——— */
+  section {
+    padding: 120px 48px;
+    max-width: 1320px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  .section-head {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 80px;
+    margin-bottom: 72px;
+  }
+  .section-head .eyebrow { margin-bottom: 0; margin-top: 8px; }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(36px, 4.8vw, 62px);
+    line-height: 1.04;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .section-title em { font-style: italic; color: var(--ocre-deep); font-weight: 300; }
+
+  /* ——— UNIONS ——— */
+  .unions {
+    background: var(--sand);
+    padding: 120px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .unions::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 6px;
+    background:
+      repeating-linear-gradient(90deg,
+        var(--terra) 0, var(--terra) 14px,
+        transparent 14px, transparent 22px,
+        var(--ocre-deep) 22px, var(--ocre-deep) 30px,
+        transparent 30px, transparent 42px);
+  }
+
+  .unions-inner { max-width: 1320px; margin: 0 auto; }
+
+  .unions-head { text-align: center; margin-bottom: 72px; }
+  .unions-head .eyebrow { justify-content: center; margin-bottom: 20px; }
+  .unions-head .eyebrow::after {
+    content: "";
+    width: 36px;
+    height: 2px;
+    background: var(--ocre-deep);
+  }
+
+  .union-counter {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(64px, 9vw, 120px);
+    font-weight: 300;
+    font-style: italic;
+    color: var(--terra-deep);
+    line-height: 1;
+    margin-bottom: 14px;
+    letter-spacing: -0.03em;
+  }
+  .union-counter-label {
+    font-size: 14px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    max-width: 480px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .stories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+    margin-top: 60px;
+  }
+  .story {
+    background: var(--cream);
+    border-radius: 16px;
+    border: 1px solid rgba(184, 105, 26, 0.15);
+    transition: transform 0.5s ease, box-shadow 0.5s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .story:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 25px 60px rgba(43, 22, 5, 0.15);
+  }
+  .story-photo {
+    width: 100%;
+    height: 260px;
+    position: relative;
+    overflow: hidden;
+    background: var(--sand);
+  }
+  .story-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.7s ease;
+  }
+  .story:hover .story-photo img { transform: scale(1.06); }
+  .story-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(43, 22, 5, 0.55) 0%, transparent 50%);
+    pointer-events: none;
+  }
+  .story-photo .story-badge {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background: rgba(253, 248, 240, 0.95);
+    backdrop-filter: blur(8px);
+    padding: 5px 12px;
+    border-radius: 100px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--terra-deep);
+    font-weight: 600;
+    z-index: 2;
+  }
+
+  .story-content {
+    padding: 28px 30px 30px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .story-text {
+    font-family: 'Fraunces', serif;
+    font-size: 19px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink);
+    line-height: 1.45;
+    margin-bottom: 20px;
+    flex: 1;
+  }
+  .story-author {
+    font-size: 13px;
+    color: var(--ink-soft);
+    padding-top: 16px;
+    border-top: 1px solid rgba(184, 105, 26, 0.2);
+  }
+  .story-author strong {
+    color: var(--terra-deep);
+    font-weight: 500;
+  }
+
+  /* ——— PARCOURS ——— */
+  .journey-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    margin-top: 20px;
+    position: relative;
+  }
+  .journey-grid::before {
+    content: "";
+    position: absolute;
+    top: 38px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: repeating-linear-gradient(90deg, var(--ocre-deep) 0, var(--ocre-deep) 4px, transparent 4px, transparent 10px);
+    z-index: 0;
+  }
+  .journey-step { position: relative; z-index: 2; }
+  .journey-number {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    background: var(--cream);
+    border: 2px solid var(--ocre-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-size: 30px;
+    font-style: italic;
+    color: var(--terra-deep);
+    font-weight: 500;
+    margin-bottom: 22px;
+    box-shadow: 0 4px 16px rgba(184, 105, 26, 0.12);
+  }
+  .journey-step h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 10px;
+    line-height: 1.15;
+  }
+  .journey-step p {
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+
+  /* ——— VALEURS ——— */
+  .values {
+    background: var(--terra-deep);
+    color: var(--sand);
+    padding: 120px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  .values::before {
+    content: "";
+    position: absolute;
+    top: -20%; left: -10%;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--ocre) 0%, transparent 70%);
+    opacity: 0.15;
+  }
+  .values::after {
+    content: "";
+    position: absolute;
+    bottom: -30%; right: -10%;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--copper) 0%, transparent 70%);
+    opacity: 0.1;
+  }
+
+  .values-inner { max-width: 1320px; margin: 0 auto; position: relative; z-index: 2; }
+  .values .section-title { color: var(--sand); }
+  .values .section-title em { color: var(--ocre); }
+  .values .eyebrow { color: var(--ocre); }
+  .values .eyebrow::before { background: var(--ocre); }
+
+  .values-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+    margin-top: 40px;
+  }
+  .value {
+    padding: 36px 0;
+    border-top: 1px solid rgba(245, 230, 211, 0.2);
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 28px;
+    align-items: start;
+  }
+  .value-icon {
+    font-family: 'Fraunces', serif;
+    font-size: 44px;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--ocre);
+    line-height: 1;
+  }
+  .value h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 24px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    color: var(--sand);
+  }
+  .value p {
+    font-size: 15px;
+    line-height: 1.7;
+    color: rgba(245, 230, 211, 0.8);
+  }
+
+  /* ——— MOMENT ——— */
+  .moment {
+    padding: 120px 48px;
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+  }
+  .moment-content .eyebrow { margin-bottom: 24px; }
+  .moment-content h2 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(36px, 4.5vw, 58px);
+    line-height: 1.05;
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 24px;
+  }
+  .moment-content h2 em { font-style: italic; color: var(--ocre-deep); font-weight: 300; }
+  .moment-content p {
+    font-size: 17px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    margin-bottom: 20px;
+  }
+  .moment-content p:last-child { margin-bottom: 0; }
+
+  .moment-visual {
+    position: relative;
+    height: 620px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .moment-couple-photo {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 85%;
+    height: 95%;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 30px 70px rgba(43, 22, 5, 0.25);
+    z-index: 1;
+  }
+  .moment-couple-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .moment-couple-photo::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(91, 46, 12, 0.3) 0%, rgba(43, 22, 5, 0.1) 60%);
+  }
+
+  .phone-frame {
+    width: 270px;
+    height: 540px;
+    background: var(--ink);
+    border-radius: 42px;
+    padding: 10px;
+    box-shadow: 0 30px 80px rgba(43, 22, 5, 0.4);
+    position: relative;
+    z-index: 2;
+    margin-left: -50px;
+    margin-top: 60px;
+  }
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--cream);
+    border-radius: 34px;
+    overflow: hidden;
+    position: relative;
+  }
+  .phone-notch {
+    position: absolute;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 72px;
+    height: 20px;
+    background: var(--ink);
+    border-radius: 10px;
+    z-index: 10;
+  }
+  .phone-statusbar {
+    padding: 44px 14px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 6px;
+  }
+  .phone-statusbar svg { width: 20px; height: 20px; }
+  .phone-statusbar span {
+    font-family: 'Fraunces', serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--terra-deep);
+    letter-spacing: 0.02em;
+  }
+  .phone-statusbar span em { font-style: italic; color: var(--ocre-deep); }
+
+  .chat-header {
+    padding: 10px 14px 12px;
+    border-bottom: 1px solid rgba(184, 105, 26, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+  }
+  .chat-header .ch-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--sand);
+  }
+  .chat-header .ch-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .chat-header .ch-name {
+    font-family: 'Fraunces', serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+  .chat-header .ch-meta {
+    font-size: 10px;
+    color: var(--ocre-deep);
+    font-weight: 500;
+  }
+  .chat-body {
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .chat-msg {
+    padding: 8px 12px;
+    font-size: 11px;
+    line-height: 1.4;
+    max-width: 80%;
+    border-radius: 12px 12px 12px 4px;
+    background: var(--sand-light);
+    color: var(--ink);
+  }
+  .chat-msg.mine {
+    align-self: flex-end;
+    border-radius: 12px 12px 4px 12px;
+    background: var(--terra-deep);
+    color: var(--sand);
+  }
+
+  /* ——— PRICING ——— */
+  .pricing {
+    background: var(--sand-light);
+    padding: 120px 48px;
+    border-top: 1px solid rgba(184, 105, 26, 0.15);
+    border-bottom: 1px solid rgba(184, 105, 26, 0.15);
+  }
+  .pricing-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .pricing .eyebrow { justify-content: center; margin-bottom: 20px; }
+  .pricing .eyebrow::after {
+    content: "";
+    width: 36px;
+    height: 2px;
+    background: var(--ocre-deep);
+  }
+  .pricing h2 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(32px, 4vw, 48px);
+    line-height: 1.1;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 20px;
+    letter-spacing: -0.015em;
+  }
+  .pricing h2 em { font-style: italic; color: var(--ocre-deep); font-weight: 300; }
+  .pricing > .pricing-inner > p {
+    font-size: 16px;
+    color: var(--ink-soft);
+    line-height: 1.65;
+    max-width: 640px;
+    margin: 0 auto 52px;
+  }
+
+  .pricing-table {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    background: var(--cream);
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(184, 105, 26, 0.2);
+    margin-bottom: 30px;
+  }
+  .price-col {
+    padding: 44px 28px 36px;
+    text-align: left;
+    position: relative;
+  }
+  .price-col + .price-col { border-left: 1px solid rgba(184, 105, 26, 0.15); }
+  .price-col.featured { background: var(--sand); }
+  .price-col.featured::before {
+    content: "LE PLUS CHOISI";
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--ocre-deep);
+    color: var(--sand);
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    padding: 4px 14px;
+    border-radius: 0 0 6px 6px;
+    font-weight: 600;
+  }
+  .price-name {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 16px;
+  }
+  .price-amount {
+    font-family: 'Fraunces', serif;
+    font-size: 38px;
+    font-weight: 400;
+    color: var(--terra-deep);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .price-amount small {
+    font-size: 14px;
+    color: var(--ink-soft);
+    font-weight: 300;
+  }
+  .price-details {
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid rgba(184, 105, 26, 0.15);
+  }
+  .price-note {
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .price-note::before {
+    content: "✓ ";
+    color: var(--ocre-deep);
+    font-weight: 600;
+  }
+
+  .pricing-disclaimer {
+    font-size: 13px;
+    color: var(--ink-soft);
+    opacity: 0.75;
+    font-style: italic;
+    max-width: 700px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .pricing-disclaimer strong {
+    color: var(--terra-deep);
+    font-weight: 500;
+    font-style: normal;
+  }
+
+  /* ——— FAQ ——— */
+  .faq { max-width: 860px; margin: 0 auto; }
+  .faq-item {
+    border-bottom: 1px solid rgba(184, 105, 26, 0.3);
+    padding: 26px 0;
+    cursor: pointer;
+  }
+  .faq-q {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  .faq-q::after {
+    content: "+";
+    font-weight: 300;
+    color: var(--ocre-deep);
+    font-size: 32px;
+    transition: transform 0.3s;
+  }
+  .faq-item.open .faq-q::after { transform: rotate(45deg); }
+  .faq-a {
+    max-height: 0;
+    overflow: hidden;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.7;
+    transition: max-height 0.4s ease, padding 0.4s ease;
+  }
+  .faq-item.open .faq-a { max-height: 300px; padding-top: 16px; }
+
+  /* ——— FINAL CTA ——— */
+  .final-cta {
+    text-align: center;
+    padding: 160px 48px;
+    position: relative;
+    overflow: hidden;
+    background: var(--terra-deep);
+  }
+  .final-cta-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .final-cta-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .final-cta-bg::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(to bottom, rgba(43, 22, 5, 0.8) 0%, rgba(91, 46, 12, 0.85) 100%);
+  }
+  .final-cta-inner {
+    position: relative;
+    z-index: 2;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+
+  .final-cta-logo {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+  .final-cta-logo svg {
+    filter: drop-shadow(0 8px 24px rgba(184, 105, 26, 0.4));
+  }
+
+  .final-cta h2 {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(44px, 5.5vw, 80px);
+    font-weight: 400;
+    line-height: 1.02;
+    margin-bottom: 24px;
+    color: var(--sand);
+    letter-spacing: -0.02em;
+  }
+  .final-cta h2 em { font-style: italic; color: var(--ocre); font-weight: 300; }
+  .final-cta > .final-cta-inner > p {
+    font-size: 19px;
+    color: rgba(245, 230, 211, 0.85);
+    max-width: 620px;
+    margin: 0 auto 44px;
+    line-height: 1.55;
+  }
+  .email-form {
+    display: flex;
+    max-width: 520px;
+    margin: 0 auto;
+    gap: 10px;
+  }
+  .email-form input {
+    flex: 1;
+    padding: 16px 22px;
+    border: 1.5px solid rgba(245, 230, 211, 0.3);
+    background: rgba(253, 248, 240, 0.1);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--sand);
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+    backdrop-filter: blur(8px);
+  }
+  .email-form input:focus {
+    border-color: var(--ocre);
+    background: rgba(253, 248, 240, 0.15);
+  }
+  .email-form input::placeholder { color: rgba(245, 230, 211, 0.5); }
+  .email-form .btn-primary {
+    background: var(--ocre-deep);
+    box-shadow: 0 2px 0 var(--terra-deep);
+  }
+
+  /* ——— FOOTER ——— */
+  footer {
+    background: var(--ink);
+    color: var(--sand);
+    padding: 70px 48px 32px;
+  }
+  .footer-inner {
+    max-width: 1320px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 60px;
+    margin-bottom: 50px;
+  }
+  footer .logo-text { color: var(--sand); font-size: 28px; }
+  footer .logo-text em { color: var(--ocre); }
+  footer .logo-text .tagline { color: var(--ocre); display: block; }
+  footer p.tagline-footer {
+    color: rgba(245, 230, 211, 0.6);
+    font-size: 14px;
+    margin-top: 20px;
+    max-width: 300px;
+    line-height: 1.6;
+  }
+  .footer-col h4 {
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ocre);
+    margin-bottom: 18px;
+    font-weight: 600;
+  }
+  .footer-col a {
+    display: block;
+    color: rgba(245, 230, 211, 0.7);
+    text-decoration: none;
+    font-size: 14px;
+    padding: 6px 0;
+    transition: color 0.2s;
+  }
+  .footer-col a:hover { color: var(--sand); }
+  .footer-bottom {
+    max-width: 1320px;
+    margin: 0 auto;
+    padding-top: 28px;
+    border-top: 1px solid rgba(245, 230, 211, 0.1);
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: rgba(245, 230, 211, 0.5);
+  }
+
+  /* ——— ANIMATIONS ——— */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .reveal { opacity: 0; animation: fadeUp 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+  .reveal-1 { animation-delay: 0.1s; }
+  .reveal-2 { animation-delay: 0.3s; }
+  .reveal-3 { animation-delay: 0.5s; }
+  .reveal-4 { animation-delay: 0.7s; }
+
+  @keyframes floatHer {
+    0%, 100% { transform: rotate(-5deg) translateY(0); }
+    50% { transform: rotate(-5deg) translateY(-12px); }
+  }
+  @keyframes floatHim {
+    0%, 100% { transform: rotate(4deg) translateY(0); }
+    50% { transform: rotate(4deg) translateY(12px); }
+  }
+  .card-her { animation: floatHer 7s ease-in-out infinite; }
+  .card-him { animation: floatHim 7s ease-in-out infinite; }
+
+  @keyframes beat {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.06); }
+  }
+  .heart-connector { animation: beat 2.4s ease-in-out infinite; }
+
+  /* ——— RESPONSIVE ——— */
+  @media (max-width: 900px) {
+    nav { padding: 18px 20px; }
+    nav.scrolled { padding: 12px 20px; }
+    nav .links a:not(.btn) { display: none; }
+    .hero { padding: 110px 24px 60px; }
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .hero-visual { height: 500px; }
+    .card-her, .card-him { width: 200px; }
+    .card-her .mc-photo, .card-him .mc-photo { height: 230px; }
+    .meeting-label { bottom: 70px; font-size: 13px; }
+    .heart-connector { width: 84px; height: 84px; }
+    section { padding: 80px 24px; }
+    .section-head { grid-template-columns: 1fr; gap: 22px; margin-bottom: 48px; }
+    .unions { padding: 80px 24px; }
+    .stories-grid { grid-template-columns: 1fr; gap: 20px; }
+    .journey-grid { grid-template-columns: 1fr; gap: 36px; }
+    .journey-grid::before { display: none; }
+    .values { padding: 80px 24px; }
+    .values-grid { grid-template-columns: 1fr; gap: 8px; }
+    .moment { padding: 80px 24px; grid-template-columns: 1fr; gap: 40px; }
+    .moment-visual { height: 540px; }
+    .moment-couple-photo { width: 100%; height: 100%; }
+    .phone-frame { margin-left: 0; margin-top: 0; position: absolute; bottom: -20px; right: 10px; }
+    .pricing { padding: 80px 24px; }
+    .pricing-table { grid-template-columns: 1fr; }
+    .price-col + .price-col {
+      border-left: none;
+      border-top: 1px solid rgba(184, 105, 26, 0.15);
+    }
+    .final-cta { padding: 100px 24px; }
+    .email-form { flex-direction: column; }
+    .footer-inner { grid-template-columns: 1fr 1fr; gap: 36px; }
+    .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ LOGO SVG SYMBOLS (défini une fois, réutilisé partout) ============ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <!-- Symbole Téranga : deux arcs ocres qui se rejoignent en cœur avec un point d'union au centre -->
+    <symbol id="teranga-symbol" viewBox="0 0 64 64">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="3.5" fill="#FDF8F0" stroke="#5B2E0C" stroke-width="1.5"/>
+    </symbol>
+    <!-- Version sur fond sombre -->
+    <symbol id="teranga-symbol-light" viewBox="0 0 64 64">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="3.5" fill="#F5E6D3"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ NAV ============ -->
+<nav id="nav">
+  <a href="#" class="logo">
+    <svg width="40" height="40"><use href="#teranga-symbol"/></svg>
+    <div class="logo-text">T<em>é</em>ranga</div>
+  </a>
+  <div class="links">
+    <a href="#unions">Unions</a>
+    <a href="#comment">Comment ça marche</a>
+    <a href="#valeurs">Nos valeurs</a>
+    <a href="#tarifs">Abonnement</a>
+    <a href="#inscription" class="btn btn-primary">Commencer</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow reveal reveal-1">Rencontres pour le mariage</div>
+      <h1 class="hero-title reveal reveal-2">
+        Rencontrez <em>la personne</em><br>
+        avec qui tout <em>commence.</em>
+      </h1>
+      <p class="hero-lead reveal reveal-3">
+        Téranga réunit des femmes et des hommes prêts à s'engager, à fonder
+        un foyer, à bâtir une vie à deux. Pas de jeu. Pas d'ambiguïté.
+        Seulement des rencontres qui comptent.
+      </p>
+      <div class="hero-cta reveal reveal-4">
+        <a href="#inscription" class="btn btn-primary">Créer mon profil</a>
+        <a href="#unions" class="btn btn-ghost">Voir des histoires</a>
+      </div>
+      <div class="hero-sub reveal reveal-4">
+        Déjà plus de 1 200 bêta-testeurs inscrits à Dakar, Abidjan et Douala.
+      </div>
+    </div>
+
+    <div class="hero-visual">
+      <div class="meeting-card card-her">
+        <div class="mc-photo">
+          <span class="mc-verified">Vérifié</span>
+          <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&q=80&auto=format&fit=crop"
+               alt="Portrait d'Aminata" loading="lazy">
+        </div>
+        <div class="mc-info">
+          <span class="mc-tag">Mariage</span>
+          <div class="mc-name">Aminata, 29</div>
+          <div class="mc-meta">Dakar · Enseignante</div>
+        </div>
+      </div>
+
+      <!-- Le logo symbole devient le cœur central qui relie les deux profils -->
+      <div class="heart-connector" title="Téranga">
+        <svg><use href="#teranga-symbol"/></svg>
+      </div>
+
+      <div class="meeting-label">la rencontre</div>
+
+      <div class="meeting-card card-him">
+        <div class="mc-photo">
+          <span class="mc-verified">Vérifié</span>
+          <img src="https://images.unsplash.com/photo-1507152832244-10d45c7eda57?w=600&q=80&auto=format&fit=crop"
+               alt="Portrait d'Ibrahim" loading="lazy">
+        </div>
+        <div class="mc-info">
+          <span class="mc-tag">Mariage</span>
+          <div class="mc-name">Ibrahim, 33</div>
+          <div class="mc-meta">Dakar · Ingénieur</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ UNIONS ============ -->
+<section class="unions" id="unions">
+  <div class="unions-inner">
+    <div class="unions-head">
+      <div class="eyebrow">Nos unions</div>
+      <div class="union-counter">47</div>
+      <p class="union-counter-label">
+        couples se sont dit oui depuis le lancement de la bêta.<br>
+        Voici quelques-unes de leurs histoires.
+      </p>
+    </div>
+
+    <div class="stories-grid">
+      <div class="story">
+        <div class="story-photo">
+          <span class="story-badge">Mariés — Mars 2026</span>
+          <img src="https://images.unsplash.com/photo-1609234656388-0ff363383899?w=700&q=80&auto=format&fit=crop"
+               alt="Mariama et Oumar" loading="lazy">
+        </div>
+        <div class="story-content">
+          <p class="story-text">
+            « Nous nous sommes parlé pendant trois mois avant de nous voir.
+            Quand il a rencontré mes parents, j'ai su que c'était lui. »
+          </p>
+          <div class="story-author"><strong>Mariama &amp; Oumar</strong> — Dakar</div>
+        </div>
+      </div>
+
+      <div class="story">
+        <div class="story-photo">
+          <span class="story-badge">Fiancés — Janvier 2026</span>
+          <img src="https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?w=700&q=80&auto=format&fit=crop"
+               alt="Fatou et Jean-Paul" loading="lazy">
+        </div>
+        <div class="story-content">
+          <p class="story-text">
+            « J'avais presque abandonné l'idée de me remarier. Téranga m'a
+            fait rencontrer un homme qui respecte ma fille autant que moi. »
+          </p>
+          <div class="story-author"><strong>Fatou &amp; Jean-Paul</strong> — Abidjan</div>
+        </div>
+      </div>
+
+      <div class="story">
+        <div class="story-photo">
+          <span class="story-badge">Attendent un enfant</span>
+          <img src="https://images.unsplash.com/photo-1529636798458-92182e662485?w=700&q=80&auto=format&fit=crop"
+               alt="Clarisse et Aurélien" loading="lazy">
+        </div>
+        <div class="story-content">
+          <p class="story-text">
+            « Dès le premier message, on a compris qu'on cherchait la même
+            chose. Le mariage, une famille, une vie stable. »
+          </p>
+          <div class="story-author"><strong>Clarisse &amp; Aurélien</strong> — Douala</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PARCOURS ============ -->
+<section id="comment">
+  <div class="section-head">
+    <div class="eyebrow">Le parcours</div>
+    <h2 class="section-title">
+      Quatre étapes, <em>un même horizon.</em>
+    </h2>
+  </div>
+
+  <div class="journey-grid">
+    <div class="journey-step">
+      <div class="journey-number">i</div>
+      <h3>Vous créez votre profil</h3>
+      <p>Quelques photos, votre ville, votre intention. Vérification
+      biométrique pour garantir votre identité.</p>
+    </div>
+    <div class="journey-step">
+      <div class="journey-number">ii</div>
+      <h3>Vous rencontrez quelqu'un</h3>
+      <p>Parcourez des profils de personnes qui partagent votre objectif
+      de vie. Un like mutuel ouvre la conversation.</p>
+    </div>
+    <div class="journey-step">
+      <div class="journey-number">iii</div>
+      <h3>Vous apprenez à vous connaître</h3>
+      <p>Échangez en toute sécurité. Participez aux événements visio ou
+      en présentiel dans votre ville.</p>
+    </div>
+    <div class="journey-step">
+      <div class="journey-number">iv</div>
+      <h3>Vous construisez ensemble</h3>
+      <p>Quand le moment est venu, présentez vos familles. Téranga
+      accompagne votre histoire jusqu'à son début.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VALEURS ============ -->
+<section class="values" id="valeurs">
+  <div class="values-inner">
+    <div class="section-head">
+      <div class="eyebrow">Nos valeurs</div>
+      <h2 class="section-title">
+        Le respect des <em>traditions</em>,<br>l'exigence de la <em>modernité.</em>
+      </h2>
+    </div>
+
+    <div class="values-grid">
+      <div class="value">
+        <div class="value-icon">i.</div>
+        <div>
+          <h3>L'intention avant tout</h3>
+          <p>Chaque profil déclare clairement ce qu'il cherche : relation
+          sérieuse, mariage, fonder une famille. Ici, on ne joue pas.</p>
+        </div>
+      </div>
+      <div class="value">
+        <div class="value-icon">ii.</div>
+        <div>
+          <h3>La famille au cœur</h3>
+          <p>Un tiers de confiance — frère, sœur, ami — peut valider le
+          profil de l'autre personne avant une rencontre en présentiel.</p>
+        </div>
+      </div>
+      <div class="value">
+        <div class="value-icon">iii.</div>
+        <div>
+          <h3>Le respect mutuel</h3>
+          <p>Tolérance zéro pour le harcèlement. Modération humaine
+          francophone. Tout abus entraîne un bannissement définitif.</p>
+        </div>
+      </div>
+      <div class="value">
+        <div class="value-icon">iv.</div>
+        <div>
+          <h3>La sincérité des profils</h3>
+          <p>Vérification biométrique obligatoire. Protection anti-brouteur
+          renforcée. Vous parlez à de vraies personnes, sérieusement.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MOMENT ============ -->
+<section class="moment">
+  <div class="moment-content">
+    <div class="eyebrow">Une conversation, un début</div>
+    <h2>Et si le premier <em>« bonjour »</em><br>était le vrai ?</h2>
+    <p>
+      Derrière chaque profil, une personne qui a pris le temps de se
+      présenter, de déclarer son intention, de prouver son identité.
+    </p>
+    <p>
+      Pas de messages à la chaîne. Pas de photos envoyées sans réfléchir.
+      Seulement des échanges qui peuvent, un jour, mener quelque part.
+    </p>
+  </div>
+
+  <div class="moment-visual">
+    <div class="moment-couple-photo">
+      <img src="https://images.unsplash.com/photo-1542596594-649edbc13630?w=900&q=80&auto=format&fit=crop"
+           alt="Un couple heureux" loading="lazy">
+    </div>
+    <div class="phone-frame">
+      <div class="phone-screen">
+        <div class="phone-notch"></div>
+        <!-- Logo en haut de l'app -->
+        <div class="phone-statusbar">
+          <svg><use href="#teranga-symbol"/></svg>
+          <span>T<em>é</em>ranga</span>
+        </div>
+        <div class="chat-header">
+          <div class="ch-avatar">
+            <img src="https://images.unsplash.com/photo-1507152832244-10d45c7eda57?w=100&q=80&auto=format&fit=crop"
+                 alt="Avatar Ibrahim">
+          </div>
+          <div>
+            <div class="ch-name">Ibrahim, 33</div>
+            <div class="ch-meta">✓ Vérifié · Dakar</div>
+          </div>
+        </div>
+        <div class="chat-body">
+          <div class="chat-msg">Bonjour Aminata, votre profil m'a beaucoup touché.</div>
+          <div class="chat-msg">Vous êtes enseignante ? Dans quel domaine ?</div>
+          <div class="chat-msg mine">Bonjour Ibrahim ! J'enseigne les mathématiques au lycée.</div>
+          <div class="chat-msg mine">Et vous, ingénieur dans quelle spécialité ?</div>
+          <div class="chat-msg">Télécoms. J'ai cofondé une petite entreprise.</div>
+          <div class="chat-msg">Ma mère voudrait vous rencontrer 🙂</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TARIFS ============ -->
+<section class="pricing" id="tarifs">
+  <div class="pricing-inner">
+    <div class="eyebrow">Pour les hommes</div>
+    <h2>Un engagement, <em>symbolique et concret.</em></h2>
+    <p>
+      Pour préserver un équilibre entre femmes et hommes, et s'assurer
+      que chaque profil masculin est réellement engagé dans sa démarche,
+      l'accès à la messagerie est réservé aux hommes abonnés. Les femmes,
+      elles, bénéficient de l'intégralité des fonctionnalités sans frais.
+    </p>
+
+    <div class="pricing-table">
+      <div class="price-col">
+        <div class="price-name">Découverte</div>
+        <div class="price-amount">3 000 <small>F / mois</small></div>
+        <div class="price-details">1 mois — 3 000 F CFA</div>
+        <div class="price-note">Messagerie et découverte illimitées</div>
+      </div>
+      <div class="price-col featured">
+        <div class="price-name">Standard</div>
+        <div class="price-amount">7 000 <small>F / mois</small></div>
+        <div class="price-details">3 mois — 21 000 F CFA</div>
+        <div class="price-note">Tout Découverte + événements</div>
+      </div>
+      <div class="price-col">
+        <div class="price-name">Engagement</div>
+        <div class="price-amount">12 000 <small>F / mois</small></div>
+        <div class="price-details">6 mois — 72 000 F CFA</div>
+        <div class="price-note">Tout Standard + coach dédié</div>
+      </div>
+    </div>
+
+    <p class="pricing-disclaimer">
+      Paiement par <strong>Orange Money, Wave, MTN MoMo, Moov Money, carte
+      bancaire</strong> ou facture opérateur. Annulable à tout moment à la
+      fin de la période choisie.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section>
+  <div class="section-head">
+    <div class="eyebrow">Questions fréquentes</div>
+    <h2 class="section-title">Tout ce que vous <em>voulez savoir.</em></h2>
+  </div>
+  <div class="faq">
+    <div class="faq-item">
+      <div class="faq-q">Téranga est-elle vraiment différente des autres apps ?</div>
+      <div class="faq-a">
+        Oui. Ici, chaque profil déclare son intention : mariage, relation
+        sérieuse, fonder une famille. Pas de rencontres d'un soir, pas de
+        photos inappropriées, pas de jeux. Seulement des personnes prêtes
+        à construire quelque chose de durable.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Comment vous protégez contre les brouteurs ?</div>
+      <div class="faq-a">
+        Vérification biométrique obligatoire à l'inscription, géolocalisation
+        croisée, détection automatique par IA des demandes d'argent et des
+        schémas d'arnaque. Tout utilisateur identifié comme brouteur est
+        banni définitivement, sans possibilité de recréer un compte.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Puis-je impliquer ma famille dans ma démarche ?</div>
+      <div class="faq-a">
+        Absolument. Notre fonctionnalité « tiers de confiance » permet à un
+        proche (frère, sœur, ami, parent) de consulter le profil de la
+        personne avec qui vous échangez, et de valider avant une rencontre
+        en présentiel. La famille a toute sa place ici.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">L'app fonctionne-t-elle en 3G ou en zone peu couverte ?</div>
+      <div class="faq-a">
+        Oui. Téranga est optimisée pour les réseaux africains : images
+        compressées, mode économie de données, cache offline. L'app
+        fonctionne même avec une connexion 2G intermittente.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Dans quels pays est disponible Téranga ?</div>
+      <div class="faq-a">
+        Au lancement : Sénégal et Côte d'Ivoire. Puis Cameroun, Mali, Burkina
+        Faso, Togo, Bénin. Ensuite Maroc, Tunisie, Algérie et RDC. Téranga
+        a vocation à couvrir toute l'Afrique francophone et sa diaspora.
+      </div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Mon profil est-il visible par tout le monde ?</div>
+      <div class="faq-a">
+        Non. Vous choisissez votre visibilité. Le mode discrétion permet
+        même de remplacer l'icône de l'app sur votre téléphone par une
+        icône neutre, pour préserver votre vie privée vis-à-vis de votre
+        entourage.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL CTA ============ -->
+<section class="final-cta" id="inscription">
+  <div class="final-cta-bg">
+    <img src="https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=1600&q=80&auto=format&fit=crop"
+         alt="Couple africain heureux" loading="lazy">
+  </div>
+  <div class="final-cta-inner">
+    <!-- Logo sur la section finale (monochrome light) -->
+    <div class="final-cta-logo">
+      <svg width="64" height="64"><use href="#teranga-symbol-light"/></svg>
+    </div>
+    <h2>Votre histoire <em>commence ici.</em></h2>
+    <p>
+      Rejoignez les premiers membres de Téranga. Vous serez averti·e du
+      lancement officiel et bénéficierez de conditions préférentielles.
+    </p>
+    <div class="email-form">
+      <input type="email" id="email-input" placeholder="votre@email.com ou numéro WhatsApp">
+      <button onclick="submitEmail()" class="btn btn-primary">Je m'inscris</button>
+    </div>
+    <p id="email-confirm" style="margin-top: 20px; color: var(--ocre); font-weight: 500; display: none;">
+      ✓ Merci — vous êtes sur la liste.
+    </p>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <a href="#" class="logo">
+        <svg width="48" height="48"><use href="#teranga-symbol-light"/></svg>
+        <div class="logo-text">
+          T<em>é</em>ranga
+          <span class="tagline">La rencontre, autrement</span>
+        </div>
+      </a>
+      <p class="tagline-footer">Rencontres pour le mariage. Conçue pour l'Afrique francophone et sa diaspora.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Téranga</h4>
+      <a href="#unions">Nos unions</a>
+      <a href="#comment">Comment ça marche</a>
+      <a href="#valeurs">Nos valeurs</a>
+      <a href="#tarifs">Abonnement</a>
+    </div>
+    <div class="footer-col">
+      <h4>Entreprise</h4>
+      <a href="#">À propos</a>
+      <a href="#">Manifeste</a>
+      <a href="#">Presse</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="footer-col">
+      <h4>Légal</h4>
+      <a href="#">CGU</a>
+      <a href="#">Confidentialité</a>
+      <a href="#">Protection des données</a>
+      <a href="#">Modération</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <div>© 2026 Téranga — Tous droits réservés.</div>
+    <div>Fait avec cœur pour l'Afrique.</div>
+  </div>
+</footer>
+
+<script>
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    if (window.scrollY > 40) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  });
+
+  document.querySelectorAll('.faq-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const wasOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
+  });
+
+  function submitEmail() {
+    const input = document.getElementById('email-input');
+    const confirm = document.getElementById('email-confirm');
+    if (input.value && input.value.length > 3) {
+      confirm.style.display = 'block';
+      input.value = '';
+    } else {
+      input.focus();
+      input.style.borderColor = 'var(--ocre)';
+      setTimeout(() => input.style.borderColor = '', 1000);
+    }
+  }
+  document.getElementById('email-input').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') submitEmail();
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.style.opacity = '1';
+        entry.target.style.transform = 'translateY(0)';
+      }
+    });
+  }, { threshold: 0.12 });
+
+  document.querySelectorAll('section:not(.hero) > *').forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(30px)';
+    el.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
+    observer.observe(el);
+  });
+</script>
+
+</body>
+</html>

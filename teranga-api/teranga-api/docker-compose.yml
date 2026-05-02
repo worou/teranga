@@ -1,0 +1,42 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: teranga-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: teranga
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: teranga
+    ports:
+      - '5432:5432'
+    volumes:
+      - teranga-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U teranga -d teranga']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teranga-api
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://teranga:password@postgres:5432/teranga?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      PORT: 3000
+      API_BASE_URL: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3001,https://teranga.africa
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  teranga-data:

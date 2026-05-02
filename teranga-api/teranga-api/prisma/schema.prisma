@@ -1,0 +1,406 @@
+// Téranga — Schéma de base de données
+// PostgreSQL via Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========== ENUMS ==========
+
+enum Gender {
+  FEMALE
+  MALE
+  NON_BINARY
+  UNDISCLOSED
+}
+
+enum Intent {
+  SERIOUS_RELATIONSHIP
+  MARRIAGE
+  FAMILY
+}
+
+enum Religion {
+  CHRISTIAN
+  MUSLIM
+  OTHER
+  UNDISCLOSED
+}
+
+enum UserStatus {
+  PENDING_VERIFICATION
+  ACTIVE
+  SUSPENDED
+  BANNED
+  DELETED
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_REVIEW
+  VERIFIED
+  REJECTED
+}
+
+enum SubscriptionPlan {
+  FREE
+  DISCOVERY
+  STANDARD
+  ENGAGEMENT
+}
+
+enum SubscriptionStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  ORANGE_MONEY
+  WAVE
+  MTN_MOMO
+  MOOV_MONEY
+  M_PESA
+  AIRTEL_MONEY
+  CARD
+  CARRIER_BILLING
+}
+
+enum MatchStatus {
+  PENDING
+  MATCHED
+  UNMATCHED
+}
+
+enum ReportReason {
+  HARASSMENT
+  FAKE_PROFILE
+  SCAM
+  INAPPROPRIATE_CONTENT
+  SPAM
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWING
+  RESOLVED
+  DISMISSED
+}
+
+enum EventType {
+  VIRTUAL
+  IN_PERSON
+}
+
+// ========== MODELS ==========
+
+model User {
+  id                String    @id @default(uuid())
+  phone             String    @unique
+  email             String?   @unique
+  passwordHash      String?
+  firstName         String
+  lastName          String?
+  birthDate         DateTime
+  gender            Gender
+  intent            Intent
+  religion          Religion  @default(UNDISCLOSED)
+  city              String
+  country           String    // ISO code: SN, CI, ML, CM...
+  profession        String?
+  bio               String?   @db.Text
+  hasChildren       Boolean   @default(false)
+  educationLevel    String?
+
+  status            UserStatus         @default(PENDING_VERIFICATION)
+  verificationStatus VerificationStatus @default(PENDING)
+  isVerified        Boolean   @default(false)
+  emailVerified     Boolean   @default(false)
+  phoneVerified     Boolean   @default(false)
+  biometricVerified Boolean   @default(false)
+
+  lastActiveAt      DateTime  @default(now())
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime?
+
+  // Relations
+  photos            Photo[]
+  subscription      Subscription?
+  sentLikes         Like[]              @relation("LikesSent")
+  receivedLikes     Like[]              @relation("LikesReceived")
+  matchesAsUserA    Match[]             @relation("MatchUserA")
+  matchesAsUserB    Match[]             @relation("MatchUserB")
+  sentMessages      Message[]
+  payments          Payment[]
+  sentReports       Report[]            @relation("ReportsSent")
+  receivedReports   Report[]            @relation("ReportsReceived")
+  blockedUsers      Block[]             @relation("BlocksMade")
+  blockedByUsers    Block[]             @relation("BlocksReceived")
+  otpCodes          OtpCode[]
+  refreshTokens     RefreshToken[]
+  events            EventParticipant[]
+  trustedCircleAsOwner TrustedCircle[]  @relation("CircleOwner")
+  trustedCircleAsTrustee TrustedCircle[] @relation("CircleTrustee")
+  notifications     Notification[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([status])
+  @@index([country, city])
+  @@index([gender, intent])
+}
+
+model Photo {
+  id           String   @id @default(uuid())
+  userId       String
+  url          String
+  order        Int      @default(0)
+  isMain       Boolean  @default(false)
+  moderationStatus VerificationStatus @default(PENDING)
+  createdAt    DateTime @default(now())
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  userId    String?
+  phone     String
+  code      String
+  purpose   String   // "registration", "login", "password_reset"
+  expiresAt DateTime
+  consumedAt DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([phone, code])
+  @@index([expiresAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+}
+
+model Subscription {
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  plan         SubscriptionPlan   @default(FREE)
+  status       SubscriptionStatus @default(PENDING)
+  startsAt     DateTime?
+  expiresAt    DateTime?
+  cancelledAt  DateTime?
+  autoRenew    Boolean            @default(false)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments     Payment[]
+
+  @@index([userId])
+  @@index([status, expiresAt])
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  userId            String
+  subscriptionId    String?
+  plan              SubscriptionPlan
+  method            PaymentMethod
+  status            PaymentStatus @default(PENDING)
+  amountFcfa        Int           // montant en F CFA
+  currency          String        @default("XOF")
+  phoneNumber       String?       // numéro Mobile Money utilisé
+  providerTxId      String?       // identifiant de transaction du provider
+  providerRef       String?       // référence publique du provider
+  cinetpayTxId      String?
+  webhookReceived   Boolean       @default(false)
+  webhookPayload    Json?
+  failureReason     String?
+  createdAt         DateTime      @default(now())
+  completedAt       DateTime?
+  updatedAt         DateTime      @updatedAt
+
+  user              User          @relation(fields: [userId], references: [id])
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([providerTxId])
+}
+
+model Like {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  isSuperLike Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("LikesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver    User     @relation("LikesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId])
+  @@index([receiverId])
+  @@index([senderId])
+}
+
+model Match {
+  id          String      @id @default(uuid())
+  userAId     String      // always the one with the smaller UUID string
+  userBId     String
+  status      MatchStatus @default(MATCHED)
+  matchedAt   DateTime    @default(now())
+  unmatchedAt DateTime?
+  unmatchedBy String?
+
+  userA       User        @relation("MatchUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB       User        @relation("MatchUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  messages    Message[]
+
+  @@unique([userAId, userBId])
+  @@index([userAId])
+  @@index([userBId])
+}
+
+model Message {
+  id              String   @id @default(uuid())
+  matchId         String
+  senderId        String
+  content         String   @db.Text
+  flaggedByAi     Boolean  @default(false)
+  flagReason      String?
+  blockedByAi     Boolean  @default(false)
+  readAt          DateTime?
+  createdAt       DateTime @default(now())
+
+  match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  sender          User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+  @@index([senderId])
+  @@index([createdAt])
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  reporterId  String
+  reportedId  String
+  reason      ReportReason
+  description String?      @db.Text
+  status      ReportStatus @default(PENDING)
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  resolution  String?
+  createdAt   DateTime     @default(now())
+
+  reporter    User         @relation("ReportsSent", fields: [reporterId], references: [id], onDelete: Cascade)
+  reported    User         @relation("ReportsReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+
+  @@index([reportedId])
+  @@index([status])
+}
+
+model Block {
+  id         String   @id @default(uuid())
+  blockerId  String
+  blockedId  String
+  reason     String?
+  createdAt  DateTime @default(now())
+
+  blocker    User     @relation("BlocksMade", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked    User     @relation("BlocksReceived", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@unique([blockerId, blockedId])
+}
+
+model Event {
+  id             String              @id @default(uuid())
+  title          String
+  description    String              @db.Text
+  type           EventType
+  city           String?
+  country        String?
+  venueAddress   String?
+  virtualLink    String?
+  startsAt       DateTime
+  endsAt         DateTime
+  maxParticipants Int?
+  coverImageUrl  String?
+  createdAt      DateTime            @default(now())
+
+  participants   EventParticipant[]
+
+  @@index([startsAt])
+  @@index([country, city])
+}
+
+model EventParticipant {
+  id        String   @id @default(uuid())
+  eventId   String
+  userId    String
+  joinedAt  DateTime @default(now())
+
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+}
+
+model TrustedCircle {
+  id         String   @id @default(uuid())
+  ownerId    String   // celui qui a donné accès
+  trusteeId  String?  // membre Téranga qui a été invité (optionnel)
+  trusteeContact String? // si ce n'est pas un utilisateur Téranga
+  relation   String   // "mère", "frère", "ami(e)", etc.
+  canReview  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  owner      User     @relation("CircleOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  trustee    User?    @relation("CircleTrustee", fields: [trusteeId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  userId     String
+  type       String   // "new_match", "new_message", "subscription_expires", "event_invitation"...
+  title      String
+  body       String   @db.Text
+  data       Json?
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+}

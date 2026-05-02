@@ -1,0 +1,86 @@
+version: '3.8'
+
+# ============================================================
+#  Téranga — Frontoffice
+#  Lance : PostgreSQL (base partagée) + API utilisateurs
+#
+#  Démarrage :  docker compose up -d
+#  Arrêt :      docker compose down
+# ============================================================
+
+networks:
+  teranga-network:
+    name: teranga-network   # réseau partagé avec le backoffice
+
+services:
+  # ── Base de données (partagée avec le backoffice) ──────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: teranga-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: teranga
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: teranga
+    ports:
+      - '5432:5432'
+    volumes:
+      - teranga-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U teranga -d teranga']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - teranga-network
+
+  # ── API Frontoffice (port 3000) ────────────────────────────
+  frontoffice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: teranga-frontoffice
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
+      DATABASE_URL: postgresql://teranga:${DB_PASSWORD:-password}@postgres:5432/teranga?schema=public
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001,https://teranga.africa}
+      # CinetPay
+      CINETPAY_API_KEY: ${CINETPAY_API_KEY:-}
+      CINETPAY_SITE_ID: ${CINETPAY_SITE_ID:-}
+      CINETPAY_SECRET_KEY: ${CINETPAY_SECRET_KEY:-}
+      CINETPAY_NOTIFY_URL: ${CINETPAY_NOTIFY_URL:-}
+      CINETPAY_RETURN_URL: ${CINETPAY_RETURN_URL:-}
+      # SMS
+      ORANGE_SMS_CLIENT_ID: ${ORANGE_SMS_CLIENT_ID:-}
+      ORANGE_SMS_CLIENT_SECRET: ${ORANGE_SMS_CLIENT_SECRET:-}
+      ORANGE_SMS_SENDER: ${ORANGE_SMS_SENDER:-Teranga}
+      # Biométrie
+      SMILE_PARTNER_ID: ${SMILE_PARTNER_ID:-}
+      SMILE_API_KEY: ${SMILE_API_KEY:-}
+      # Stockage S3
+      S3_ENDPOINT: ${S3_ENDPOINT:-}
+      S3_REGION: ${S3_REGION:-fr-par}
+      S3_BUCKET: ${S3_BUCKET:-teranga-media}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY:-}
+      S3_SECRET_KEY: ${S3_SECRET_KEY:-}
+      # Modération images
+      SIGHTENGINE_API_USER: ${SIGHTENGINE_API_USER:-}
+      SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
+      # Rate limit
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - teranga-network
+
+volumes:
+  teranga-data:
+    name: teranga-data   # volume partagé nommé (accessible depuis les deux compose)

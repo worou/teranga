@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Créer mon profil — Téranga</title>
+<meta name="description" content="Rejoignez Téranga et rencontrez la personne qui compte.">
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z' fill='%23D49060'/><path d='M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z' fill='%23B8691A'/><path d='M32 40 L32 54 Q32 58 28 54 L18 44 Z' fill='%23D49060'/><path d='M32 40 L32 54 Q32 58 36 54 L46 44 Z' fill='%23B8691A'/><circle cx='32' cy='28' r='4' fill='%23F5E6D3'/></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,300;1,9..144,400;1,9..144,500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --sand: #F5E6D3;
+    --sand-light: #FAF1E3;
+    --cream: #FDF8F0;
+    --ocre: #D49060;
+    --ocre-deep: #B8691A;
+    --terra: #8B4513;
+    --terra-deep: #5B2E0C;
+    --ink: #2B1605;
+    --ink-soft: #4A2A12;
+    --copper: #C87533;
+    --green: #5D7246;
+    --error: #C0392B;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    line-height: 1.65;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.35;
+    mix-blend-mode: multiply;
+    z-index: 1000;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.45 0 0 0 0 0.28 0 0 0 0 0.12 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ——— NAV ——— */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 18px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 100;
+    background: rgba(253, 248, 240, 0.92);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 1px 0 rgba(184, 105, 26, 0.12);
+  }
+
+  .logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .logo svg {
+    flex-shrink: 0;
+    transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+  .logo:hover svg { transform: rotate(-6deg) scale(1.05); }
+  .logo-text {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 22px;
+    color: var(--terra-deep);
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+  }
+  .logo-text em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ocre-deep);
+  }
+
+  nav .nav-right {
+    font-size: 14px;
+    color: var(--ink-soft);
+  }
+  nav .nav-right a {
+    color: var(--ocre-deep);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  nav .nav-right a:hover { color: var(--terra-deep); }
+
+  /* ——— LAYOUT ——— */
+  .page-wrap {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  /* Left panel — illustration */
+  .panel-left {
+    position: relative;
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(212, 144, 96, 0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, rgba(184, 105, 26, 0.2) 0%, transparent 60%),
+      var(--terra-deep);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 120px 60px 60px;
+    overflow: hidden;
+  }
+
+  .panel-left::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D49060' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    opacity: 0.5;
+  }
+
+  .panel-quote {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 380px;
+  }
+
+  .panel-quote .mark {
+    font-family: 'Fraunces', serif;
+    font-size: 80px;
+    line-height: 0.6;
+    color: var(--ocre);
+    opacity: 0.4;
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .panel-quote blockquote {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 26px;
+    line-height: 1.4;
+    color: var(--sand);
+    margin-bottom: 28px;
+  }
+
+  .panel-quote cite {
+    font-size: 13px;
+    color: var(--ocre);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-style: normal;
+    opacity: 0.8;
+  }
+
+  .panel-badges {
+    position: relative;
+    z-index: 2;
+    margin-top: 60px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .panel-badge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: rgba(245, 230, 211, 0.08);
+    border: 1px solid rgba(212, 144, 96, 0.2);
+    border-radius: 12px;
+    padding: 14px 20px;
+  }
+  .panel-badge .badge-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(212, 144, 96, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .panel-badge .badge-text {
+    font-size: 13px;
+    color: var(--sand);
+    line-height: 1.45;
+    opacity: 0.9;
+  }
+  .panel-badge .badge-text strong {
+    display: block;
+    font-weight: 600;
+    color: var(--ocre);
+    margin-bottom: 2px;
+  }
+
+  /* ——— FORM PANEL ——— */
+  .panel-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 120px 64px 60px;
+    overflow-y: auto;
+  }
+
+  .form-header {
+    margin-bottom: 40px;
+  }
+
+  .form-header .step-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--ocre-deep);
+    font-weight: 600;
+    margin-bottom: 16px;
+  }
+  .form-header .step-label::before {
+    content: "";
+    width: 28px;
+    height: 2px;
+    background: var(--ocre-deep);
+  }
+
+  .form-header h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(28px, 3vw, 42px);
+    line-height: 1.1;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+  .form-header h1 em {
+    font-style: italic;
+    font-weight: 300;
+    color: var(--ocre-deep);
+  }
+
+  .form-header p {
+    font-size: 15px;
+    color: var(--ink-soft);
+    opacity: 0.8;
+    font-weight: 300;
+  }
+
+  /* ——— PROGRESS ——— */
+  .progress-bar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 36px;
+  }
+  .progress-step {
+    height: 3px;
+    flex: 1;
+    border-radius: 99px;
+    background: var(--sand);
+    transition: background 0.4s ease;
+  }
+  .progress-step.active { background: var(--ocre-deep); }
+  .progress-step.done { background: var(--terra); }
+
+  /* ——— FORM ——— */
+  .form-step {
+    display: none;
+  }
+  .form-step.visible {
+    display: block;
+    animation: fadeUp 0.35s ease forwards;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .form-grid .full { grid-column: 1 / -1; }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    letter-spacing: 0.01em;
+  }
+  label .optional {
+    font-weight: 400;
+    opacity: 0.55;
+    font-style: italic;
+    margin-left: 4px;
+  }
+
+  input, select, textarea {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    color: var(--ink);
+    background: white;
+    border: 1.5px solid var(--sand);
+    border-radius: 10px;
+    padding: 13px 16px;
+    transition: border-color 0.25s, box-shadow 0.25s;
+    outline: none;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234A2A12' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 42px;
+    cursor: pointer;
+  }
+  input:focus, select:focus {
+    border-color: var(--ocre-deep);
+    box-shadow: 0 0 0 3px rgba(184, 105, 26, 0.12);
+  }
+  input::placeholder { color: rgba(74, 42, 18, 0.35); }
+
+  input.error, select.error {
+    border-color: var(--error);
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.1);
+  }
+
+  .field-error {
+    font-size: 12px;
+    color: var(--error);
+    display: none;
+    margin-top: -3px;
+  }
+  .field-error.visible { display: block; }
+
+  .phone-group {
+    display: flex;
+    gap: 0;
+  }
+  .phone-group .country-code {
+    width: 90px;
+    flex-shrink: 0;
+    border-radius: 10px 0 0 10px;
+    border-right: none;
+    background: var(--sand-light);
+    font-size: 14px;
+    padding: 13px 10px;
+  }
+  .phone-group input {
+    border-radius: 0 10px 10px 0;
+    flex: 1;
+  }
+  .phone-group .country-code:focus {
+    z-index: 1;
+    border-color: var(--ocre-deep);
+    box-shadow: 0 0 0 3px rgba(184, 105, 26, 0.12);
+  }
+
+  .radio-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .radio-option {
+    flex: 1;
+    min-width: 120px;
+  }
+  .radio-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  .radio-option label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 14px;
+    background: white;
+    border: 1.5px solid var(--sand);
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--ink-soft);
+    transition: all 0.2s;
+    text-align: center;
+    gap: 8px;
+  }
+  .radio-option input[type="radio"]:checked + label {
+    background: var(--terra-deep);
+    border-color: var(--terra-deep);
+    color: var(--sand);
+  }
+  .radio-option label:hover {
+    border-color: var(--ocre-deep);
+    color: var(--ocre-deep);
+  }
+
+  /* OTP input */
+  .otp-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin: 8px 0;
+  }
+  .otp-input {
+    width: 54px;
+    height: 64px;
+    text-align: center;
+    font-size: 26px;
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    border: 1.5px solid var(--sand);
+    border-radius: 12px;
+    padding: 0;
+    color: var(--terra-deep);
+    caret-color: var(--ocre-deep);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .otp-input:focus {
+    border-color: var(--ocre-deep);
+    box-shadow: 0 0 0 3px rgba(184, 105, 26, 0.12);
+  }
+  .otp-input.filled { border-color: var(--terra); }
+
+  /* ——— PASSWORD TOGGLE ——— */
+  .password-wrap { position: relative; }
+  .password-wrap input { padding-right: 46px; }
+  .toggle-pw {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--ocre-deep);
+    opacity: 0.6;
+    padding: 4px;
+    transition: opacity 0.2s;
+  }
+  .toggle-pw:hover { opacity: 1; }
+
+  /* ——— STRENGTH BAR ——— */
+  .strength-bar {
+    height: 3px;
+    border-radius: 99px;
+    background: var(--sand);
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .strength-fill {
+    height: 100%;
+    border-radius: 99px;
+    width: 0;
+    transition: width 0.4s, background 0.4s;
+  }
+  .strength-label {
+    font-size: 11px;
+    margin-top: 4px;
+    color: var(--ink-soft);
+    opacity: 0.65;
+    min-height: 16px;
+  }
+
+  /* ——— ACTIONS ——— */
+  .form-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 28px;
+  }
+
+  .btn {
+    padding: 14px 28px;
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-primary {
+    background: var(--terra-deep);
+    color: var(--sand);
+    box-shadow: 0 2px 0 var(--ink);
+    flex: 1;
+    justify-content: center;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--ink);
+  }
+  .btn-primary:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+  .btn-back {
+    background: transparent;
+    color: var(--ink-soft);
+    border: 1.5px solid var(--sand);
+    padding: 14px 20px;
+  }
+  .btn-back:hover { border-color: var(--ocre-deep); color: var(--ocre-deep); }
+
+  .btn-loading {
+    position: relative;
+    pointer-events: none;
+    color: transparent !important;
+  }
+  .btn-loading::after {
+    content: "";
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(245, 230, 211, 0.4);
+    border-top-color: var(--sand);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ——— GLOBAL ERROR ——— */
+  .alert {
+    display: none;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+  }
+  .alert.visible { display: flex; align-items: flex-start; gap: 10px; }
+  .alert-error {
+    background: rgba(192, 57, 43, 0.08);
+    border: 1px solid rgba(192, 57, 43, 0.25);
+    color: var(--error);
+  }
+  .alert-success {
+    background: rgba(93, 114, 70, 0.08);
+    border: 1px solid rgba(93, 114, 70, 0.25);
+    color: var(--green);
+  }
+
+  .form-footer {
+    margin-top: 28px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--ink-soft);
+    opacity: 0.75;
+  }
+  .form-footer a {
+    color: var(--ocre-deep);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .form-footer a:hover { color: var(--terra-deep); }
+
+  .section-divider {
+    font-size: 11px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    opacity: 0.45;
+    margin: 24px 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .section-divider::before, .section-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--sand);
+  }
+
+  /* OTP page styles */
+  .otp-hero {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .otp-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: rgba(184, 105, 26, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+    font-size: 32px;
+  }
+  .otp-phone {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    color: var(--terra-deep);
+    font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .otp-sub {
+    font-size: 14px;
+    color: var(--ink-soft);
+    opacity: 0.75;
+    font-weight: 300;
+  }
+
+  .resend-wrap {
+    text-align: center;
+    margin-top: 16px;
+  }
+  #resend-btn {
+    background: none;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ocre-deep);
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+    transition: color 0.2s;
+  }
+  #resend-btn:hover { color: var(--terra-deep); }
+  #resend-btn:disabled { color: var(--ink-soft); opacity: 0.5; cursor: not-allowed; text-decoration: none; }
+  #countdown { font-size: 13px; color: var(--ink-soft); opacity: 0.6; }
+
+  /* ——— RESPONSIVE ——— */
+  @media (max-width: 900px) {
+    .page-wrap { grid-template-columns: 1fr; }
+    .panel-left { display: none; }
+    .panel-right { padding: 100px 32px 60px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .form-grid .full { grid-column: 1; }
+  }
+  @media (max-width: 480px) {
+    nav { padding: 16px 20px; }
+    .panel-right { padding: 90px 20px 40px; }
+    .otp-input { width: 42px; height: 54px; font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="logo">
+    <svg width="36" height="36" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A"/>
+      <circle cx="32" cy="28" r="4" fill="#F5E6D3"/>
+    </svg>
+    <span class="logo-text">Tér<em>anga</em></span>
+  </a>
+  <div class="nav-right">
+    Déjà membre ? <a href="/connexion">Se connecter</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="page-wrap">
+
+  <!-- LEFT PANEL -->
+  <div class="panel-left">
+    <div class="panel-quote">
+      <span class="mark">"</span>
+      <blockquote>L'amour vrai prend le temps de se construire, pas de se décider.</blockquote>
+      <cite>Philosophie Téranga</cite>
+    </div>
+    <div class="panel-badges">
+      <div class="panel-badge">
+        <div class="badge-icon">🔒</div>
+        <div class="badge-text">
+          <strong>Confidentialité totale</strong>
+          Vos données ne sont jamais revendues ni partagées
+        </div>
+      </div>
+      <div class="panel-badge">
+        <div class="badge-icon">✅</div>
+        <div class="badge-text">
+          <strong>Profils vérifiés</strong>
+          Chaque profil est contrôlé par notre équipe
+        </div>
+      </div>
+      <div class="panel-badge">
+        <div class="badge-icon">💬</div>
+        <div class="badge-text">
+          <strong>Rencontres sérieuses</strong>
+          Conçu pour ceux qui veulent s'engager
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="panel-right">
+
+    <!-- Progress -->
+    <div class="progress-bar">
+      <div class="progress-step active" id="ps-1"></div>
+      <div class="progress-step" id="ps-2"></div>
+      <div class="progress-step" id="ps-3"></div>
+    </div>
+
+    <!-- STEP 1 : Infos personnelles -->
+    <div class="form-step visible" id="step-1">
+      <div class="form-header">
+        <div class="step-label">Étape 1 sur 3</div>
+        <h1>Parlez-nous de <em>vous</em></h1>
+        <p>Ces informations nous aident à trouver les personnes les plus compatibles avec vous.</p>
+      </div>
+
+      <div id="alert-1" class="alert alert-error"></div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="firstName">Prénom</label>
+          <input type="text" id="firstName" name="firstName" placeholder="Aminata" autocomplete="given-name">
+          <span class="field-error" id="err-firstName">Veuillez entrer votre prénom.</span>
+        </div>
+        <div class="form-group">
+          <label for="lastName">Nom <span class="optional">(optionnel)</span></label>
+          <input type="text" id="lastName" name="lastName" placeholder="Diallo" autocomplete="family-name">
+        </div>
+
+        <div class="form-group full">
+          <label>Je suis</label>
+          <div class="radio-group">
+            <div class="radio-option">
+              <input type="radio" id="gender-f" name="gender" value="FEMALE">
+              <label for="gender-f">♀ Une femme</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="gender-m" name="gender" value="MALE">
+              <label for="gender-m">♂ Un homme</label>
+            </div>
+            <div class="radio-option">
+              <input type="radio" id="gender-nb" name="gender" value="NON_BINARY">
+              <label for="gender-nb">⚬ Non-binaire</label>
+            </div>
+          </div>
+          <span class="field-error" id="err-gender">Veuillez sélectionner une option.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="birthDate">Date de naissance</label>
+          <input type="date" id="birthDate" name="birthDate" autocomplete="bday">
+          <span class="field-error" id="err-birthDate">Vous devez avoir au moins 18 ans.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="intent">Je recherche</label>
+          <select id="intent" name="intent">
+            <option value="">Choisir…</option>
+            <option value="SERIOUS_RELATIONSHIP">Une relation sérieuse</option>
+            <option value="MARRIAGE">Le mariage</option>
+            <option value="FAMILY">Fonder une famille</option>
+          </select>
+          <span class="field-error" id="err-intent">Veuillez préciser votre intention.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="city">Ville</label>
+          <input type="text" id="city" name="city" placeholder="Dakar" autocomplete="address-level2">
+          <span class="field-error" id="err-city">Veuillez entrer votre ville.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="country">Pays</label>
+          <select id="country" name="country">
+            <option value="">Choisir…</option>
+            <option value="SN">🇸🇳 Sénégal</option>
+            <option value="CI">🇨🇮 Côte d'Ivoire</option>
+            <option value="ML">🇲🇱 Mali</option>
+            <option value="BF">🇧🇫 Burkina Faso</option>
+            <option value="GN">🇬🇳 Guinée</option>
+            <option value="TG">🇹🇬 Togo</option>
+            <option value="BJ">🇧🇯 Bénin</option>
+            <option value="NE">🇳🇪 Niger</option>
+            <option value="CM">🇨🇲 Cameroun</option>
+            <option value="GA">🇬🇦 Gabon</option>
+            <option value="CD">🇨🇩 RD Congo</option>
+            <option value="CG">🇨🇬 Congo</option>
+            <option value="MR">🇲🇷 Mauritanie</option>
+            <option value="FR">🇫🇷 France</option>
+            <option value="BE">🇧🇪 Belgique</option>
+            <option value="CA">🇨🇦 Canada</option>
+            <option value="OTHER">🌍 Autre</option>
+          </select>
+          <span class="field-error" id="err-country">Veuillez sélectionner votre pays.</span>
+        </div>
+
+        <div class="form-group">
+          <label for="religion">Religion <span class="optional">(optionnel)</span></label>
+          <select id="religion" name="religion">
+            <option value="">Préférer ne pas dire</option>
+            <option value="ISLAM">Islam</option>
+            <option value="CHRISTIANISME">Christianisme</option>
+            <option value="CATHOLICISME">Catholicisme</option>
+            <option value="PROTESTANTISME">Protestantisme</option>
+            <option value="AUTRE">Autre</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="profession">Profession <span class="optional">(optionnel)</span></label>
+          <input type="text" id="profession" name="profession" placeholder="Ingénieure, médecin…" autocomplete="organization-title">
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="next-1">
+          Continuer
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <div class="form-footer">
+        En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
+      </div>
+    </div>
+
+    <!-- STEP 2 : Téléphone & Mot de passe -->
+    <div class="form-step" id="step-2">
+      <div class="form-header">
+        <div class="step-label">Étape 2 sur 3</div>
+        <h1>Votre <em>numéro</em></h1>
+        <p>Nous vous enverrons un code SMS pour confirmer votre identité.</p>
+      </div>
+
+      <div id="alert-2" class="alert alert-error"></div>
+
+      <div class="form-grid">
+        <div class="form-group full">
+          <label for="phone">Numéro de téléphone</label>
+          <div class="phone-group">
+            <select id="dialCode" class="country-code">
+              <option value="+221">+221</option>
+              <option value="+225">+225</option>
+              <option value="+223">+223</option>
+              <option value="+226">+226</option>
+              <option value="+224">+224</option>
+              <option value="+228">+228</option>
+              <option value="+229">+229</option>
+              <option value="+227">+227</option>
+              <option value="+237">+237</option>
+              <option value="+241">+241</option>
+              <option value="+243">+243</option>
+              <option value="+242">+242</option>
+              <option value="+222">+222</option>
+              <option value="+33">+33</option>
+              <option value="+32">+32</option>
+              <option value="+1">+1</option>
+            </select>
+            <input type="tel" id="phone" name="phone" placeholder="77 123 45 67" inputmode="numeric" autocomplete="tel">
+          </div>
+          <span class="field-error" id="err-phone">Numéro de téléphone invalide.</span>
+        </div>
+
+        <div class="form-group full">
+          <label for="email">Adresse e-mail <span class="optional">(optionnel)</span></label>
+          <input type="email" id="email" name="email" placeholder="aminata@exemple.com" autocomplete="email">
+          <span class="field-error" id="err-email">Adresse e-mail invalide.</span>
+        </div>
+
+        <div class="form-group full">
+          <div class="section-divider">Sécurité</div>
+        </div>
+
+        <div class="form-group full">
+          <label for="password">Mot de passe <span class="optional">(optionnel)</span></label>
+          <div class="password-wrap">
+            <input type="password" id="password" name="password" placeholder="Choisissez un mot de passe sécurisé" autocomplete="new-password">
+            <button type="button" class="toggle-pw" aria-label="Afficher/masquer le mot de passe" onclick="togglePassword('password', this)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+          <div class="strength-bar"><div class="strength-fill" id="strength-fill"></div></div>
+          <div class="strength-label" id="strength-label"></div>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-back" id="back-2">Retour</button>
+        <button type="button" class="btn btn-primary" id="next-2">
+          Envoyer le code SMS
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.66A2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.1v2.82z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- STEP 3 : Code OTP -->
+    <div class="form-step" id="step-3">
+      <div class="form-header">
+        <div class="step-label">Étape 3 sur 3</div>
+        <h1>Vérifiez votre <em>téléphone</em></h1>
+        <p>Entrez le code à 6 chiffres reçu par SMS.</p>
+      </div>
+
+      <div id="alert-3" class="alert alert-error"></div>
+
+      <div class="otp-hero">
+        <div class="otp-icon">📱</div>
+        <div class="otp-phone" id="otp-phone-display">+221 77 123 45 67</div>
+        <div class="otp-sub">Code envoyé par SMS</div>
+      </div>
+
+      <div class="otp-group" id="otp-group">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="0" autocomplete="one-time-code">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="1">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="2">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="3">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="4">
+        <input class="otp-input" type="text" inputmode="numeric" maxlength="1" data-idx="5">
+      </div>
+
+      <div class="resend-wrap">
+        <button type="button" id="resend-btn" disabled>Renvoyer le code</button>
+        <span id="countdown"></span>
+      </div>
+
+      <div class="form-actions" style="margin-top: 28px;">
+        <button type="button" class="btn btn-back" id="back-3">Retour</button>
+        <button type="button" class="btn btn-primary" id="verify-btn" disabled>
+          Vérifier et créer mon compte
+        </button>
+      </div>
+    </div>
+
+  </div><!-- /panel-right -->
+</div><!-- /page-wrap -->
+
+<script>
+// ——— STATE ———
+const state = {
+  currentStep: 1,
+  phone: '',
+  otp: '',
+  registered: false,
+  countdownTimer: null,
+};
+
+// ——— UTILS ———
+function showAlert(step, msg, type = 'error') {
+  const el = document.getElementById(`alert-${step}`);
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `alert alert-${type} visible`;
+  el.innerHTML = `<span>${type === 'error' ? '⚠' : '✓'}</span> ${msg}`;
+}
+function hideAlert(step) {
+  const el = document.getElementById(`alert-${step}`);
+  if (el) { el.className = 'alert alert-error'; }
+}
+function showFieldError(id, show = true) {
+  const el = document.getElementById(`err-${id}`);
+  const input = document.getElementById(id) || document.querySelector(`[name="${id}"]`);
+  if (el) el.classList.toggle('visible', show);
+  if (input) input.classList.toggle('error', show);
+}
+
+// ——— NAV BETWEEN STEPS ———
+function goToStep(n) {
+  document.getElementById(`step-${state.currentStep}`).classList.remove('visible');
+  state.currentStep = n;
+  document.getElementById(`step-${n}`).classList.add('visible');
+  // Update progress bar
+  for (let i = 1; i <= 3; i++) {
+    const ps = document.getElementById(`ps-${i}`);
+    if (i < n) ps.className = 'progress-step done';
+    else if (i === n) ps.className = 'progress-step active';
+    else ps.className = 'progress-step';
+  }
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ——— PASSWORD TOGGLE ———
+function togglePassword(id, btn) {
+  const input = document.getElementById(id);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+  } else {
+    input.type = 'password';
+    btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  }
+}
+
+// ——— PASSWORD STRENGTH ———
+document.getElementById('password').addEventListener('input', function() {
+  const val = this.value;
+  const fill = document.getElementById('strength-fill');
+  const label = document.getElementById('strength-label');
+  if (!val) { fill.style.width = '0'; label.textContent = ''; return; }
+  let score = 0;
+  if (val.length >= 8) score++;
+  if (/[A-Z]/.test(val)) score++;
+  if (/[0-9]/.test(val)) score++;
+  if (/[^A-Za-z0-9]/.test(val)) score++;
+  const levels = [
+    { w: '20%', color: '#C0392B', label: 'Trop faible' },
+    { w: '45%', color: '#E67E22', label: 'Faible' },
+    { w: '70%', color: '#F39C12', label: 'Moyen' },
+    { w: '100%', color: '#27AE60', label: 'Fort' },
+  ];
+  const lvl = levels[Math.min(score - 1, 3)] || levels[0];
+  fill.style.width = lvl.w;
+  fill.style.background = lvl.color;
+  label.textContent = lvl.label;
+});
+
+// ——— STEP 1 VALIDATION ———
+document.getElementById('next-1').addEventListener('click', function() {
+  let valid = true;
+  hideAlert(1);
+
+  const firstName = document.getElementById('firstName').value.trim();
+  if (!firstName) { showFieldError('firstName'); valid = false; } else showFieldError('firstName', false);
+
+  const gender = document.querySelector('input[name="gender"]:checked');
+  if (!gender) { showFieldError('gender'); valid = false; } else showFieldError('gender', false);
+
+  const birthDate = document.getElementById('birthDate').value;
+  if (!birthDate) { showFieldError('birthDate'); valid = false; }
+  else {
+    const age = (Date.now() - new Date(birthDate)) / (365.25 * 24 * 3600 * 1000);
+    if (age < 18) { showFieldError('birthDate'); valid = false; }
+    else showFieldError('birthDate', false);
+  }
+
+  const intent = document.getElementById('intent').value;
+  if (!intent) { showFieldError('intent'); valid = false; } else showFieldError('intent', false);
+
+  const city = document.getElementById('city').value.trim();
+  if (!city) { showFieldError('city'); valid = false; } else showFieldError('city', false);
+
+  const country = document.getElementById('country').value;
+  if (!country) { showFieldError('country'); valid = false; } else showFieldError('country', false);
+
+  if (valid) goToStep(2);
+});
+
+// ——— STEP 2 VALIDATION & REGISTER ———
+document.getElementById('back-2').addEventListener('click', () => goToStep(1));
+
+document.getElementById('next-2').addEventListener('click', async function() {
+  let valid = true;
+  hideAlert(2);
+
+  const dialCode = document.getElementById('dialCode').value;
+  const phoneLocal = document.getElementById('phone').value.replace(/\s/g, '');
+  if (!phoneLocal || !/^\d{7,12}$/.test(phoneLocal)) {
+    showFieldError('phone'); valid = false;
+  } else showFieldError('phone', false);
+
+  const email = document.getElementById('email').value.trim();
+  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showFieldError('email'); valid = false;
+  } else showFieldError('email', false);
+
+  if (!valid) return;
+
+  // Build E.164 phone
+  state.phone = dialCode + phoneLocal;
+
+  // Build payload
+  const payload = {
+    phone: state.phone,
+    firstName: document.getElementById('firstName').value.trim(),
+    gender: document.querySelector('input[name="gender"]:checked').value,
+    birthDate: document.getElementById('birthDate').value,
+    intent: document.getElementById('intent').value,
+    city: document.getElementById('city').value.trim(),
+    country: document.getElementById('country').value === 'OTHER' ? 'XX' : document.getElementById('country').value,
+  };
+  const lastName = document.getElementById('lastName').value.trim();
+  if (lastName) payload.lastName = lastName;
+  if (email) payload.email = email;
+  const password = document.getElementById('password').value;
+  if (password) payload.password = password;
+  const religion = document.getElementById('religion').value;
+  if (religion) payload.religion = religion;
+  const profession = document.getElementById('profession').value.trim();
+  if (profession) payload.profession = profession;
+
+  this.classList.add('btn-loading');
+  this.disabled = true;
+
+  try {
+    const res = await fetch('/api/v1/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      const msg = data?.message || 'Une erreur est survenue. Réessayez.';
+      showAlert(2, msg);
+      return;
+    }
+
+    // Registered: go to OTP step
+    state.registered = true;
+    document.getElementById('otp-phone-display').textContent = state.phone;
+    goToStep(3);
+    startCountdown();
+
+  } catch (err) {
+    showAlert(2, 'Impossible de contacter le serveur. Vérifiez votre connexion.');
+  } finally {
+    this.classList.remove('btn-loading');
+    this.disabled = false;
+  }
+});
+
+// ——— OTP INPUTS ———
+const otpInputs = document.querySelectorAll('.otp-input');
+
+otpInputs.forEach((input, idx) => {
+  input.addEventListener('input', function(e) {
+    const val = this.value.replace(/\D/g, '');
+    this.value = val.slice(-1);
+    if (val && idx < otpInputs.length - 1) otpInputs[idx + 1].focus();
+    if (val) this.classList.add('filled'); else this.classList.remove('filled');
+    checkOtpComplete();
+  });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Backspace' && !this.value && idx > 0) {
+      otpInputs[idx - 1].focus();
+      otpInputs[idx - 1].value = '';
+      otpInputs[idx - 1].classList.remove('filled');
+    }
+  });
+  // Handle paste
+  input.addEventListener('paste', function(e) {
+    e.preventDefault();
+    const paste = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+    paste.split('').slice(0, 6).forEach((ch, i) => {
+      if (otpInputs[i]) {
+        otpInputs[i].value = ch;
+        otpInputs[i].classList.add('filled');
+      }
+    });
+    if (paste.length >= 6) otpInputs[5].focus();
+    checkOtpComplete();
+  });
+});
+
+function checkOtpComplete() {
+  const code = Array.from(otpInputs).map(i => i.value).join('');
+  document.getElementById('verify-btn').disabled = code.length < 6;
+}
+
+// ——— COUNTDOWN ———
+function startCountdown(seconds = 60) {
+  const resendBtn = document.getElementById('resend-btn');
+  const countdown = document.getElementById('countdown');
+  resendBtn.disabled = true;
+  countdown.textContent = `(${seconds}s)`;
+  clearInterval(state.countdownTimer);
+  state.countdownTimer = setInterval(() => {
+    seconds--;
+    if (seconds <= 0) {
+      clearInterval(state.countdownTimer);
+      resendBtn.disabled = false;
+      countdown.textContent = '';
+    } else {
+      countdown.textContent = `(${seconds}s)`;
+    }
+  }, 1000);
+}
+
+// ——— RESEND OTP ———
+document.getElementById('resend-btn').addEventListener('click', async function() {
+  this.disabled = true;
+  try {
+    const res = await fetch('/api/v1/auth/otp/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone }),
+    });
+    if (res.ok) {
+      showAlert(3, 'Nouveau code envoyé !', 'success');
+      startCountdown();
+      // Clear inputs
+      otpInputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+      document.getElementById('verify-btn').disabled = true;
+    } else {
+      showAlert(3, 'Impossible de renvoyer le code. Réessayez.');
+      this.disabled = false;
+    }
+  } catch {
+    showAlert(3, 'Erreur réseau. Réessayez.');
+    this.disabled = false;
+  }
+});
+
+// ——— OTP VERIFY ———
+document.getElementById('back-3').addEventListener('click', () => goToStep(2));
+
+document.getElementById('verify-btn').addEventListener('click', async function() {
+  hideAlert(3);
+  const code = Array.from(otpInputs).map(i => i.value).join('');
+  if (code.length < 6) return;
+
+  this.classList.add('btn-loading');
+  this.disabled = true;
+
+  try {
+    const res = await fetch('/api/v1/auth/otp/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: state.phone, code }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      showAlert(3, data?.message || 'Code incorrect. Réessayez.');
+      otpInputs.forEach(i => { i.value = ''; i.classList.remove('filled'); i.classList.add('error'); });
+      otpInputs[0].focus();
+      document.getElementById('verify-btn').disabled = true;
+      return;
+    }
+
+    // Save token
+    if (data.accessToken) {
+      localStorage.setItem('teranga_token', data.accessToken);
+      if (data.refreshToken) localStorage.setItem('teranga_refresh', data.refreshToken);
+    }
+
+    // Redirect to app or dashboard
+    window.location.href = data.redirectUrl || '/';
+
+  } catch {
+    showAlert(3, 'Erreur réseau. Réessayez.');
+  } finally {
+    this.classList.remove('btn-loading');
+    this.disabled = false;
+  }
+});
+
+// Auto-focus first OTP input when step 3 becomes visible
+const observer = new MutationObserver(() => {
+  if (document.getElementById('step-3').classList.contains('visible')) {
+    setTimeout(() => otpInputs[0].focus(), 100);
+  }
+});
+observer.observe(document.getElementById('step-3'), { attributes: true, attributeFilter: ['class'] });
+</script>
+</body>
+</html>

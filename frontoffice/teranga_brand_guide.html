@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Téranga — Guide de marque</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><path d='M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z' fill='%23D49060'/><path d='M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z' fill='%23B8691A'/><path d='M32 40 L32 54 Q32 58 28 54 L18 44 Z' fill='%23D49060'/><path d='M32 40 L32 54 Q32 58 36 54 L46 44 Z' fill='%23B8691A'/><circle cx='32' cy='28' r='4' fill='%23F5E6D3'/></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #F5E6D3;
+    --sand-light: #FAF1E3;
+    --cream: #FDF8F0;
+    --ocre: #D49060;
+    --ocre-deep: #B8691A;
+    --terra: #8B4513;
+    --terra-deep: #5B2E0C;
+    --ink: #2B1605;
+    --ink-soft: #4A2A12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    padding: 80px 60px;
+    min-height: 100vh;
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 56px;
+    font-weight: 400;
+    margin-bottom: 14px;
+    letter-spacing: -0.025em;
+    color: var(--terra-deep);
+    line-height: 1;
+  }
+  h1 em { font-style: italic; color: var(--ocre-deep); font-weight: 300; }
+  .lede {
+    color: var(--ink-soft);
+    margin-bottom: 80px;
+    font-size: 18px;
+    max-width: 600px;
+    line-height: 1.6;
+  }
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 32px;
+    font-weight: 500;
+    margin: 80px 0 12px;
+    color: var(--terra-deep);
+    letter-spacing: -0.015em;
+  }
+  h2 .num {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    color: var(--ocre-deep);
+    font-weight: 400;
+    margin-right: 14px;
+    opacity: 0.7;
+  }
+  .section-intro {
+    color: var(--ink-soft);
+    margin-bottom: 36px;
+    font-size: 14px;
+    max-width: 620px;
+    line-height: 1.7;
+  }
+  .showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+    margin-bottom: 20px;
+  }
+  .demo {
+    padding: 48px 36px;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 220px;
+    gap: 20px;
+    position: relative;
+    transition: transform 0.3s;
+  }
+  .demo:hover { transform: translateY(-2px); }
+  .demo-label {
+    position: absolute;
+    top: 14px;
+    left: 16px;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0.55;
+  }
+  .bg-cream { background: var(--cream); border: 1px solid rgba(184, 105, 26, 0.2); }
+  .bg-sand { background: var(--sand); }
+  .bg-dark { background: var(--terra-deep); }
+  .bg-ink { background: var(--ink); }
+  .bg-dark .demo-label, .bg-ink .demo-label { color: rgba(245, 230, 211, 0.6); }
+
+  /* Colors palette */
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 14px;
+    margin-top: 30px;
+  }
+  .swatch {
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid rgba(184, 105, 26, 0.15);
+  }
+  .swatch-color {
+    height: 110px;
+    position: relative;
+  }
+  .swatch-info {
+    padding: 14px 16px;
+    background: var(--cream);
+    font-size: 11px;
+  }
+  .swatch-name {
+    font-family: 'Fraunces', serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 3px;
+  }
+  .swatch-hex {
+    color: var(--ink-soft);
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.05em;
+  }
+
+  /* Typography */
+  .typo-block {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 40px;
+    padding: 32px 0;
+    border-bottom: 1px solid rgba(184, 105, 26, 0.2);
+  }
+  .typo-meta {
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+  .typo-meta strong {
+    display: block;
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    color: var(--terra-deep);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .typo-sample-serif {
+    font-family: 'Fraunces', serif;
+    font-size: 44px;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+  .typo-sample-serif em {
+    font-style: italic;
+    color: var(--ocre-deep);
+    font-weight: 300;
+  }
+  .typo-sample-sans {
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink-soft);
+    max-width: 560px;
+  }
+
+  /* Concept explanation */
+  .concept {
+    background: var(--sand);
+    border-radius: 20px;
+    padding: 60px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 60px;
+    align-items: center;
+    margin: 40px 0;
+  }
+  .concept-visual {
+    display: flex;
+    justify-content: center;
+  }
+  .concept-text h3 {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--terra-deep);
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .concept-text h3 em { font-style: italic; color: var(--ocre-deep); }
+  .concept-text p {
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1.7;
+    margin-bottom: 12px;
+  }
+  .concept-text ul {
+    list-style: none;
+    margin-top: 16px;
+  }
+  .concept-text li {
+    padding-left: 22px;
+    position: relative;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+  }
+  .concept-text li::before {
+    content: "◆";
+    position: absolute;
+    left: 0;
+    top: 2px;
+    color: var(--ocre-deep);
+    font-size: 9px;
+  }
+  .concept-text li strong {
+    color: var(--terra-deep);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<h1>Téranga <em>— guide de marque</em></h1>
+<p class="lede">
+  Logo, palette, typographie et règles d'usage. Un système visuel
+  cohérent, pensé pour durer.
+</p>
+
+<!-- SYMBOLS DEFINITIONS -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="sym" viewBox="0 0 64 64">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="3.5" fill="#FDF8F0" stroke="#5B2E0C" stroke-width="1.5"/>
+    </symbol>
+    <symbol id="sym-light" viewBox="0 0 64 64">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A" stroke="#F5E6D3" stroke-width="1.5" stroke-linejoin="round"/>
+      <circle cx="32" cy="28" r="3.5" fill="#F5E6D3"/>
+    </symbol>
+    <symbol id="sym-mono" viewBox="0 0 64 64">
+      <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="currentColor"/>
+      <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="currentColor"/>
+      <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="currentColor"/>
+      <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="currentColor"/>
+      <circle cx="32" cy="28" r="3.5" fill="#FDF8F0"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ========== CONCEPT ========== -->
+<h2><span class="num">01</span>Le concept</h2>
+<p class="section-intro">L'idée derrière le symbole et les choix graphiques.</p>
+
+<div class="concept">
+  <div class="concept-visual">
+    <svg width="180" height="180"><use href="#sym"/></svg>
+  </div>
+  <div class="concept-text">
+    <h3>Deux trajectoires<br><em>qui se rejoignent.</em></h3>
+    <p>
+      Le symbole Téranga est construit à partir de <strong>deux arcs distincts</strong>
+      — un clair (ocre sable), un plus profond (ocre cuit) — qui se rejoignent
+      au centre pour former un cœur.
+    </p>
+    <ul>
+      <li><strong>Les deux arcs</strong> représentent deux personnes, deux histoires, deux familles.</li>
+      <li><strong>Le point blanc central</strong> est le moment de la rencontre — l'étincelle, la promesse.</li>
+      <li><strong>La pointe inférieure</strong> évoque la descendance, la famille à venir.</li>
+      <li><strong>Le contour chocolat foncé</strong> ancre le tout dans la terre, la stabilité.</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ========== LOGO PRINCIPAL ========== -->
+<h2><span class="num">02</span>Logo principal</h2>
+<p class="section-intro">Le lockup horizontal : symbole + wordmark + baseline ornementale. Usage recommandé sur tous supports.</p>
+<div class="showcase">
+  <div class="demo bg-cream">
+    <div class="demo-label">Fond cream — usage principal</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none">
+      <g transform="translate(4, 4)"><use href="#sym"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#5B2E0C">T<tspan font-style="italic" font-weight="400" fill="#B8691A">é</tspan>ranga</text>
+      <g transform="translate(82, 54)"><line x1="0" y1="0" x2="16" y2="0" stroke="#B8691A" stroke-width="1.5"/><circle cx="20" cy="0" r="1.5" fill="#B8691A"/><line x1="24" y1="0" x2="40" y2="0" stroke="#B8691A" stroke-width="1.5"/></g>
+    </svg>
+  </div>
+  <div class="demo bg-sand">
+    <div class="demo-label">Fond sable</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none">
+      <g transform="translate(4, 4)"><use href="#sym"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#5B2E0C">T<tspan font-style="italic" font-weight="400" fill="#B8691A">é</tspan>ranga</text>
+      <g transform="translate(82, 54)"><line x1="0" y1="0" x2="16" y2="0" stroke="#B8691A" stroke-width="1.5"/><circle cx="20" cy="0" r="1.5" fill="#B8691A"/><line x1="24" y1="0" x2="40" y2="0" stroke="#B8691A" stroke-width="1.5"/></g>
+    </svg>
+  </div>
+  <div class="demo bg-dark">
+    <div class="demo-label">Fond terre</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none">
+      <g transform="translate(4, 4)"><use href="#sym-light"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#F5E6D3">T<tspan font-style="italic" font-weight="400" fill="#D49060">é</tspan>ranga</text>
+      <g transform="translate(82, 54)"><line x1="0" y1="0" x2="16" y2="0" stroke="#D49060" stroke-width="1.5"/><circle cx="20" cy="0" r="1.5" fill="#D49060"/><line x1="24" y1="0" x2="40" y2="0" stroke="#D49060" stroke-width="1.5"/></g>
+    </svg>
+  </div>
+  <div class="demo bg-ink">
+    <div class="demo-label">Fond encre (nuit)</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none">
+      <g transform="translate(4, 4)"><use href="#sym-light"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#F5E6D3">T<tspan font-style="italic" font-weight="400" fill="#D49060">é</tspan>ranga</text>
+      <g transform="translate(82, 54)"><line x1="0" y1="0" x2="16" y2="0" stroke="#D49060" stroke-width="1.5"/><circle cx="20" cy="0" r="1.5" fill="#D49060"/><line x1="24" y1="0" x2="40" y2="0" stroke="#D49060" stroke-width="1.5"/></g>
+    </svg>
+  </div>
+</div>
+
+<!-- ========== SYMBOLE ========== -->
+<h2><span class="num">03</span>Symbole seul</h2>
+<p class="section-intro">Pour les usages restreints : avatars, favicons, icônes d'app, watermarks. Taille minimum : 16 px.</p>
+<div class="showcase">
+  <div class="demo bg-cream">
+    <div class="demo-label">128 px</div>
+    <svg width="128" height="128"><use href="#sym"/></svg>
+  </div>
+  <div class="demo bg-sand">
+    <div class="demo-label">80 px</div>
+    <svg width="80" height="80"><use href="#sym"/></svg>
+  </div>
+  <div class="demo bg-dark">
+    <div class="demo-label">48 px sur fond sombre</div>
+    <svg width="48" height="48"><use href="#sym-light"/></svg>
+  </div>
+  <div class="demo bg-ink">
+    <div class="demo-label">Favicon 32 px</div>
+    <svg width="32" height="32"><use href="#sym-light"/></svg>
+  </div>
+</div>
+
+<!-- ========== MONOCHROME ========== -->
+<h2><span class="num">04</span>Monochromes</h2>
+<p class="section-intro">Pour l'impression économique, les tampons, les filigranes et les environnements où la couleur n'est pas disponible.</p>
+<div class="showcase">
+  <div class="demo bg-cream">
+    <div class="demo-label">Mono terra-deep</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none" color="#5B2E0C">
+      <g transform="translate(4, 4)"><use href="#sym-mono"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#5B2E0C">T<tspan font-style="italic" font-weight="400">é</tspan>ranga</text>
+    </svg>
+  </div>
+  <div class="demo bg-sand">
+    <div class="demo-label">Mono ink</div>
+    <svg width="260" height="70" viewBox="0 0 260 70" fill="none" color="#2B1605">
+      <g transform="translate(4, 4)"><use href="#sym-mono"/></g>
+      <text x="82" y="42" font-family="Fraunces, serif" font-size="32" font-weight="500" fill="#2B1605">T<tspan font-style="italic" font-weight="400">é</tspan>ranga</text>
+    </svg>
+  </div>
+</div>
+
+<!-- ========== PALETTE ========== -->
+<h2><span class="num">05</span>Palette de couleurs</h2>
+<p class="section-intro">Les couleurs officielles de la marque. Chaque teinte a un rôle précis — l'ocre est le ton signature, les teintes sombres ancrent et structurent.</p>
+<div class="palette">
+  <div class="swatch"><div class="swatch-color" style="background:#D49060"></div><div class="swatch-info"><div class="swatch-name">Ocre</div><div class="swatch-hex">#D49060</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#B8691A"></div><div class="swatch-info"><div class="swatch-name">Ocre profond</div><div class="swatch-hex">#B8691A</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#8B4513"></div><div class="swatch-info"><div class="swatch-name">Terre cuite</div><div class="swatch-hex">#8B4513</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#5B2E0C"></div><div class="swatch-info"><div class="swatch-name">Terre profonde</div><div class="swatch-hex">#5B2E0C</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#2B1605"></div><div class="swatch-info"><div class="swatch-name">Encre</div><div class="swatch-hex">#2B1605</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#F5E6D3"></div><div class="swatch-info"><div class="swatch-name">Sable</div><div class="swatch-hex">#F5E6D3</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#FAF1E3"></div><div class="swatch-info"><div class="swatch-name">Sable clair</div><div class="swatch-hex">#FAF1E3</div></div></div>
+  <div class="swatch"><div class="swatch-color" style="background:#FDF8F0;border-top:1px solid rgba(184,105,26,0.15);border-left:1px solid rgba(184,105,26,0.15);border-right:1px solid rgba(184,105,26,0.15)"></div><div class="swatch-info"><div class="swatch-name">Cream</div><div class="swatch-hex">#FDF8F0</div></div></div>
+</div>
+
+<!-- ========== TYPOGRAPHIE ========== -->
+<h2><span class="num">06</span>Typographie</h2>
+<p class="section-intro">Deux polices complémentaires. Fraunces pour le caractère éditorial, Inter pour la lisibilité moderne.</p>
+
+<div class="typo-block">
+  <div class="typo-meta">
+    <strong>Fraunces</strong>
+    Serif — Titres, accents italiques, wordmark<br>
+    Poids utilisés : 300, 400, 500<br>
+    <br>
+    Google Fonts
+  </div>
+  <div>
+    <div class="typo-sample-serif">Rencontrez <em>la personne</em><br>qui compte.</div>
+  </div>
+</div>
+
+<div class="typo-block">
+  <div class="typo-meta">
+    <strong>Inter</strong>
+    Sans-serif — Corps de texte, interface, boutons<br>
+    Poids utilisés : 300, 400, 500, 600<br>
+    <br>
+    Google Fonts
+  </div>
+  <div>
+    <div class="typo-sample-sans">
+      Téranga réunit des femmes et des hommes prêts à s'engager, à fonder
+      un foyer, à bâtir une vie à deux. Pas de jeu. Pas d'ambiguïté.
+      Seulement des rencontres qui comptent.
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

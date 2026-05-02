@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 80" width="260" height="80">
+  <!-- Symbole : deux arcs ocres qui se rejoignent en forme de cœur -->
+  <g transform="translate(8, 8)">
+    <path d="M20 38 Q8 32 8 20 Q8 10 18 10 Q27 10 32 20 L32 40 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M44 38 Q56 32 56 20 Q56 10 46 10 Q37 10 32 20 L32 40 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M32 40 L32 54 Q32 58 28 54 L18 44 Z" fill="#D49060" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M32 40 L32 54 Q32 58 36 54 L46 44 Z" fill="#B8691A" stroke="#5B2E0C" stroke-width="2" stroke-linejoin="round"/>
+    <circle cx="32" cy="28" r="3.5" fill="#FDF8F0" stroke="#5B2E0C" stroke-width="1.5"/>
+  </g>
+  <!-- Wordmark -->
+  <text x="86" y="50" font-family="Fraunces, Georgia, serif" font-size="32" font-weight="500" fill="#5B2E0C" letter-spacing="0.5">T<tspan font-style="italic" font-weight="400" fill="#B8691A">é</tspan>ranga</text>
+  <!-- Baseline ornementale -->
+  <g transform="translate(86, 62)">
+    <line x1="0" y1="0" x2="16" y2="0" stroke="#B8691A" stroke-width="1.5"/>
+    <circle cx="20" cy="0" r="1.5" fill="#B8691A"/>
+    <line x1="24" y1="0" x2="40" y2="0" stroke="#B8691A" stroke-width="1.5"/>
+  </g>
+</svg>

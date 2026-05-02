@@ -1,0 +1,42 @@
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.logo svg {
+  flex-shrink: 0;
+  transition: transform 0.5s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.logo:hover svg { transform: rotate(-6deg) scale(1.05); }
+
+.logoText {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 24px;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  color: var(--terra-deep);
+  display: flex;
+  flex-direction: column;
+}
+.logoText em {
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ocre-deep);
+}
+.light .logoText { color: var(--sand); }
+.light .logoText em { color: var(--ocre); }
+
+.tagline {
+  font-family: 'Fraunces', serif;
+  font-style: italic;
+  font-size: 9.5px;
+  font-weight: 400;
+  letter-spacing: 0.22em;
+  color: var(--ocre-deep);
+  margin-top: 4px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.light .tagline { color: var(--ocre); }
