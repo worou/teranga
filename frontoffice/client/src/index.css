@@ -54,7 +54,7 @@ body::before {
 }
 .btn-primary {
   background: var(--terra-deep);
-  color: var(--sand);
+  color: #fff;
   box-shadow: 0 2px 0 var(--ink);
 }
 .btn-primary:hover:not(:disabled) {

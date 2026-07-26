@@ -64,7 +64,7 @@ export async function requireSubscriptionForMessaging(
 
     if (!hasActive) {
       throw AppError.forbidden(
-        "Abonnement requis pour utiliser la messagerie. Souscrivez à partir de 3 000 F CFA / mois.",
+        "Abonnement requis pour utiliser la messagerie. Souscrivez à partir de 1 000 F CFA.",
       );
     }
 

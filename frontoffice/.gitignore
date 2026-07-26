@@ -7,3 +7,7 @@ dist/
 coverage/
 .vscode/
 .idea/
+
+# Uploads utilisateurs — données privées, ne jamais versionner
+public/uploads/*
+!public/uploads/.gitkeep

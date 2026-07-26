@@ -14,6 +14,10 @@ import { logger } from './utils/logger';
 import authRouter from './routes/auth.routes';
 import usersRouter from './routes/users.routes';
 import statsRouter from './routes/stats.routes';
+import subscriptionsRouter from './routes/subscriptions.routes';
+import paymentsRouter from './routes/payments.routes';
+import reportsRouter from './routes/reports.routes';
+import adminsRouter from './routes/admins.routes';
 
 const app = express();
 
@@ -43,6 +47,10 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use('/api/admin/auth',  authRouter);
 app.use('/api/admin/users', usersRouter);
 app.use('/api/admin/stats', statsRouter);
+app.use('/api/admin/subscriptions', subscriptionsRouter);
+app.use('/api/admin/payments', paymentsRouter);
+app.use('/api/admin/reports', reportsRouter);
+app.use('/api/admin/admins', adminsRouter);
 
 // ── Health check ─────────────────────────────────────────
 app.get('/health', (_req, res) => {

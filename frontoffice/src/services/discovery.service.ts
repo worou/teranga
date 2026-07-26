@@ -11,6 +11,9 @@ export interface DiscoveryFilters {
   religion?: string;
   intent?: string;
   hasChildren?: boolean;
+  profession?: string;
+  /** Recherche plein-texte : prénom, profession, bio, ville. */
+  q?: string;
 }
 
 export class DiscoveryService {
@@ -76,27 +79,56 @@ export class DiscoveryService {
     const minBirth = new Date();
     minBirth.setFullYear(minBirth.getFullYear() - maxAge - 1);
 
-    const candidates = await prisma.user.findMany({
-      where: {
-        id: { notIn: Array.from(excludeIds) },
-        status: 'ACTIVE',
-        isVerified: true,
-        ...(targetGender && { gender: targetGender }),
-        birthDate: { gte: minBirth, lte: maxBirth },
-        ...(filters.city && { city: { equals: filters.city, mode: 'insensitive' } }),
-        ...(filters.country && { country: filters.country }),
-        ...(filters.religion && filters.religion !== 'UNDISCLOSED'
-          ? { religion: filters.religion as any }
-          : {}),
-        ...(filters.intent && { intent: filters.intent as any }),
-        ...(filters.hasChildren !== undefined && { hasChildren: filters.hasChildren }),
-      },
+    const q = filters.q?.trim();
+
+    // NB : MariaDB/MySQL — pas de `mode: 'insensitive'` (option Postgres only) ;
+    // la casse est gérée par la collation utf8mb4_unicode_ci. `contains` = LIKE %..%.
+    const where = {
+      id: { notIn: Array.from(excludeIds) },
+      status: 'ACTIVE' as const,
+      isVerified: true,
+      ...(targetGender && { gender: targetGender }),
+      birthDate: { gte: minBirth, lte: maxBirth },
+      ...(filters.city && { city: { contains: filters.city } }),
+      ...(filters.country && { country: filters.country }),
+      ...(filters.religion && filters.religion !== 'UNDISCLOSED'
+        ? { religion: filters.religion as any }
+        : {}),
+      ...(filters.intent && { intent: filters.intent as any }),
+      ...(filters.hasChildren !== undefined && { hasChildren: filters.hasChildren }),
+      ...(filters.profession && { profession: { contains: filters.profession } }),
+      ...(q && {
+        OR: [
+          { firstName: { contains: q } },
+          { profession: { contains: q } },
+          { bio: { contains: q } },
+          { city: { contains: q } },
+        ],
+      }),
+    };
+
+    // On récupère un vivier plus large que `limit`, puis on classe par score de
+    // pertinence côté application (compatibilité + activité), et on renvoie le top.
+    const poolSize = Math.min(Math.max(limit * 5, limit), 200);
+    const pool = await prisma.user.findMany({
+      where,
       include: { photos: { orderBy: { order: 'asc' } } },
       orderBy: { lastActiveAt: 'desc' },
-      take: limit,
+      take: poolSize,
     });
 
-    return candidates.map((c: any) => ({
+    const now = Date.now();
+    const searcherAge = calculateAge(user.birthDate);
+
+    const scored = pool
+      .map((c: any) => ({ c, ...this.compatibilityScore(user, searcherAge, c, now) }))
+      .sort(
+        (a, b) =>
+          b.score - a.score ||
+          new Date(b.c.lastActiveAt).getTime() - new Date(a.c.lastActiveAt).getTime(),
+      );
+
+    return scored.slice(0, limit).map(({ c, score, sharedTraits }) => ({
       id: c.id,
       firstName: c.firstName,
       age: calculateAge(c.birthDate),
@@ -107,7 +139,53 @@ export class DiscoveryService {
       religion: c.religion,
       isVerified: c.isVerified,
       photos: c.photos,
+      score,
+      sharedTraits,
     }));
+  }
+
+  /**
+   * Score de compatibilité (0 → ~105) : même ville/pays, intention et religion
+   * communes, proximité d'âge, activité récente, présence de photos.
+   */
+  private compatibilityScore(
+    searcher: any,
+    searcherAge: number,
+    c: any,
+    now: number,
+  ): { score: number; sharedTraits: Record<string, boolean> } {
+    let score = 0;
+
+    const sameCity =
+      !!searcher.city && !!c.city && searcher.city.toLowerCase() === c.city.toLowerCase();
+    const sameCountry = !!searcher.country && searcher.country === c.country;
+    if (sameCity) score += 25;
+    else if (sameCountry) score += 10;
+
+    const sameIntent = searcher.intent === c.intent;
+    if (sameIntent) score += 20;
+
+    const sameReligion =
+      searcher.religion !== 'UNDISCLOSED' &&
+      c.religion !== 'UNDISCLOSED' &&
+      searcher.religion === c.religion;
+    if (sameReligion) score += 15;
+
+    // Proximité d'âge : 15 pts, -1,5 pt par année d'écart.
+    const ageDiff = Math.abs(searcherAge - calculateAge(c.birthDate));
+    score += Math.max(0, 15 - ageDiff * 1.5);
+
+    // Activité récente : 20 pts, décroissant linéairement sur 30 jours.
+    const daysInactive = (now - new Date(c.lastActiveAt).getTime()) / 86_400_000;
+    score += Math.max(0, 20 - (daysInactive / 30) * 20);
+
+    // Profil avec photo.
+    if (c.photos && c.photos.length > 0) score += 10;
+
+    return {
+      score: Math.round(score),
+      sharedTraits: { sameCity, sameCountry, sameIntent, sameReligion },
+    };
   }
 
   async like(senderId: string, receiverId: string, isSuperLike = false) {

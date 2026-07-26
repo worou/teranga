@@ -1,13 +1,23 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
 import { requireAuth } from '../middleware/auth';
 import { usersService } from '../services/users.service';
 import { updateProfileSchema, addPhotoSchema, biometricSchema } from '../validators';
+import { photoUpload } from '../config/upload';
+import { AppError } from '../utils/AppError';
 
 const router = Router();
 
 router.use(requireAuth);
+
+// Enveloppe multer : convertit ses erreurs (taille, format…) en 400 propres.
+function uploadPhotos(req: Request, res: Response, next: NextFunction) {
+  photoUpload.array('photos', 6)(req, res, (err: unknown) => {
+    if (err) return next(AppError.badRequest((err as Error).message || 'Upload échoué'));
+    next();
+  });
+}
 
 /**
  * @openapi
@@ -136,6 +146,50 @@ router.post(
   asyncHandler(async (req, res) => {
     const photo = await usersService.addPhoto(req.auth!.userId, req.body.url);
     res.status(201).json(photo);
+  }),
+);
+
+/**
+ * @openapi
+ * /users/me/photos/upload:
+ *   post:
+ *     tags: [Users]
+ *     summary: Uploader une ou plusieurs photos (fichiers)
+ *     description: |
+ *       Upload multipart (`photos`). JPEG/PNG/WebP, 5 Mo max par fichier, 6 max.
+ *       Utilisé notamment à l'inscription (minimum 3 photos requises côté client).
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               photos:
+ *                 type: array
+ *                 items: { type: string, format: binary }
+ *     responses:
+ *       201:
+ *         description: Photos ajoutées
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items: { $ref: '#/components/schemas/Photo' }
+ */
+router.post(
+  '/me/photos/upload',
+  uploadPhotos,
+  asyncHandler(async (req, res) => {
+    const files = (req.files as Express.Multer.File[]) || [];
+    if (files.length === 0) throw AppError.badRequest('Aucune photo reçue');
+
+    const created = [];
+    for (const f of files) {
+      created.push(await usersService.addPhoto(req.auth!.userId, `/uploads/${f.filename}`));
+    }
+    res.status(201).json(created);
   }),
 );
 

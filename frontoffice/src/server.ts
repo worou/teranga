@@ -18,11 +18,15 @@ import authRoutes from './routes/auth.routes';
 import usersRoutes from './routes/users.routes';
 import discoveryRoutes from './routes/discovery.routes';
 import paymentsRoutes from './routes/payments.routes';
+import adminPaymentsRoutes from './routes/adminPayments.routes';
 import webhooksRoutes from './routes/webhooks.routes';
 import featuresRoutes from './routes/features.routes';
 
 // Sockets
 import { initSockets } from './sockets';
+
+// Jobs planifiés
+import { startSubscriptionScheduler } from './jobs/subscriptionLifecycle';
 
 const app = express();
 const server = createServer(app);
@@ -37,8 +41,13 @@ app.use(express.static(path.join(__dirname, '..', 'public')));
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
 
 app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// On conserve le corps brut : la validation IPN PayPal exige de renvoyer le
+// message reçu à l'octet près (cf. utils/paypal.ts / payments.service).
+const keepRawBody = (req: any, _res: unknown, buf: Buffer) => {
+  req.rawBody = buf;
+};
+app.use(express.json({ limit: '10mb', verify: keepRawBody }));
+app.use(express.urlencoded({ extended: true, limit: '10mb', verify: keepRawBody }));
 
 // Global rate limit
 app.use(
@@ -84,6 +93,9 @@ app.use('/api/v1/payments/webhook', webhooksRoutes);
 // API v1
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/users', usersRoutes);
+// Interne (backoffice → frontoffice) : monté AVANT les routers génériques
+// `/api/v1` dont le `requireAuth` global intercepterait sinon /admin/*.
+app.use('/api/v1/admin', adminPaymentsRoutes); // validation virements
 app.use('/api/v1', discoveryRoutes);   // /discovery/*, /matches/*
 app.use('/api/v1', paymentsRoutes);    // /pricing, /subscriptions/me, /payments/*
 app.use('/api/v1', featuresRoutes);    // /events, /moderation, /trusted-circle, /notifications
@@ -104,6 +116,7 @@ async function start() {
   try {
     await prisma.$connect();
     logger.info('Database connected');
+    startSubscriptionScheduler();
     server.listen(config.port, () => {
       logger.info('Téranga Frontoffice running', { port: config.port, env: config.env });
       console.log(`\n  ✅ Frontoffice API démarré sur ${config.apiBaseUrl}\n  📚 Docs: ${config.apiBaseUrl}/api-docs\n`);

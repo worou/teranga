@@ -58,7 +58,75 @@ export const authApi = {
     post<AuthResponse>('/otp/verify', payload),
 }
 
+const TOKEN_KEY = 'teranga_token'
+const REFRESH_KEY = 'teranga_refresh'
+
 export function saveTokens(data: AuthResponse) {
-  localStorage.setItem('teranga_token', data.accessToken)
-  if (data.refreshToken) localStorage.setItem('teranga_refresh', data.refreshToken)
+  localStorage.setItem(TOKEN_KEY, data.accessToken)
+  if (data.refreshToken) localStorage.setItem(REFRESH_KEY, data.refreshToken)
+}
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
+}
+
+export function isAuthenticated(): boolean {
+  return !!getToken()
+}
+
+export function clearTokens() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem(REFRESH_KEY)
+}
+
+/** Profil renvoyé par GET /users/me (sous-ensemble utilisé par l'UI). */
+export interface MeResponse {
+  id: string
+  firstName: string
+  lastName?: string | null
+  phone: string
+  gender: 'FEMALE' | 'MALE' | 'NON_BINARY' | 'UNDISCLOSED'
+  city?: string | null
+  country?: string | null
+  status: string
+  subscription?: { plan: string; status: string; expiresAt?: string | null } | null
+}
+
+/** Récupère le profil courant. Lève si le token est absent/expiré (401). */
+export async function fetchMe(): Promise<MeResponse> {
+  const token = getToken()
+  if (!token) throw new Error('Non authentifié')
+  const res = await fetch('/api/v1/users/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.message || 'Session expirée.')
+  return data as MeResponse
+}
+
+export interface UploadedPhoto {
+  id: string
+  url: string
+  isMain: boolean
+  order: number
+}
+
+/**
+ * Upload de photos (multipart). IMPORTANT : ne PAS fixer de Content-Type —
+ * le navigateur génère lui-même la frontière multipart pour le FormData.
+ */
+export async function uploadPhotos(files: File[], token: string): Promise<UploadedPhoto[]> {
+  const form = new FormData()
+  files.forEach(f => form.append('photos', f))
+
+  const res = await fetch('/api/v1/users/me/photos/upload', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  const data = await res.json()
+  if (!res.ok) {
+    throw new Error(data?.message || "Échec de l'envoi des photos.")
+  }
+  return data as UploadedPhoto[]
 }

@@ -46,6 +46,14 @@ router.use(requireAuth);
  *         name: hasChildren
  *         schema: { type: boolean }
  *       - in: query
+ *         name: profession
+ *         description: Filtre partiel sur la profession.
+ *         schema: { type: string, example: Médecin }
+ *       - in: query
+ *         name: q
+ *         description: Recherche plein-texte (prénom, profession, bio, ville).
+ *         schema: { type: string, example: pharma }
+ *       - in: query
  *         name: limit
  *         schema: { type: integer, default: 20, maximum: 50 }
  *     responses:

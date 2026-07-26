@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TerangaSymbol } from '../components/Logo'
-import { authApi, saveTokens, type RegisterPayload } from '../api/auth'
+import { authApi, saveTokens, uploadPhotos, type RegisterPayload } from '../api/auth'
 import styles from './AuthForms.module.css'
 
 // ——— Types ———
-type Gender = 'FEMALE' | 'MALE' | 'NON_BINARY'
+type Gender = 'FEMALE' | 'MALE'
 type Intent = 'SERIOUS_RELATIONSHIP' | 'MARRIAGE' | 'FAMILY'
 
 interface Step1Data {
@@ -26,6 +26,9 @@ interface Step2Data {
   email: string
   password: string
 }
+
+// Erreurs de l'étape 1 : un message (string) par champ.
+type Step1Errors = Partial<Record<keyof Step1Data, string>>
 
 // ——— OTP Input ———
 function OtpInput({ onComplete, onReset }: { onComplete: (code: string) => void; onReset: boolean }) {
@@ -118,15 +121,27 @@ function getStrength(pw: string): { width: string; color: string; label: string 
   return levels[Math.min(score - 1, 3)] || levels[0]
 }
 
+// ——— Âge calculé à partir d'une date ISO (null si invalide/hors bornes) ———
+function calcAge(iso: string): number | null {
+  if (!iso) return null
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return null
+  const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000))
+  return age >= 0 && age < 130 ? age : null
+}
+
 // ——— Main ———
 export default function Inscription() {
   const navigate = useNavigate()
+  const topRef = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [otpReset, setOtpReset] = useState(false)
   const [otpCode, setOtpCode] = useState('')
+  const [token, setToken] = useState('')
+  const [photos, setPhotos] = useState<File[]>([])
   const { seconds, start: startCountdown, canResend } = useCountdown(60)
 
   const [s1, setS1] = useState<Step1Data>({
@@ -136,15 +151,24 @@ export default function Inscription() {
   const [s2, setS2] = useState<Step2Data>({
     dialCode: '+221', phoneLocal: '', email: '', password: '',
   })
-  const [errors1, setErrors1] = useState<Partial<Step1Data>>({})
+  const [errors1, setErrors1] = useState<Step1Errors>({})
   const [errors2, setErrors2] = useState<Partial<Step2Data & { phone: string }>>({})
   const strength = getStrength(s2.password)
+  const birthAge = calcAge(s1.birthDate)
 
-  const phone = s2.dialCode + s2.phoneLocal.replace(/\s/g, '')
+  // Normalisation du numéro : on ne garde que les chiffres, on retire un
+  // éventuel indicatif ressaisi dans le champ local, puis les zéros de tête.
+  const dialDigits = s2.dialCode.replace(/\D/g, '')
+  let phoneLocalDigits = s2.phoneLocal.replace(/\D/g, '')
+  if (dialDigits && phoneLocalDigits.startsWith(dialDigits) && phoneLocalDigits.length - dialDigits.length >= 7) {
+    phoneLocalDigits = phoneLocalDigits.slice(dialDigits.length)
+  }
+  phoneLocalDigits = phoneLocalDigits.replace(/^0+/, '')
+  const phone = s2.dialCode + phoneLocalDigits
 
   // ——— Validate Step 1 ———
-  function validateStep1() {
-    const e: Partial<Step1Data> = {}
+  function validateStep1(): Step1Errors {
+    const e: Step1Errors = {}
     if (!s1.firstName.trim()) e.firstName = 'Requis'
     if (!s1.gender) e.gender = 'Requis'
     if (!s1.birthDate) { e.birthDate = 'Requis' }
@@ -156,21 +180,42 @@ export default function Inscription() {
     if (!s1.city.trim()) e.city = 'Requis'
     if (!s1.country) e.country = 'Requis'
     setErrors1(e)
-    return Object.keys(e).length === 0
+    return e
   }
 
   // ——— Validate Step 2 ———
   function validateStep2() {
     const e: Partial<Record<string, string>> = {}
-    if (!s2.phoneLocal || !/^\d{7,12}$/.test(s2.phoneLocal.replace(/\s/g, ''))) e.phone = 'Numéro invalide'
+    if (!/^\d{7,12}$/.test(phoneLocalDigits)) e.phone = 'Numéro invalide'
+    // Zone F CFA : l'indicatif doit correspondre au pays (miroir du serveur).
+    else if (XOF_COUNTRIES.has(s1.country) && s2.dialCode !== COUNTRY_DIAL[s1.country]) {
+      e.phone = `Indicatif ${COUNTRY_DIAL[s1.country]} attendu pour ce pays`
+    }
     if (s2.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s2.email)) e.email = 'Email invalide'
     setErrors2(e)
     return Object.keys(e).length === 0
   }
 
   // ——— Step 1 → 2 ———
+  const STEP1_LABELS: Record<keyof Step1Data, string> = {
+    firstName: 'Prénom', lastName: 'Nom', gender: 'Je suis', birthDate: 'Date de naissance',
+    intent: 'Je recherche', city: 'Ville', country: 'Pays', religion: 'Religion', profession: 'Profession',
+  }
   function nextStep1() {
-    if (validateStep1()) { setError(''); setStep(2) }
+    const e = validateStep1()
+    const keys = Object.keys(e) as (keyof Step1Data)[]
+    if (keys.length === 0) {
+      setError('')
+      // Aligne l'indicatif sur le pays choisi (évite un numéro incohérent).
+      const dc = COUNTRY_DIAL[s1.country]
+      if (dc) setS2(p => ({ ...p, dialCode: dc }))
+      setStep(2)
+      return
+    }
+    // Retour visible : bannière en haut + défilement (l'erreur peut être hors écran, ex. le Prénom).
+    const missing = keys.map(k => STEP1_LABELS[k]).join(', ')
+    setError(`Veuillez corriger : ${missing}.`)
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   // ——— Step 2 → Register → OTP ———
@@ -210,12 +255,44 @@ export default function Inscription() {
     try {
       const data = await authApi.otpVerify({ phone, code: otpCode })
       saveTokens(data)
-      navigate(data.redirectUrl || '/')
+      setToken(data.accessToken)
+      setStep(4) // téléphone vérifié → étape photos (obligatoire, min. 3)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Code incorrect')
       setOtpReset(true)
       setTimeout(() => setOtpReset(false), 100)
       setOtpCode('')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // ——— Photos (étape 4) ———
+  const MIN_PHOTOS = 3
+  const MAX_PHOTOS = 6
+
+  function addPhotoFiles(fileList: FileList | null) {
+    if (!fileList) return
+    setError('')
+    const incoming = Array.from(fileList).filter(f => f.type.startsWith('image/'))
+    setPhotos(prev => [...prev, ...incoming].slice(0, MAX_PHOTOS))
+  }
+
+  function removePhoto(idx: number) {
+    setPhotos(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  async function finishWithPhotos() {
+    if (photos.length < MIN_PHOTOS) {
+      setError(`Ajoutez au moins ${MIN_PHOTOS} photos pour finaliser votre profil.`)
+      return
+    }
+    setError(''); setLoading(true)
+    try {
+      await uploadPhotos(photos, token)
+      navigate('/accueil')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Échec de l'envoi des photos.")
     } finally {
       setLoading(false)
     }
@@ -280,17 +357,19 @@ export default function Inscription() {
         <div className={styles.panelRight}>
           {/* Progress bar */}
           <div className={styles.progressBar}>
-            {[1, 2, 3].map(n => <div key={n} className={`${styles.progressStep} ${progressStep(n)}`} />)}
+            {[1, 2, 3, 4].map(n => <div key={n} className={`${styles.progressStep} ${progressStep(n)}`} />)}
           </div>
 
           {/* ——— STEP 1 ——— */}
           {step === 1 && (
-            <div className={styles.formStep}>
+            <div className={styles.formStep} ref={topRef}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 1 sur 3</div>
+                <div className={styles.stepLabel}>Étape 1 sur 4</div>
                 <h1>Parlez-nous de <em>vous</em></h1>
                 <p>Ces informations nous aident à trouver les personnes les plus compatibles.</p>
               </div>
+
+              {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
 
               <div className={styles.formGrid}>
                 <Field label="Prénom" error={errors1.firstName}>
@@ -307,7 +386,7 @@ export default function Inscription() {
                 <div className={`${styles.field} ${styles.fullWidth}`}>
                   <label>Je suis {errors1.gender && <span className={styles.fieldErr}> — {errors1.gender}</span>}</label>
                   <div className={styles.radioGroup}>
-                    {([['FEMALE', '♀ Une femme'], ['MALE', '♂ Un homme'], ['NON_BINARY', '⚬ Non-binaire']] as [Gender, string][]).map(([val, label]) => (
+                    {([['FEMALE', '♀ Une femme'], ['MALE', '♂ Un homme']] as [Gender, string][]).map(([val, label]) => (
                       <label key={val} className={`${styles.radioOption} ${s1.gender === val ? styles.radioChecked : ''}`}>
                         <input type="radio" name="gender" value={val} checked={s1.gender === val}
                           onChange={() => setS1(p => ({ ...p, gender: val }))} />
@@ -321,6 +400,11 @@ export default function Inscription() {
                   <input type="date" value={s1.birthDate} autoComplete="bday"
                     className={errors1.birthDate ? styles.inputError : ''}
                     onChange={e => setS1(p => ({ ...p, birthDate: e.target.value }))} />
+                  {birthAge !== null && (
+                    <span className={styles.ageHint}>
+                      {birthAge} ans{birthAge < 18 ? ' — minimum 18 ans requis' : ''}
+                    </span>
+                  )}
                 </Field>
 
                 <Field label="Je recherche" error={errors1.intent}>
@@ -348,13 +432,12 @@ export default function Inscription() {
                 </Field>
 
                 <Field label="Religion" optional>
+                  {/* Valeurs alignées sur l'enum attendu par l'API (Religion) */}
                   <select value={s1.religion} onChange={e => setS1(p => ({ ...p, religion: e.target.value }))}>
                     <option value="">Préférer ne pas dire</option>
-                    <option value="ISLAM">Islam</option>
-                    <option value="CHRISTIANISME">Christianisme</option>
-                    <option value="CATHOLICISME">Catholicisme</option>
-                    <option value="PROTESTANTISME">Protestantisme</option>
-                    <option value="AUTRE">Autre</option>
+                    <option value="MUSLIM">Islam</option>
+                    <option value="CHRISTIAN">Christianisme</option>
+                    <option value="OTHER">Autre</option>
                   </select>
                 </Field>
 
@@ -380,7 +463,7 @@ export default function Inscription() {
           {step === 2 && (
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 2 sur 3</div>
+                <div className={styles.stepLabel}>Étape 2 sur 4</div>
                 <h1>Votre <em>numéro</em></h1>
                 <p>Nous vous enverrons un code SMS pour confirmer votre identité.</p>
               </div>
@@ -395,9 +478,9 @@ export default function Inscription() {
                       onChange={e => setS2(p => ({ ...p, dialCode: e.target.value }))}>
                       {DIAL_CODES.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
                     </select>
-                    <input type="tel" placeholder="77 123 45 67" inputMode="numeric" autoComplete="tel"
+                    <input type="tel" placeholder="759 856 864" inputMode="numeric" autoComplete="tel"
                       value={s2.phoneLocal} className={errors2.phone ? styles.inputError : ''}
-                      onChange={e => setS2(p => ({ ...p, phoneLocal: e.target.value }))} />
+                      onChange={e => setS2(p => ({ ...p, phoneLocal: e.target.value.replace(/[^\d\s]/g, '') }))} />
                   </div>
                 </div>
 
@@ -436,7 +519,7 @@ export default function Inscription() {
           {step === 3 && (
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 3 sur 3</div>
+                <div className={styles.stepLabel}>Étape 3 sur 4</div>
                 <h1>Vérifiez votre <em>téléphone</em></h1>
                 <p>Entrez le code à 6 chiffres reçu par SMS.</p>
               </div>
@@ -465,7 +548,53 @@ export default function Inscription() {
                   className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
                   disabled={loading || otpCode.length < 6}
                   onClick={verifyOtp}>
-                  {!loading && 'Vérifier et créer mon compte'}
+                  {!loading && 'Vérifier mon numéro'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ——— STEP 4 — PHOTOS ——— */}
+          {step === 4 && (
+            <div className={styles.formStep}>
+              <div className={styles.formHeader}>
+                <div className={styles.stepLabel}>Étape 4 sur 4</div>
+                <h1>Vos <em>photos</em></h1>
+                <p>Ajoutez au moins {MIN_PHOTOS} photos pour créer votre profil. Elles seront vérifiées avant publication.</p>
+              </div>
+
+              {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
+
+              <div className={styles.photoGrid}>
+                {photos.map((f, i) => (
+                  <div key={i} className={styles.photoThumb}>
+                    <img src={URL.createObjectURL(f)} alt={`Photo ${i + 1}`} />
+                    <button type="button" className={styles.photoRemove} onClick={() => removePhoto(i)} aria-label="Retirer la photo">×</button>
+                    {i === 0 && <span className={styles.photoMain}>Principale</span>}
+                  </div>
+                ))}
+                {photos.length < MAX_PHOTOS && (
+                  <label className={styles.photoAdd}>
+                    <input type="file" accept="image/*" multiple hidden
+                      onChange={e => { addPhotoFiles(e.target.files); e.target.value = '' }} />
+                    <span className={styles.photoAddPlus}>+</span>
+                    <span className={styles.photoAddText}>Ajouter</span>
+                  </label>
+                )}
+              </div>
+
+              <div className={styles.photoHint}>
+                {photos.length} / {MIN_PHOTOS} minimum · {MAX_PHOTOS} max · JPEG, PNG ou WebP (5 Mo max)
+              </div>
+
+              <div className={styles.actions}>
+                <button
+                  className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
+                  disabled={loading || photos.length < MIN_PHOTOS}
+                  onClick={finishWithPhotos}>
+                  {!loading && (photos.length >= MIN_PHOTOS
+                    ? 'Créer mon compte'
+                    : `Ajoutez ${MIN_PHOTOS - photos.length} photo${MIN_PHOTOS - photos.length > 1 ? 's' : ''} de plus`)}
                 </button>
               </div>
             </div>
@@ -531,3 +660,14 @@ const DIAL_CODES: [string, string][] = [
   ['+241', '+241'], ['+243', '+243'], ['+242', '+242'],
   ['+222', '+222'], ['+33', '+33'], ['+32', '+32'], ['+1', '+1'],
 ]
+
+// Indicatif par pays (aligne le champ téléphone sur le pays choisi).
+const COUNTRY_DIAL: Record<string, string> = {
+  SN: '+221', CI: '+225', ML: '+223', BF: '+226', GN: '+224', TG: '+228',
+  BJ: '+229', NE: '+227', CM: '+237', GA: '+241', CD: '+243', CG: '+242',
+  MR: '+222', FR: '+33', BE: '+32', CA: '+1',
+}
+
+// Pays de la zone F CFA où l'indicatif est imposé (paiement + OTP par SMS).
+// Miroir du garde-fou serveur (registerSchema).
+const XOF_COUNTRIES = new Set(['SN', 'CI', 'ML', 'BF', 'BJ', 'TG', 'NE'])

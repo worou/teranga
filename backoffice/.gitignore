@@ -7,3 +7,6 @@ dist/
 coverage/
 .vscode/
 .idea/
+
+# Fichiers de sauvegarde locaux (ne pas versionner)
+*.backup.*

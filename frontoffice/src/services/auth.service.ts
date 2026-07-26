@@ -6,6 +6,7 @@ import { AppError } from '../utils/AppError';
 import { signAccessToken } from '../utils/jwt';
 import { addDays, generateOtpCode } from '../utils/helpers';
 import { logger } from '../utils/logger';
+import { twilioSms } from '../utils/twilioSms';
 
 export interface RegisterInput {
   phone: string;
@@ -89,8 +90,24 @@ export class AuthService {
       },
     });
 
-    // TODO: actually send via Orange SMS API / Africa's Talking
-    logger.info('OTP generated', { phone, purpose, code: process.env.NODE_ENV === 'development' ? code : '***' });
+    // Envoi réel via Twilio si configuré ; sinon repli sur journalisation
+    // (dev local sans identifiants — le code reste récupérable dans les logs).
+    const smsText = `Téranga : votre code de vérification est ${code}. Il expire dans 10 minutes.`;
+    if (twilioSms.isConfigured()) {
+      try {
+        await twilioSms.sendSms(phone, smsText);
+        logger.info('OTP sent by SMS', { phone, purpose });
+      } catch (err) {
+        logger.error('OTP SMS delivery failed', { phone, purpose, error: (err as Error).message });
+        throw new AppError("Impossible d'envoyer le SMS de vérification. Réessayez.", 502);
+      }
+    } else {
+      logger.warn('OTP generated (SMS non configuré — repli journalisation)', {
+        phone,
+        purpose,
+        code: config.env === 'development' ? code : '***',
+      });
+    }
 
     return { sent: true, expiresAt };
   }

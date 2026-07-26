@@ -236,9 +236,20 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
           profession: { type: 'string', nullable: true },
           bio: { type: 'string', nullable: true },
           intent: { type: 'string' },
+          religion: { type: 'string' },
           photos: { type: 'array', items: { $ref: '#/components/schemas/Photo' } },
           isVerified: { type: 'boolean' },
-          distanceKm: { type: 'integer', nullable: true },
+          score: { type: 'integer', description: 'Score de compatibilité (tri décroissant).', example: 70 },
+          sharedTraits: {
+            type: 'object',
+            description: 'Points communs avec le chercheur.',
+            properties: {
+              sameCity: { type: 'boolean' },
+              sameCountry: { type: 'boolean' },
+              sameIntent: { type: 'boolean' },
+              sameReligion: { type: 'boolean' },
+            },
+          },
         },
       },
       DiscoveryFilters: {
@@ -326,6 +337,7 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
           startsAt: { type: 'string', format: 'date-time', nullable: true },
           expiresAt: { type: 'string', format: 'date-time', nullable: true },
           autoRenew: { type: 'boolean' },
+          lastReminderAt: { type: 'string', format: 'date-time', nullable: true },
         },
       },
       SubscribeRequest: {
@@ -335,9 +347,11 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
           plan: { type: 'string', enum: ['DISCOVERY', 'STANDARD', 'ENGAGEMENT'] },
           method: {
             type: 'string',
-            enum: ['ORANGE_MONEY', 'WAVE', 'MTN_MOMO', 'MOOV_MONEY', 'M_PESA', 'AIRTEL_MONEY', 'CARD', 'CARRIER_BILLING'],
+            description: 'Opérateurs zone F CFA (XOF). Disponibilité selon le pays — cf. GET /payments/methods.',
+            enum: ['ORANGE_MONEY', 'WAVE', 'MTN_MOMO', 'MOOV_MONEY', 'FREE_MONEY', 'WIZALL', 'CARD', 'CARRIER_BILLING'],
           },
           phoneNumber: { type: 'string', example: '+221771234567' },
+          autoRenew: { type: 'boolean', default: true, description: 'Renouveler à l\'expiration (rappel J-3).' },
         },
       },
       PricingCatalog: {
@@ -346,7 +360,7 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
           DISCOVERY: {
             type: 'object',
             properties: {
-              amount: { type: 'integer', example: 3000 },
+              amount: { type: 'integer', example: 1000 },
               months: { type: 'integer', example: 1 },
               currency: { type: 'string', example: 'XOF' },
             },
@@ -354,18 +368,18 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
           STANDARD: {
             type: 'object',
             properties: {
-              amount: { type: 'integer', example: 21000 },
+              amount: { type: 'integer', example: 1500 },
               months: { type: 'integer', example: 3 },
-              monthlyDisplay: { type: 'integer', example: 7000 },
+              monthlyDisplay: { type: 'integer', example: 500 },
               currency: { type: 'string', example: 'XOF' },
             },
           },
           ENGAGEMENT: {
             type: 'object',
             properties: {
-              amount: { type: 'integer', example: 72000 },
+              amount: { type: 'integer', example: 5000 },
               months: { type: 'integer', example: 6 },
-              monthlyDisplay: { type: 'integer', example: 12000 },
+              monthlyDisplay: { type: 'integer', example: 833 },
               currency: { type: 'string', example: 'XOF' },
             },
           },

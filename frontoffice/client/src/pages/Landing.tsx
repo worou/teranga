@@ -6,24 +6,69 @@ import styles from './Landing.module.css'
 // ——— NAV ———
 function Nav() {
   const [scrolled, setScrolled] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
+
+  // Ferme le menu si on repasse en vue « desktop » (≥ 900 px) ou sur Échap.
+  useEffect(() => {
+    if (!menuOpen) return
+    const onResize = () => { if (window.innerWidth > 900) setMenuOpen(false) }
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false) }
+    window.addEventListener('resize', onResize)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('resize', onResize)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [menuOpen])
+
+  const close = () => setMenuOpen(false)
+
+  // Liens partagés entre la barre desktop et le panneau mobile.
+  const links = (
+    <>
+      <a href="#unions" onClick={close}>Unions</a>
+      <a href="#comment" onClick={close}>Comment ça marche</a>
+      <a href="#valeurs" onClick={close}>Nos valeurs</a>
+      <a href="#tarifs" onClick={close}>Abonnement</a>
+      <Link to="/connexion" className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: 14 }} onClick={close}>Se connecter</Link>
+      <Link to="/inscription" className="btn btn-primary" style={{ padding: '10px 20px', fontSize: 14 }} onClick={close}>Commencer</Link>
+    </>
+  )
+
   return (
-    <nav className={`${styles.nav} ${scrolled ? styles.navScrolled : ''}`}>
-      <a href="#" className={styles.navLogo}>
+    <nav className={`${styles.nav} ${scrolled || menuOpen ? styles.navScrolled : ''}`}>
+      <a href="#" className={styles.navLogo} onClick={close}>
         <TerangaSymbol size={40} />
         <span className={styles.navLogoText}>Tér<em>anga</em></span>
       </a>
-      <div className={styles.navLinks}>
-        <a href="#unions">Unions</a>
-        <a href="#comment">Comment ça marche</a>
-        <a href="#valeurs">Nos valeurs</a>
-        <a href="#tarifs">Abonnement</a>
-        <Link to="/connexion" className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: 14 }}>Se connecter</Link>
-        <Link to="/inscription" className="btn btn-primary" style={{ padding: '10px 20px', fontSize: 14 }}>Commencer</Link>
+
+      {/* Barre horizontale (desktop) */}
+      <div className={styles.navLinks}>{links}</div>
+
+      {/* Bouton hamburger (tablette / smartphone) */}
+      <button
+        type="button"
+        className={`${styles.hamburger} ${menuOpen ? styles.hamburgerOpen : ''}`}
+        aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+        aria-expanded={menuOpen}
+        aria-controls="menu-mobile"
+        onClick={() => setMenuOpen(o => !o)}
+      >
+        <span /><span /><span />
+      </button>
+
+      {/* Panneau déroulant (tablette / smartphone) */}
+      <div
+        id="menu-mobile"
+        className={`${styles.mobileMenu} ${menuOpen ? styles.mobileMenuOpen : ''}`}
+      >
+        {links}
       </div>
     </nav>
   )
@@ -319,20 +364,20 @@ export default function Landing() {
             <div className={styles.pricingTable}>
               <div className={styles.priceCol}>
                 <div className={styles.priceName}>Découverte</div>
-                <div className={styles.priceAmount}>3 000 <small>F / mois</small></div>
-                <div className={styles.priceDetails}>1 mois — 3 000 F CFA</div>
+                <div className={styles.priceAmount}>1 000 <small>F / mois</small></div>
+                <div className={styles.priceDetails}>1 mois — 1 000 F CFA</div>
                 <div className={styles.priceNote}>Messagerie et découverte illimitées</div>
               </div>
               <div className={`${styles.priceCol} ${styles.priceFeatured}`}>
                 <div className={styles.priceName}>Standard</div>
-                <div className={styles.priceAmount}>7 000 <small>F / mois</small></div>
-                <div className={styles.priceDetails}>3 mois — 21 000 F CFA</div>
+                <div className={styles.priceAmount}>500 <small>F / mois</small></div>
+                <div className={styles.priceDetails}>3 mois — 1 500 F CFA</div>
                 <div className={styles.priceNote}>Tout Découverte + événements</div>
               </div>
               <div className={styles.priceCol}>
                 <div className={styles.priceName}>Engagement</div>
-                <div className={styles.priceAmount}>12 000 <small>F / mois</small></div>
-                <div className={styles.priceDetails}>6 mois — 72 000 F CFA</div>
+                <div className={styles.priceAmount}>833 <small>F / mois</small></div>
+                <div className={styles.priceDetails}>6 mois — 5 000 F CFA</div>
                 <div className={styles.priceNote}>Tout Standard + coach dédié</div>
               </div>
             </div>

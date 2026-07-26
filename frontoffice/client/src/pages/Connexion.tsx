@@ -202,7 +202,7 @@ export default function Connexion() {
   // ——— Save & redirect ———
   function handleSuccess(data: { accessToken: string; refreshToken?: string; redirectUrl?: string }) {
     saveTokens(data)
-    navigate(data.redirectUrl || '/')
+    navigate(data.redirectUrl || '/accueil')
   }
 
   // ——— Login with password ———

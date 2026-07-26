@@ -34,6 +34,29 @@ router.use(requireAuth);
 
 /**
  * @openapi
+ * /payments/methods:
+ *   get:
+ *     tags: [Payments]
+ *     summary: Moyens de paiement disponibles dans mon pays
+ *     description: |
+ *       Retourne la liste des opérateurs mobile money (Orange Money, Wave, MTN,
+ *       Moov, Free Money, Wizall…) réellement disponibles dans le pays de
+ *       l'utilisateur, plus la carte bancaire. Zone F CFA (UEMOA) uniquement.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: Liste des moyens de paiement
+ */
+router.get(
+  '/payments/methods',
+  asyncHandler(async (req, res) => {
+    const methods = await paymentsService.getMethodsForUser(req.auth!.userId);
+    res.json(methods);
+  }),
+);
+
+/**
+ * @openapi
  * /subscriptions/me:
  *   get:
  *     tags: [Subscriptions]
@@ -118,6 +141,7 @@ router.post(
       req.body.plan,
       req.body.method,
       req.body.phoneNumber,
+      req.body.autoRenew,
     );
     res.status(201).json(result);
   }),

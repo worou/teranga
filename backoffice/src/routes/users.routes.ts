@@ -78,4 +78,26 @@ router.patch(
   }),
 );
 
+/** PATCH /api/admin/users/:id/verify — approuver / rejeter la vérification. */
+router.patch(
+  '/:id/verify',
+  asyncHandler(async (req, res) => {
+    const { action } = req.body;
+    if (!['approve', 'reject'].includes(action)) {
+      throw AppError.badRequest('Action invalide (approve | reject)');
+    }
+    const data =
+      action === 'approve'
+        ? { isVerified: true, verificationStatus: 'VERIFIED' as const }
+        : { isVerified: false, verificationStatus: 'REJECTED' as const };
+
+    const user = await prisma.user.update({
+      where: { id: req.params.id },
+      data,
+      select: { id: true, isVerified: true, verificationStatus: true, firstName: true },
+    });
+    res.json(user);
+  }),
+);
+
 export default router;

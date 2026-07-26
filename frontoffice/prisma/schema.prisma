@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -70,14 +70,17 @@ enum PaymentStatus {
 }
 
 enum PaymentMethod {
-  ORANGE_MONEY
-  WAVE
-  MTN_MOMO
-  MOOV_MONEY
-  M_PESA
-  AIRTEL_MONEY
-  CARD
-  CARRIER_BILLING
+  // Portefeuilles mobile money de la zone UEMOA / F CFA (XOF) uniquement.
+  ORANGE_MONEY      // SN, CI, ML, BF, NE, GW
+  WAVE              // SN, CI, ML, BF, TG, GW
+  MTN_MOMO          // CI, BJ
+  MOOV_MONEY        // CI, ML, BF, BJ, TG, NE
+  FREE_MONEY        // SN (Free/Yas Sénégal)
+  WIZALL            // SN, CI
+  CARD              // Carte bancaire (partout)
+  CARRIER_BILLING   // Facturation opérateur
+  PAYPAL            // PayPal (redirection, facturé en EUR) — diaspora / international
+  BANK_TRANSFER     // Virement bancaire (SEPA/EUR) — validation manuelle admin
 }
 
 enum MatchStatus {
@@ -219,7 +222,8 @@ model Subscription {
   startsAt     DateTime?
   expiresAt    DateTime?
   cancelledAt  DateTime?
-  autoRenew    Boolean            @default(false)
+  autoRenew    Boolean            @default(true)
+  lastReminderAt DateTime?        // dernier rappel d'expiration/renouvellement envoyé
   createdAt    DateTime           @default(now())
   updatedAt    DateTime           @updatedAt
 
@@ -239,9 +243,10 @@ model Payment {
   status            PaymentStatus @default(PENDING)
   amountFcfa        Int           // montant en F CFA
   currency          String        @default("XOF")
+  autoRenew         Boolean       @default(true) // choix utilisateur : renouveler à l'expiration
   phoneNumber       String?       // numéro Mobile Money utilisé
   providerTxId      String?       // identifiant de transaction du provider
-  providerRef       String?       // référence publique du provider
+  providerRef       String?       @unique // référence publique du provider (idempotence webhook)
   cinetpayTxId      String?
   webhookReceived   Boolean       @default(false)
   webhookPayload    Json?
@@ -403,4 +408,22 @@ model Notification {
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, readAt])
+}
+
+// ========== ADMINISTRATION (backoffice) ==========
+// Comptes du back-office (distincts des utilisateurs). Le frontoffice reste
+// l'unique propriétaire des migrations : ce modèle vit ici pour qu'un
+// `prisma db push` ne supprime jamais la table admin.
+model Admin {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  role         String    @default("ADMIN") // ADMIN | SUPERADMIN
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([email])
 }

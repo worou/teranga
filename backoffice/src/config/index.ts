@@ -12,4 +12,9 @@ export const config = {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173',
   },
+  // Frontoffice : cible des actions admin internes (validation de virement).
+  // Le backoffice relaie l'action au frontoffice, qui détient la logique
+  // canonique d'activation d'abonnement, via un secret partagé.
+  frontofficeApiUrl: process.env.FRONTOFFICE_API_URL || 'http://localhost:3000',
+  internalApiSecret: process.env.INTERNAL_API_SECRET || 'dev-internal-secret',
 };
