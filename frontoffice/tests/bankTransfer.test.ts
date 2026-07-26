@@ -18,8 +18,8 @@ import { subscribeSchema } from '../src/validators';
 const RIB = {
   beneficiary: 'MR TEST',
   iban: 'FR7620041000010000000000000',
-  bic: 'PSSTFRPPPAR',
-  bankName: 'La Banque Postale',
+  bic: 'BANKFRPPXXX',
+  bankName: 'Banque de Test',
 };
 
 describe('Virement bancaire', () => {
