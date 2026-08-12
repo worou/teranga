@@ -29,6 +29,8 @@ export interface AuthResponse {
   accessToken: string
   refreshToken?: string
   redirectUrl?: string
+  /** Profil sérialisé par l'API (porte l'état de complétude des photos). */
+  user?: MeResponse
 }
 
 async function post<T>(path: string, body: unknown): Promise<T> {
@@ -90,6 +92,12 @@ export interface MeResponse {
   country?: string | null
   status: string
   subscription?: { plan: string; status: string; expiresAt?: string | null } | null
+  /** Complétude du profil — l'API est seule juge du seuil (config.profile). */
+  photos?: UploadedPhoto[]
+  photosCount?: number
+  profileComplete?: boolean
+  minPhotos?: number
+  maxPhotos?: number
 }
 
 /** Récupère le profil courant. Lève si le token est absent/expiré (401). */

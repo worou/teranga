@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 import { AppError } from '../utils/AppError';
 import { prisma } from '../config/prisma';
+import { config } from '../config';
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -65,6 +66,46 @@ export async function requireSubscriptionForMessaging(
     if (!hasActive) {
       throw AppError.forbidden(
         "Abonnement requis pour utiliser la messagerie. Souscrivez à partir de 1 000 F CFA.",
+      );
+    }
+
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+/**
+ * Inscription complète : le profil doit porter au moins `config.profile.minPhotos`
+ * photos avant de donner accès à l'application (découverte, matchs, messagerie).
+ *
+ * Le contrôle est fait à chaque requête plutôt qu'une fois pour toutes à la
+ * création du compte : c'est ce qui empêche de contourner l'exigence, aussi bien
+ * en abandonnant l'étape photos de l'inscription qu'en supprimant ses photos
+ * après coup. Corollaire volontaire : remplacer une photo (supprimer puis
+ * réenvoyer) reste possible, seul l'accès est suspendu entre les deux.
+ *
+ * N'est PAS posé sur `/users/me/photos*` : il faut pouvoir envoyer ses photos
+ * pour lever le blocage.
+ */
+export async function requireCompleteProfile(
+  req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
+  try {
+    if (!req.auth) throw AppError.unauthorized();
+
+    const minPhotos = config.profile.minPhotos;
+    const photosCount = await prisma.photo.count({ where: { userId: req.auth.userId } });
+
+    if (photosCount < minPhotos) {
+      const missing = minPhotos - photosCount;
+      throw new AppError(
+        `Ajoutez au moins ${minPhotos} photos pour finaliser votre inscription ` +
+          `(${missing} manquante${missing > 1 ? 's' : ''}).`,
+        403,
+        { code: 'PHOTOS_REQUIRED', photosCount, minPhotos, missing },
       );
     }
 

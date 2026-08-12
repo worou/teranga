@@ -112,6 +112,15 @@ export const config = {
     ENGAGEMENT: { amount: 5000, months: 6, monthlyDisplay: 833 },
   },
 
+  // Complétude du profil exigée à l'inscription. Un compte dont le profil n'est
+  // pas complet est créé et authentifié (il faut un token pour uploader les
+  // photos), mais n'accède pas à l'application tant que le minimum n'est pas
+  // atteint. `maxPhotos` est la limite haute déjà appliquée par `addPhoto`.
+  profile: {
+    minPhotos: parseInt(process.env.PROFILE_MIN_PHOTOS || '3', 10),
+    maxPhotos: parseInt(process.env.PROFILE_MAX_PHOTOS || '6', 10),
+  },
+
   // Free tier limits for men
   freeTierLimits: {
     dailyProfileViews: 10,

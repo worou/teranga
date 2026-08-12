@@ -1,0 +1,194 @@
+.page { min-height: 100vh; background: var(--cream); padding-top: 70px; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 32px 32px 80px; }
+
+/* ——— En-tête de page ——— */
+.head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap; margin-bottom: 28px;
+}
+.greeting { font-family: Georgia, serif; font-size: 40px; font-weight: 400; color: var(--terra-deep); line-height: 1.15; }
+.greeting em { font-style: normal; color: var(--ocre-deep); }
+.subtitle { color: var(--ink-soft); font-size: 14px; margin-top: 6px; }
+
+.headActions { display: flex; align-items: center; gap: 10px; }
+.filterBtn {
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 11px 20px;
+  border: 1.5px solid var(--terra-deep); border-radius: 999px;
+  background: transparent; color: var(--terra-deep);
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: all 0.25s ease;
+}
+.filterBtn:hover { background: var(--terra-deep); color: var(--sand); }
+.filterBtn.on { background: var(--terra-deep); color: var(--sand); }
+.clearBtn {
+  padding: 11px 18px; border: none; border-radius: 999px;
+  background: transparent; color: var(--ocre-deep);
+  font-family: 'Inter', sans-serif; font-size: 14px; cursor: pointer;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+.clearBtn:hover { color: var(--terra-deep); }
+
+/* ——— Grille de profils ——— */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 22px;
+}
+
+.card {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--sand-light);
+  border: 1px solid rgba(184, 105, 26, 0.16);
+  box-shadow: 0 2px 0 rgba(43, 22, 5, 0.08);
+  text-decoration: none; color: inherit;
+  display: flex; flex-direction: column;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover { transform: translateY(-4px); box-shadow: 0 8px 22px rgba(43, 22, 5, 0.14); }
+
+.photoWrap { position: relative; aspect-ratio: 3 / 4; background: var(--sand); overflow: hidden; }
+.photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photoEmpty {
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: Georgia, serif; font-size: 52px; color: var(--ocre);
+  background: linear-gradient(150deg, var(--sand) 0%, var(--sand-light) 100%);
+}
+
+/* Flèches du carrousel — visibles seulement s'il y a plusieurs photos. */
+.arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 32px; height: 32px; border: none; border-radius: 50%;
+  background: rgba(253, 248, 240, 0.85); color: var(--terra-deep);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; opacity: 0; transition: opacity 0.2s ease, background 0.2s ease;
+}
+.card:hover .arrow, .arrow:focus-visible { opacity: 1; }
+.arrow:hover { background: var(--cream); }
+.arrowLeft { left: 8px; }
+.arrowRight { right: 8px; }
+
+/* Points de progression du carrousel. */
+.dots { position: absolute; bottom: 96px; left: 0; right: 0; display: flex; justify-content: center; gap: 5px; }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(253, 248, 240, 0.5); }
+.dot.dotOn { background: var(--cream); width: 14px; border-radius: 3px; }
+
+.verified {
+  position: absolute; top: 10px; right: 10px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 999px;
+  background: rgba(93, 114, 70, 0.94); color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+}
+
+/* Bandeau d'information en bas de carte. */
+.info {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  padding: 34px 14px 13px;
+  background: linear-gradient(to top, rgba(43, 22, 5, 0.93) 40%, rgba(43, 22, 5, 0));
+  color: var(--cream);
+}
+.nameRow { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.name { font-family: Georgia, serif; font-size: 20px; }
+.meta { font-size: 12px; opacity: 0.85; }
+.tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+.tag {
+  padding: 3px 9px; border-radius: 999px;
+  background: rgba(212, 144, 96, 0.9); color: var(--ink);
+  font-size: 11px; font-weight: 500;
+}
+.bio {
+  margin-top: 7px; font-size: 12.5px; line-height: 1.45; opacity: 0.9;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+/* ——— États ——— */
+.state { text-align: center; padding: 72px 24px; color: var(--ink-soft); }
+.state h2 { font-family: Georgia, serif; font-size: 26px; color: var(--terra-deep); margin-bottom: 10px; }
+.state p { max-width: 460px; margin: 0 auto 22px; }
+
+.skeleton {
+  aspect-ratio: 3 / 4; border-radius: 14px;
+  background: linear-gradient(100deg, var(--sand) 30%, var(--sand-light) 50%, var(--sand) 70%);
+  background-size: 220% 100%;
+  animation: shimmer 1.3s linear infinite;
+}
+@keyframes shimmer { to { background-position: -220% 0; } }
+
+/* ——— Tiroir de filtres ——— */
+.overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(43, 22, 5, 0.42);
+  backdrop-filter: blur(2px);
+}
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 301;
+  width: min(420px, 100%);
+  background: var(--cream);
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 34px rgba(43, 22, 5, 0.22);
+  animation: slideIn 0.28s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.drawerHead {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 26px 16px;
+  border-bottom: 1px solid rgba(184, 105, 26, 0.16);
+}
+.drawerHead h2 { font-family: Georgia, serif; font-size: 26px; color: var(--terra-deep); font-weight: 400; }
+.close {
+  border: none; background: transparent; color: var(--ocre-deep);
+  font-size: 26px; line-height: 1; cursor: pointer; padding: 4px 8px; border-radius: 6px;
+}
+.close:hover { background: rgba(184, 105, 26, 0.1); }
+
+.drawerBody { flex: 1; overflow-y: auto; padding: 22px 26px; }
+.group { margin-bottom: 22px; }
+.group > label {
+  display: block; margin-bottom: 8px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ocre-deep);
+}
+.group input[type='text'], .group select {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px;
+  background: var(--sand-light); color: var(--ink);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+}
+.group input[type='text']:focus, .group select:focus {
+  outline: none; border-color: var(--ocre-deep); background: var(--cream);
+}
+
+/* Bornes d'âge : deux champs numériques, pas un slider — l'API attend
+   minAge / maxAge et la saisie chiffrée reste plus précise au doigt. */
+.ageRow { display: flex; align-items: center; gap: 12px; }
+.ageRow input { width: 100%; padding: 11px 13px; border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px; background: var(--sand-light); font-family: 'Inter', sans-serif; font-size: 14px; }
+.ageSep { color: var(--ink-soft); font-size: 13px; }
+
+/* Case à cocher : neutralise le style « titre de section » de `.group > label`,
+   qui la rendrait majuscule et détachée de sa case. */
+.group > label.checkRow {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 0;
+  font-size: 14px; font-weight: 400; letter-spacing: normal;
+  text-transform: none; color: var(--ink); cursor: pointer;
+}
+.checkRow input { width: 17px; height: 17px; flex: none; accent-color: var(--ocre-deep); }
+
+.drawerFoot {
+  display: flex; gap: 12px; padding: 18px 26px;
+  border-top: 1px solid rgba(184, 105, 26, 0.16);
+  background: var(--sand-light);
+}
+.drawerFoot > * { flex: 1; justify-content: center; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 24px 16px 64px; }
+  .greeting { font-size: 30px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 14px; }
+  .name { font-size: 17px; }
+  .dots { bottom: 88px; }
+}

@@ -4,6 +4,8 @@ import Inscription from './pages/Inscription'
 import Connexion from './pages/Connexion'
 import Accueil from './pages/Accueil'
 import Abonnement from './pages/Abonnement'
+import Decouverte from './pages/Decouverte'
+import Profil from './pages/Profil'
 import RequireAuth from './components/RequireAuth'
 
 export default function App() {
@@ -18,6 +20,22 @@ export default function App() {
           element={
             <RequireAuth>
               <Accueil />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/decouverte"
+          element={
+            <RequireAuth>
+              <Decouverte />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profil/:id"
+          element={
+            <RequireAuth>
+              <Profil />
             </RequireAuth>
           }
         />

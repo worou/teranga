@@ -15,6 +15,7 @@ import './twilioSms.test';
 import './paypal.test';
 import './paypalIpn.test';
 import './registerValidation.test';
+import './profilePhotos.test';
 import './mobileMoney.test';
 import './payments.initiate.test';
 import './bankTransfer.test';

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { TerangaSymbol } from '../components/Logo'
+import AppHeader from '../components/AppHeader'
 import { fetchMe, clearTokens, type MeResponse } from '../api/auth'
 import styles from './AuthForms.module.css'
 
@@ -61,6 +61,13 @@ export default function Accueil() {
   const isMan = me?.gender === 'MALE'
   const manNeedsSubscription = isMan && !hasPaidAccess
 
+  // Inscription non finalisée : sans le minimum de photos, l'API refuse la
+  // découverte, les matchs et la messagerie (403 PHOTOS_REQUIRED).
+  const minPhotos = me?.minPhotos ?? 3
+  const photosCount = me?.photosCount ?? 0
+  const profileIncomplete = !!me && me.profileComplete === false
+  const photosMissing = Math.max(minPhotos - photosCount, 0)
+
   // Libellé de la ligne « Abonnement » selon le cas.
   let planDisplay: string
   if (hasPaidAccess) {
@@ -73,15 +80,7 @@ export default function Accueil() {
 
   return (
     <div className={styles.page}>
-      <nav className={styles.nav}>
-        <Link to="/accueil" className={styles.navLogo}>
-          <TerangaSymbol size={34} />
-          <span className={styles.navLogoText}>Tér<em>anga</em></span>
-        </Link>
-        <div className={styles.navRight}>
-          <button className={styles.linkBtn} onClick={logout}>Se déconnecter</button>
-        </div>
-      </nav>
+      <AppHeader initial={me?.firstName} />
 
       <div className={styles.wrap}>
         <div className={styles.panelRight} style={{ maxWidth: 560, margin: '0 auto' }}>
@@ -123,8 +122,24 @@ export default function Accueil() {
                 </div>
               </div>
 
+              {/* Inscription à finaliser : priorité sur l'incitation à s'abonner,
+                  puisque rien n'est accessible tant que les photos manquent. */}
+              {profileIncomplete && (
+                <div className={styles.upsell}>
+                  <strong>Finalisez votre inscription 📸</strong>
+                  <p>
+                    Il vous manque {photosMissing} photo{photosMissing > 1 ? 's' : ''} :
+                    votre profil doit en compter au moins {minPhotos} pour accéder aux
+                    profils et à la messagerie. Elles seront vérifiées avant publication.
+                  </p>
+                  <Link to="/inscription" className={`btn btn-primary ${styles.btnFull}`}>
+                    Ajouter mes photos
+                  </Link>
+                </div>
+              )}
+
               {/* Rappel + incitation : un homme non abonné a un accès limité. */}
-              {manNeedsSubscription && (
+              {!profileIncomplete && manNeedsSubscription && (
                 <div className={styles.upsell}>
                   <strong>Débloquez la messagerie 💬</strong>
                   <p>
@@ -133,6 +148,15 @@ export default function Accueil() {
                   </p>
                   <Link to="/abonnement" className={`btn btn-primary ${styles.btnFull}`}>
                     S'abonner — dès 1 000 F CFA
+                  </Link>
+                </div>
+              )}
+
+              {/* Le profil complet donne accès à la découverte : on y mène. */}
+              {!profileIncomplete && (
+                <div className={styles.actions}>
+                  <Link to="/decouverte" className={`btn btn-primary ${styles.btnFull}`}>
+                    Découvrir des profils
                   </Link>
                 </div>
               )}

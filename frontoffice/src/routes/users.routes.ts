@@ -1,10 +1,11 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, requireCompleteProfile } from '../middleware/auth';
 import { usersService } from '../services/users.service';
 import { updateProfileSchema, addPhotoSchema, biometricSchema } from '../validators';
 import { photoUpload } from '../config/upload';
+import { config } from '../config';
 import { AppError } from '../utils/AppError';
 
 const router = Router();
@@ -13,7 +14,7 @@ router.use(requireAuth);
 
 // Enveloppe multer : convertit ses erreurs (taille, format…) en 400 propres.
 function uploadPhotos(req: Request, res: Response, next: NextFunction) {
-  photoUpload.array('photos', 6)(req, res, (err: unknown) => {
+  photoUpload.array('photos', config.profile.maxPhotos)(req, res, (err: unknown) => {
     if (err) return next(AppError.badRequest((err as Error).message || 'Upload échoué'));
     next();
   });
@@ -110,6 +111,10 @@ router.delete(
  */
 router.get(
   '/:id',
+  // Consulter un autre membre, c'est utiliser l'application : même exigence que
+  // la découverte. `/users/me` reste ouvert (il faut pouvoir suivre sa propre
+  // progression tant que le profil est incomplet).
+  requireCompleteProfile,
   asyncHandler(async (req, res) => {
     const user = await usersService.getById(req.params.id);
     const { phone, email, passwordHash, ...publicFields } = user;
@@ -157,7 +162,10 @@ router.post(
  *     summary: Uploader une ou plusieurs photos (fichiers)
  *     description: |
  *       Upload multipart (`photos`). JPEG/PNG/WebP, 5 Mo max par fichier, 6 max.
- *       Utilisé notamment à l'inscription (minimum 3 photos requises côté client).
+ *       Dernière étape de l'inscription : tant que le profil ne porte pas le
+ *       minimum de photos exigé (`config.profile.minPhotos`), la découverte, les
+ *       matchs et la messagerie répondent 403 `PHOTOS_REQUIRED`. Cette route
+ *       reste ouverte aux profils incomplets — c'est elle qui lève le blocage.
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true

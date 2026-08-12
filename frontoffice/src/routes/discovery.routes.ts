@@ -1,13 +1,20 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
-import { requireAuth, requireSubscriptionForMessaging } from '../middleware/auth';
+import {
+  requireAuth,
+  requireCompleteProfile,
+  requireSubscriptionForMessaging,
+} from '../middleware/auth';
 import { discoveryService } from '../services/discovery.service';
 import { matchesService } from '../services/matches.service';
 import { discoveryFiltersSchema, likeSchema, sendMessageSchema } from '../validators';
 
 const router = Router();
 router.use(requireAuth);
+// Découverte, likes, matchs et messagerie exigent une inscription complète
+// (photos). Le profil incomplet reste authentifié pour pouvoir les envoyer.
+router.use(requireCompleteProfile);
 
 /**
  * @openapi

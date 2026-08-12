@@ -1,7 +1,10 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TerangaSymbol } from '../components/Logo'
-import { authApi, saveTokens, uploadPhotos, type RegisterPayload } from '../api/auth'
+import {
+  authApi, saveTokens, clearTokens, uploadPhotos, fetchMe, getToken,
+  type RegisterPayload,
+} from '../api/auth'
 import styles from './AuthForms.module.css'
 
 // ——— Types ———
@@ -142,7 +145,38 @@ export default function Inscription() {
   const [otpCode, setOtpCode] = useState('')
   const [token, setToken] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
+  // Seuils annoncés par l'API (config.profile) ; ces valeurs ne sont qu'un repli.
+  const [minPhotos, setMinPhotos] = useState(3)
+  const [maxPhotos, setMaxPhotos] = useState(6)
+  // Photos déjà présentes sur le profil (cas d'une reprise d'inscription) :
+  // elles comptent dans le minimum, seules les nouvelles sont à envoyer.
+  const [serverPhotos, setServerPhotos] = useState(0)
   const { seconds, start: startCountdown, canResend } = useCountdown(60)
+
+  // Reprise : un compte créé dont l'étape photos a été abandonnée reste bloqué
+  // côté API (403 PHOTOS_REQUIRED). On le ramène directement à cette étape
+  // plutôt que de lui faire recommencer une inscription qui échouerait en 409.
+  useEffect(() => {
+    const saved = getToken()
+    if (!saved) return
+    let alive = true
+    fetchMe()
+      .then(me => {
+        if (!alive) return
+        if (me.minPhotos) setMinPhotos(me.minPhotos)
+        if (me.maxPhotos) setMaxPhotos(me.maxPhotos)
+        if (me.profileComplete) { navigate('/accueil', { replace: true }); return }
+        setServerPhotos(me.photosCount ?? 0)
+        setToken(saved)
+        setStep(4)
+      })
+      .catch(() => {
+        // Token expiré ou API injoignable : on repart sur une inscription
+        // normale plutôt que de laisser un token mort bloquer l'écran.
+        clearTokens()
+      })
+    return () => { alive = false }
+  }, [navigate])
 
   const [s1, setS1] = useState<Step1Data>({
     firstName: '', lastName: '', gender: '', birthDate: '',
@@ -256,7 +290,9 @@ export default function Inscription() {
       const data = await authApi.otpVerify({ phone, code: otpCode })
       saveTokens(data)
       setToken(data.accessToken)
-      setStep(4) // téléphone vérifié → étape photos (obligatoire, min. 3)
+      if (data.user?.minPhotos) setMinPhotos(data.user.minPhotos)
+      if (data.user?.maxPhotos) setMaxPhotos(data.user.maxPhotos)
+      setStep(4) // téléphone vérifié → étape photos (obligatoire, exigée par l'API)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Code incorrect')
       setOtpReset(true)
@@ -268,14 +304,19 @@ export default function Inscription() {
   }
 
   // ——— Photos (étape 4) ———
-  const MIN_PHOTOS = 3
-  const MAX_PHOTOS = 6
+  // Total du profil = photos déjà en ligne (reprise) + fichiers en attente
+  // d'envoi. C'est ce total que l'API compare à son minimum.
+  const totalPhotos = serverPhotos + photos.length
+  const photosMissing = Math.max(minPhotos - totalPhotos, 0)
+  const slotsLeft = Math.max(maxPhotos - totalPhotos, 0)
 
   function addPhotoFiles(fileList: FileList | null) {
     if (!fileList) return
     setError('')
     const incoming = Array.from(fileList).filter(f => f.type.startsWith('image/'))
-    setPhotos(prev => [...prev, ...incoming].slice(0, MAX_PHOTOS))
+    // On tronque au nombre de places restantes : au-delà, l'API rejetterait les
+    // fichiers en trop et l'envoi ne serait que partiellement appliqué.
+    setPhotos(prev => [...prev, ...incoming.slice(0, Math.max(maxPhotos - serverPhotos - prev.length, 0))])
   }
 
   function removePhoto(idx: number) {
@@ -283,13 +324,14 @@ export default function Inscription() {
   }
 
   async function finishWithPhotos() {
-    if (photos.length < MIN_PHOTOS) {
-      setError(`Ajoutez au moins ${MIN_PHOTOS} photos pour finaliser votre profil.`)
+    if (totalPhotos < minPhotos) {
+      setError(`Ajoutez au moins ${minPhotos} photos pour finaliser votre profil.`)
       return
     }
     setError(''); setLoading(true)
     try {
-      await uploadPhotos(photos, token)
+      // Reprise déjà complète côté serveur : rien de neuf à envoyer.
+      if (photos.length > 0) await uploadPhotos(photos, token)
       navigate('/accueil')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Échec de l'envoi des photos.")
@@ -560,10 +602,17 @@ export default function Inscription() {
               <div className={styles.formHeader}>
                 <div className={styles.stepLabel}>Étape 4 sur 4</div>
                 <h1>Vos <em>photos</em></h1>
-                <p>Ajoutez au moins {MIN_PHOTOS} photos pour créer votre profil. Elles seront vérifiées avant publication.</p>
+                <p>Ajoutez au moins {minPhotos} photos pour créer votre profil. Elles seront vérifiées avant publication.</p>
               </div>
 
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
+
+              {serverPhotos > 0 && (
+                <div className={styles.alertSuccess}>
+                  <span>✓</span> {serverPhotos} photo{serverPhotos > 1 ? 's' : ''} déjà
+                  enregistrée{serverPhotos > 1 ? 's' : ''} sur votre profil.
+                </div>
+              )}
 
               <div className={styles.photoGrid}>
                 {photos.map((f, i) => (
@@ -573,7 +622,7 @@ export default function Inscription() {
                     {i === 0 && <span className={styles.photoMain}>Principale</span>}
                   </div>
                 ))}
-                {photos.length < MAX_PHOTOS && (
+                {slotsLeft > 0 && (
                   <label className={styles.photoAdd}>
                     <input type="file" accept="image/*" multiple hidden
                       onChange={e => { addPhotoFiles(e.target.files); e.target.value = '' }} />
@@ -584,17 +633,17 @@ export default function Inscription() {
               </div>
 
               <div className={styles.photoHint}>
-                {photos.length} / {MIN_PHOTOS} minimum · {MAX_PHOTOS} max · JPEG, PNG ou WebP (5 Mo max)
+                {totalPhotos} / {minPhotos} minimum · {maxPhotos} max · JPEG, PNG ou WebP (5 Mo max)
               </div>
 
               <div className={styles.actions}>
                 <button
                   className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
-                  disabled={loading || photos.length < MIN_PHOTOS}
+                  disabled={loading || photosMissing > 0}
                   onClick={finishWithPhotos}>
-                  {!loading && (photos.length >= MIN_PHOTOS
+                  {!loading && (photosMissing === 0
                     ? 'Créer mon compte'
-                    : `Ajoutez ${MIN_PHOTOS - photos.length} photo${MIN_PHOTOS - photos.length > 1 ? 's' : ''} de plus`)}
+                    : `Ajoutez ${photosMissing} photo${photosMissing > 1 ? 's' : ''} de plus`)}
                 </button>
               </div>
             </div>

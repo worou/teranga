@@ -133,6 +133,8 @@ export class DiscoveryService {
       firstName: c.firstName,
       age: calculateAge(c.birthDate),
       city: c.city,
+      // Téranga couvre 8 pays : la carte l'affiche, comme la ville.
+      country: c.country,
       profession: c.profession,
       bio: c.bio,
       intent: c.intent,

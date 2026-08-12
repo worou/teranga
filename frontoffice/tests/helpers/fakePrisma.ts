@@ -224,6 +224,18 @@ class Table {
     return this.create({ data: { ...args.where, ...args.create } });
   }
 
+  /** Suppression unitaire : renvoie la ligne supprimée, P2025 si absente (comme Prisma). */
+  async delete(args: { where: Row; select?: Row; include?: Row }) {
+    const idx = this.rows.findIndex((r) => matchWhere(r, args.where));
+    if (idx === -1) {
+      const err: any = new Error(`fakePrisma: ${this.name}.delete — aucune ligne ne correspond`);
+      err.code = 'P2025';
+      throw err;
+    }
+    const [row] = this.rows.splice(idx, 1);
+    return this.project(row, args.select, args.include);
+  }
+
   async deleteMany(args: { where?: Row } = {}) {
     const before = this.rows.length;
     this.rows = this.rows.filter((r) => !matchWhere(r, args.where));
@@ -295,11 +307,25 @@ const notificationTable = new Table('notification', {
   defaults: () => ({ isRead: false, data: null, createdAt: new Date() }),
 });
 
+const photoTable = new Table('photo', {
+  prefix: 'photo',
+  defaults: () => ({
+    isMain: false,
+    order: 0,
+    moderationStatus: 'PENDING',
+    createdAt: new Date(),
+  }),
+  relations: {
+    user: { table: () => userTable, localField: 'userId', foreignField: 'id' },
+  },
+});
+
 export const fakePrisma = {
   user: userTable,
   subscription: subscriptionTable,
   payment: paymentTable,
   notification: notificationTable,
+  photo: photoTable,
   /**
    * Les appels passés à `$transaction([...])` sont déjà des promesses en cours
    * (Prisma en fait autant côté client). On se contente de les attendre : le
@@ -317,6 +343,7 @@ export function resetDb() {
   subscriptionTable.clear();
   paymentTable.clear();
   notificationTable.clear();
+  photoTable.clear();
   idCounter = 0;
 }
 
@@ -330,6 +357,19 @@ export function seedSubscription(data: Row): Row {
 
 export function seedPayment(data: Row): Row {
   return paymentTable.insert(data);
+}
+
+/** Ajoute `n` photos au profil `userId` (ordre et photo principale cohérents). */
+export function seedPhotos(userId: string, n: number): Row[] {
+  const existing = photoTable.rows.filter((r) => r.userId === userId).length;
+  return Array.from({ length: n }, (_, i) =>
+    photoTable.insert({
+      userId,
+      url: `/uploads/${userId}-${existing + i}.jpg`,
+      order: existing + i,
+      isMain: existing + i === 0,
+    }),
+  );
 }
 
 /** Relit une ligne telle qu'elle est réellement persistée (pas la valeur de retour du service). */

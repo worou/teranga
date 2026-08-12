@@ -1,4 +1,5 @@
 import { prisma } from '../config/prisma';
+import { config } from '../config';
 import { AppError } from '../utils/AppError';
 import { calculateAge } from '../utils/helpers';
 
@@ -38,8 +39,11 @@ export class UsersService {
   }
 
   async addPhoto(userId: string, url: string) {
+    const { maxPhotos } = config.profile;
     const count = await prisma.photo.count({ where: { userId } });
-    if (count >= 6) throw AppError.badRequest('Vous avez déjà 6 photos (maximum)');
+    if (count >= maxPhotos) {
+      throw AppError.badRequest(`Vous avez déjà ${maxPhotos} photos (maximum)`);
+    }
 
     return prisma.photo.create({
       data: {
@@ -133,11 +137,25 @@ export class UsersService {
     return { deleted: true };
   }
 
+  /**
+   * Sérialisation exposée au client. Quand les photos sont chargées, on ajoute
+   * l'état de complétude du profil : le client (inscription, espace membre) s'y
+   * fie plutôt que de recoder le seuil de son côté.
+   */
   serialize(user: any) {
+    const hasPhotos = Array.isArray(user.photos);
     return {
       ...user,
       age: calculateAge(user.birthDate),
       passwordHash: undefined,
+      minPhotos: config.profile.minPhotos,
+      maxPhotos: config.profile.maxPhotos,
+      ...(hasPhotos
+        ? {
+            photosCount: user.photos.length,
+            profileComplete: user.photos.length >= config.profile.minPhotos,
+          }
+        : {}),
     };
   }
 }
