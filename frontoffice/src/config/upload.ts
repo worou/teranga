@@ -6,11 +6,18 @@ import { v4 as uuid } from 'uuid';
 /**
  * Upload local des photos de profil (développement).
  *
- * Les fichiers sont écrits dans `public/uploads/` (servi en statique par
- * Express) ; on stocke en base l'URL relative `/uploads/<fichier>`.
+ * Les fichiers vont dans `frontoffice/uploads/`, **hors de `public/`**, et sont
+ * servis sous l'URL `/uploads/<fichier>` (montée explicitement dans server.ts).
+ * L'URL stockée en base est inchangée.
+ *
+ * ⚠️  Cette séparation n'est pas cosmétique : `public/` est la sortie de
+ * `vite build`, qui tourne avec `emptyOutDir: true` et **efface tout son
+ * contenu** à chaque construction. Des photos de membres rangées là sont
+ * perdues au premier `npm run build:all` — c'est déjà arrivé sur ce projet.
+ *
  * En production, on remplacera ce stockage disque par un envoi vers S3.
  */
-const uploadDir = path.join(__dirname, '..', '..', 'public', 'uploads');
+const uploadDir = path.join(__dirname, '..', '..', 'uploads');
 // Le dossier doit exister au runtime, sinon multer.diskStorage lève ENOENT.
 fs.mkdirSync(uploadDir, { recursive: true });
 

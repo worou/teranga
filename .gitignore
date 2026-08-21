@@ -7,3 +7,8 @@ dist/
 coverage/
 *.zip
 .claude/
+
+# Photos de membres deposees en local (dev). Le dossier est versionne, son
+# contenu non : ce sont des donnees personnelles, pas du code.
+frontoffice/uploads/*
+!frontoffice/uploads/.gitkeep

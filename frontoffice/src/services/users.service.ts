@@ -184,7 +184,11 @@ export class UsersService {
       where: { id: userId },
       include: { photos: { orderBy: { order: 'asc' } } },
     });
-    if (!user || user.status !== 'ACTIVE' || user.deletedAt) {
+    // Mêmes conditions de visibilité que le fil (`getFeed`) : actif, non
+    // supprimé, **et vérifié**. Sans le contrôle de vérification, un profil que
+    // la recherche masque délibérément resterait atteignable par son
+    // identifiant — les deux surfaces publiques doivent désigner le même monde.
+    if (!user || user.status !== 'ACTIVE' || user.deletedAt || !user.isVerified) {
       throw AppError.notFound('Profil introuvable');
     }
 

@@ -19,6 +19,9 @@ export default defineConfig({
   },
   build: {
     outDir: '../public',
+    // `public/` ne contient plus QUE la sortie de build : les photos de membres
+    // vivent dans `frontoffice/uploads/`. Les y remettre exposerait de nouveau
+    // les fichiers des membres à cet effacement.
     emptyOutDir: true,
   },
 })

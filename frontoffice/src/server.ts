@@ -37,6 +37,21 @@ const server = createServer(app);
 app.use(helmet({ contentSecurityPolicy: false }));
 
 // Static pages
+// Photos de membres : servies depuis `uploads/`, en dehors de `public/` que
+// `vite build` vide à chaque construction. Monté avant le statique du build
+// pour que l'URL `/uploads/...` ne dépende pas de la sortie de compilation.
+app.use(
+  '/uploads',
+  express.static(path.join(__dirname, '..', 'uploads'), {
+    dotfiles: 'ignore',
+    // Contenu déposé par des membres : jamais interprété comme du code. Helmet
+    // pose déjà `X-Content-Type-Options: nosniff` globalement.
+    index: false,
+    maxAge: '7d',
+  }),
+);
+
+// Sortie de `vite build` (SPA + assets).
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use(cors({ origin: config.corsOrigin, credentials: true }));
