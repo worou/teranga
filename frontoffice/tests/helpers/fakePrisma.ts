@@ -69,6 +69,11 @@ function matchCond(value: any, cond: any): boolean {
       case 'gte':
         if (value == null || cmp(value, operand) < 0) return false;
         break;
+      case 'contains':
+        // Sensible a la casse ici ; en base c'est la collation utf8mb4_unicode_ci
+        // qui decide. Les tests comparent des valeurs deja normalisees.
+        if (value == null || !String(value).includes(String(operand))) return false;
+        break;
       default:
         throw new Error(
           `fakePrisma: opérateur de filtre non supporté « ${op} ». ` +
@@ -79,17 +84,38 @@ function matchCond(value: any, cond: any): boolean {
   return true;
 }
 
-function matchWhere(row: Row, where: Row | undefined): boolean {
+function matchWhere(
+  row: Row,
+  where: Row | undefined,
+  relations?: Record<string, RelationSpec>,
+): boolean {
   if (!where) return true;
   for (const [field, cond] of Object.entries(where)) {
     if (field === 'AND') {
       const list = Array.isArray(cond) ? cond : [cond];
-      if (!list.every((w: Row) => matchWhere(row, w))) return false;
+      if (!list.every((w: Row) => matchWhere(row, w, relations))) return false;
     } else if (field === 'OR') {
       const list = Array.isArray(cond) ? cond : [cond];
-      if (!list.some((w: Row) => matchWhere(row, w))) return false;
+      if (!list.some((w: Row) => matchWhere(row, w, relations))) return false;
     } else if (field === 'NOT') {
-      if (matchWhere(row, cond as Row)) return false;
+      if (matchWhere(row, cond as Row, relations)) return false;
+    } else if (relations?.[field]) {
+      // Filtre relationnel : `{ some: {...} }` / `{ none: {...} }`.
+      const rel = relations[field];
+      const linked = rel
+        .table()
+        .rows.filter((r) => eq(r[rel.foreignField], row[rel.localField]));
+      const spec = cond as Row;
+      if ('some' in spec) {
+        if (!linked.some((r) => matchWhere(r, spec.some as Row))) return false;
+      } else if ('none' in spec) {
+        if (linked.some((r) => matchWhere(r, spec.none as Row))) return false;
+      } else {
+        throw new Error(
+          `fakePrisma: filtre relationnel non supporte sur « ${field} ». ` +
+            'Implementez-le plutot que de le laisser passer.',
+        );
+      }
     } else if (!matchCond(row[field], cond)) {
       return false;
     }
@@ -99,13 +125,21 @@ function matchWhere(row: Row, where: Row | undefined): boolean {
 
 // ==================== table ====================
 
+interface RelationSpec {
+  table: () => Table;
+  localField: string;
+  foreignField: string;
+  /** Relation 1-N : `include` renvoie un tableau, et `some`/`none` s'appliquent. */
+  list?: boolean;
+}
+
 interface TableOptions {
-  /** Valeurs par défaut appliquées à la création (colonnes Prisma `@default`). */
+  /** Valeurs par defaut appliquees a la creation (colonnes Prisma `@default`). */
   defaults: () => Row;
-  /** Préfixe des identifiants générés. */
+  /** Prefixe des identifiants generes. */
   prefix: string;
-  /** Relations résolvables via `include`. */
-  relations?: Record<string, { table: () => Table; localField: string; foreignField: string }>;
+  /** Relations resolvables via `include` et via les filtres `some`/`none`. */
+  relations?: Record<string, RelationSpec>;
 }
 
 class Table {
@@ -147,9 +181,15 @@ class Table {
       const rel = this.options.relations?.[relName];
       if (!rel) throw new Error(`fakePrisma: relation « ${relName} » inconnue sur ${this.name}`);
       const target = rel.table();
-      const linked = target.rows.find((r) => eq(r[rel.foreignField], row[rel.localField]));
       const relSelect = typeof relOpts === 'object' ? (relOpts as Row).select : undefined;
-      out[relName] = linked ? target.project(linked, relSelect) : null;
+      if (rel.list) {
+        out[relName] = target.rows
+          .filter((r) => eq(r[rel.foreignField], row[rel.localField]))
+          .map((r) => target.project(r, relSelect));
+      } else {
+        const linked = target.rows.find((r) => eq(r[rel.foreignField], row[rel.localField]));
+        out[relName] = linked ? target.project(linked, relSelect) : null;
+      }
     }
     return out;
   }
@@ -168,20 +208,20 @@ class Table {
   // ---------- API Prisma ----------
 
   async findUnique(args: { where: Row; select?: Row; include?: Row }) {
-    const row = this.rows.find((r) => matchWhere(r, args.where));
+    const row = this.rows.find((r) => matchWhere(r, args.where, this.options.relations));
     return row ? this.project(row, args.select, args.include) : null;
   }
 
   async findFirst(args: { where?: Row; select?: Row; include?: Row; orderBy?: Row }) {
     const found = this.sort(
-      this.rows.filter((r) => matchWhere(r, args.where)),
+      this.rows.filter((r) => matchWhere(r, args.where, this.options.relations)),
       args.orderBy,
     )[0];
     return found ? this.project(found, args.select, args.include) : null;
   }
 
   async findMany(args: { where?: Row; select?: Row; include?: Row; orderBy?: Row } = {}) {
-    const found = this.rows.filter((r) => matchWhere(r, args.where));
+    const found = this.rows.filter((r) => matchWhere(r, args.where, this.options.relations));
     return this.sort(found, args.orderBy).map((r) => this.project(r, args.select, args.include));
   }
 
@@ -198,7 +238,7 @@ class Table {
   }
 
   async update(args: { where: Row; data: Row; select?: Row; include?: Row }) {
-    const row = this.rows.find((r) => matchWhere(r, args.where));
+    const row = this.rows.find((r) => matchWhere(r, args.where, this.options.relations));
     if (!row) {
       const err: any = new Error(`fakePrisma: ${this.name}.update — aucune ligne ne correspond`);
       err.code = 'P2025'; // même code que Prisma
@@ -213,20 +253,20 @@ class Table {
    * c'est ce qui rend testables l'idempotence et la course webhook/polling.
    */
   async updateMany(args: { where?: Row; data: Row }) {
-    const targets = this.rows.filter((r) => matchWhere(r, args.where));
+    const targets = this.rows.filter((r) => matchWhere(r, args.where, this.options.relations));
     for (const row of targets) Object.assign(row, args.data, { updatedAt: new Date() });
     return { count: targets.length };
   }
 
   async upsert(args: { where: Row; create: Row; update: Row }) {
-    const row = this.rows.find((r) => matchWhere(r, args.where));
+    const row = this.rows.find((r) => matchWhere(r, args.where, this.options.relations));
     if (row) return this.update({ where: args.where, data: args.update });
     return this.create({ data: { ...args.where, ...args.create } });
   }
 
   /** Suppression unitaire : renvoie la ligne supprimée, P2025 si absente (comme Prisma). */
   async delete(args: { where: Row; select?: Row; include?: Row }) {
-    const idx = this.rows.findIndex((r) => matchWhere(r, args.where));
+    const idx = this.rows.findIndex((r) => matchWhere(r, args.where, this.options.relations));
     if (idx === -1) {
       const err: any = new Error(`fakePrisma: ${this.name}.delete — aucune ligne ne correspond`);
       err.code = 'P2025';
@@ -238,12 +278,12 @@ class Table {
 
   async deleteMany(args: { where?: Row } = {}) {
     const before = this.rows.length;
-    this.rows = this.rows.filter((r) => !matchWhere(r, args.where));
+    this.rows = this.rows.filter((r) => !matchWhere(r, args.where, this.options.relations));
     return { count: before - this.rows.length };
   }
 
   async count(args: { where?: Row } = {}) {
-    return this.rows.filter((r) => matchWhere(r, args.where)).length;
+    return this.rows.filter((r) => matchWhere(r, args.where, this.options.relations)).length;
   }
 }
 
@@ -267,6 +307,12 @@ const userTable = new Table('user', {
       table: () => subscriptionTable,
       localField: 'id',
       foreignField: 'userId',
+    },
+    photos: {
+      table: () => photoTable,
+      localField: 'id',
+      foreignField: 'userId',
+      list: true,
     },
   },
 });
@@ -330,8 +376,21 @@ const photoTable = new Table('photo', {
   },
 });
 
+// Interactions : exclues du feed (deja likees, ou blocages croises).
+const likeTable = new Table('like', {
+  prefix: 'like',
+  defaults: () => ({ isSuperLike: false, createdAt: new Date() }),
+});
+
+const blockTable = new Table('block', {
+  prefix: 'block',
+  defaults: () => ({ reason: null, createdAt: new Date() }),
+});
+
 export const fakePrisma = {
   user: userTable,
+  like: likeTable,
+  block: blockTable,
   subscription: subscriptionTable,
   payment: paymentTable,
   notification: notificationTable,
@@ -354,6 +413,8 @@ export function resetDb() {
   paymentTable.clear();
   notificationTable.clear();
   photoTable.clear();
+  likeTable.clear();
+  blockTable.clear();
   idCounter = 0;
 }
 
@@ -367,6 +428,14 @@ export function seedSubscription(data: Row): Row {
 
 export function seedPayment(data: Row): Row {
   return paymentTable.insert(data);
+}
+
+export function seedLike(senderId: string, receiverId: string): Row {
+  return likeTable.insert({ senderId, receiverId });
+}
+
+export function seedBlock(blockerId: string, blockedId: string): Row {
+  return blockTable.insert({ blockerId, blockedId });
 }
 
 /** Ajoute `n` photos au profil `userId` (ordre et photo principale cohérents). */

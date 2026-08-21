@@ -35,9 +35,17 @@ export interface Profile {
   sharedTraits?: SharedTraits
 }
 
-/** Filtres réellement acceptés par l'API (cf. discoveryFiltersSchema). */
+/**
+ * Filtres acceptés par l'API (miroir de `discoveryFiltersSchema`).
+ *
+ * `includeUnspecified` s'applique aux critères facultatifs du profil (taille,
+ * poids, silhouette, origine, langue, souhait d'enfants) : activé, il conserve
+ * les profils qui n'ont pas renseigné le critère. C'est le défaut, sans quoi un
+ * seul filtre viderait la liste de tous les profils encore incomplets.
+ */
 export interface DiscoveryFilters {
   q?: string
+  gender?: string
   minAge?: number
   maxAge?: number
   city?: string
@@ -45,7 +53,18 @@ export interface DiscoveryFilters {
   religion?: string
   intent?: string
   profession?: string
+  minHeightCm?: number
+  maxHeightCm?: number
+  minWeightKg?: number
+  maxWeightKg?: number
+  bodyType?: string
+  ethnicity?: string
+  language?: string
   hasChildren?: boolean
+  wantsChildren?: boolean
+  hasPhoto?: boolean
+  lastActive?: 'all' | 'recent' | 'online'
+  includeUnspecified?: boolean
 }
 
 /**
@@ -86,11 +105,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return data as T
 }
 
-/** Sérialise les filtres actifs en query string (les vides sont omis). */
+/**
+ * Sérialise les filtres actifs en query string.
+ *
+ * Les valeurs vides sont omises, mais `false` est transmis : `hasPhoto=false`
+ * et `includeUnspecified=false` sont des choix, pas des absences de choix.
+ */
 function toQuery(filters: DiscoveryFilters): string {
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(filters)) {
-    if (value === undefined || value === '' || value === null) continue
+    if (value === undefined || value === null || value === '') continue
     params.set(key, String(value))
   }
   const q = params.toString()
@@ -149,6 +173,55 @@ export const RELIGION_LABELS: Record<string, string> = {
   CHRISTIAN: 'Christianisme',
   OTHER: 'Autre',
   UNDISCLOSED: 'Non précisée',
+}
+
+export const GENDER_LABELS: Record<string, string> = {
+  FEMALE: 'Une femme',
+  MALE: 'Un homme',
+  NON_BINARY: 'Non binaire',
+  UNDISCLOSED: 'Ne se prononce pas',
+}
+
+export const BODY_TYPE_LABELS: Record<string, string> = {
+  MINCE: 'Mince',
+  MOYENNE: 'Moyenne',
+  RONDE: 'Ronde',
+}
+
+/**
+ * Origine ethnique — donnée sensible au sens du RGPD (art. 9). Toujours
+ * déclarative et facultative, jamais déduite.
+ */
+export const ETHNICITY_LABELS: Record<string, string> = {
+  AFRICAN: 'Africaine',
+  ARAB: 'Arabe',
+  ASIAN: 'Asiatique',
+  EUROPEAN: 'Européenne',
+  LATIN: 'Latine',
+  NORTH_AMERICAN: 'Nord-américaine',
+  UNDISCLOSED: 'Ne se prononce pas',
+}
+
+/** Langues courantes de la zone couverte + langues de la diaspora. */
+export const LANGUAGE_LABELS: Record<string, string> = {
+  FR: 'Français',
+  EN: 'Anglais',
+  AR: 'Arabe',
+  WO: 'Wolof',
+  BM: 'Bambara',
+  FF: 'Peul',
+  MO: 'Moré',
+  DY: 'Dioula',
+  FO: 'Fon',
+  EW: 'Éwé',
+  PT: 'Portugais',
+  ES: 'Espagnol',
+}
+
+export const LAST_ACTIVE_LABELS: Record<string, string> = {
+  all: 'Tous',
+  recent: 'Récent (7 j)',
+  online: 'Connecté',
 }
 
 /** Chips « ce que vous avez en commun », dérivées du score de l'API. */

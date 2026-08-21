@@ -25,10 +25,39 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
     const token = header.substring(7);
     const payload = verifyAccessToken(token);
     req.auth = payload;
+    touchLastActive(payload.userId);
     next();
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Rafraîchit `lastActiveAt` au plus une fois toutes les 5 minutes par membre.
+ *
+ * Écrire à chaque requête coûterait un UPDATE par appel d'API. La condition est
+ * portée par le `where` : un seul aller-retour, sans lecture préalable, et les
+ * requêtes rapprochées ne touchent aucune ligne (`count: 0`).
+ *
+ * Délibérément non attendu : la fraîcheur de ce champ ne doit jamais retarder
+ * une réponse. Les erreurs sont avalées pour la même raison.
+ *
+ * C'est la seule source du filtre « Statut de connexion » de la découverte :
+ * sans ce rafraîchissement, `lastActiveAt` resterait figé à la création du
+ * compte et le filtre ne voudrait rien dire.
+ */
+const ACTIVITY_REFRESH_MS = 5 * 60 * 1000;
+
+function touchLastActive(userId: string) {
+  const threshold = new Date(Date.now() - ACTIVITY_REFRESH_MS);
+  prisma.user
+    .updateMany({
+      where: { id: userId, lastActiveAt: { lt: threshold } },
+      data: { lastActiveAt: new Date() },
+    })
+    .catch(() => {
+      /* l'activité est une commodité : jamais bloquante */
+    });
 }
 
 /**

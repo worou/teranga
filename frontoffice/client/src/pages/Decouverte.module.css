@@ -11,6 +11,37 @@
 .subtitle { color: var(--ink-soft); font-size: 14px; margin-top: 6px; }
 
 .headActions { display: flex; align-items: center; gap: 10px; }
+
+/* ——— Barre de recherche ——— */
+.searchBar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+.searchField {
+  position: relative; flex: 1 1 320px; min-width: 220px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 999px;
+  background: var(--sand-light);
+  color: var(--ocre-deep);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.searchField:focus-within { border-color: var(--ocre-deep); background: var(--cream); }
+.searchField input {
+  flex: 1; border: none; background: transparent; outline: none;
+  padding: 12px 0;
+  font-family: 'Inter', sans-serif; font-size: 14px; color: var(--ink);
+}
+.searchField input::-webkit-search-cancel-button { cursor: pointer; }
+
+.searchBtn {
+  padding: 12px 22px; border: none; border-radius: 999px;
+  background: var(--terra-deep); color: #fff;
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: transform 0.2s ease;
+}
+.searchBtn:hover { transform: translateY(-1px); }
+
 .filterBtn {
   display: inline-flex; align-items: center; gap: 9px;
   padding: 11px 20px;
@@ -147,7 +178,7 @@
 .close:hover { background: rgba(184, 105, 26, 0.1); }
 
 .drawerBody { flex: 1; overflow-y: auto; padding: 22px 26px; }
-.group { margin-bottom: 22px; }
+.group { margin-bottom: 18px; }
 .group > label {
   display: block; margin-bottom: 8px;
   font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
@@ -165,9 +196,33 @@
 
 /* Bornes d'âge : deux champs numériques, pas un slider — l'API attend
    minAge / maxAge et la saisie chiffrée reste plus précise au doigt. */
-.ageRow { display: flex; align-items: center; gap: 12px; }
-.ageRow input { width: 100%; padding: 11px 13px; border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px; background: var(--sand-light); font-family: 'Inter', sans-serif; font-size: 14px; }
-.ageSep { color: var(--ink-soft); font-size: 13px; }
+/* Bornes min / max : deux champs chiffres plutot qu'un curseur — plus precis
+   au doigt, et l'API attend deux valeurs distinctes. */
+.rangeRow { display: flex; align-items: center; gap: 10px; }
+.rangeRow input {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px;
+  background: var(--sand-light);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+}
+.rangeRow input:focus { outline: none; border-color: var(--ocre-deep); background: var(--cream); }
+.rangeSep { color: var(--ink-soft); font-size: 13px; flex: none; }
+.rangeUnit { color: var(--ink-soft); font-size: 12px; flex: none; min-width: 24px; }
+
+/* Choix a trois etats : indifferent / oui / non. */
+.triGroup { display: flex; gap: 6px; }
+.triBtn {
+  flex: 1; padding: 9px 6px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px;
+  background: var(--sand-light); color: var(--ink-soft);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.triBtn:hover { border-color: var(--ocre-deep); color: var(--terra-deep); }
+.triOn { background: var(--terra-deep); border-color: var(--terra-deep); color: var(--sand); }
+
+/* Precision sous un controle (donnee sensible, heuristique, etc.). */
+.hint { margin-top: 6px; font-size: 12px; line-height: 1.45; color: var(--ink-soft); opacity: 0.85; }
 
 /* Case à cocher : neutralise le style « titre de section » de `.group > label`,
    qui la rendrait majuscule et détachée de sa case. */

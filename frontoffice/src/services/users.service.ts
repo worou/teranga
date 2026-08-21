@@ -24,10 +24,30 @@ export class UsersService {
       'hasChildren',
       'religion',
       'intent',
+      // Critères de recherche facultatifs (cf. discoveryFiltersSchema).
+      'wantsChildren',
+      'heightCm',
+      'weightKg',
+      'bodyType',
+      'ethnicity',
+      'languages',
     ];
     const updateData: Record<string, any> = {};
     for (const key of allowed) {
       if (data[key] !== undefined) updateData[key] = data[key];
+    }
+
+    // Les langues sont stockées encadrées de virgules (",FR,WO,") pour que la
+    // recherche par `contains` soit exacte. On accepte un tableau ou une chaîne
+    // libre et on normalise ici, seul endroit qui écrit ce champ.
+    if (updateData.languages !== undefined) {
+      const codes = (Array.isArray(updateData.languages)
+        ? updateData.languages
+        : String(updateData.languages).split(','))
+        .map((c: string) => c.trim().toUpperCase())
+        .filter(Boolean);
+      const unique = Array.from(new Set(codes));
+      updateData.languages = unique.length ? `,${unique.join(',')},` : null;
     }
 
     const user = await prisma.user.update({

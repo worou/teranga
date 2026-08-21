@@ -17,6 +17,24 @@ datasource db {
 
 // ========== ENUMS ==========
 
+enum BodyType {
+  MINCE
+  MOYENNE
+  RONDE
+}
+
+/// Origine ethnique — donnée sensible (RGPD art. 9). Toujours facultative,
+/// jamais déduite : c'est le membre qui la déclare, ou pas.
+enum Ethnicity {
+  AFRICAN
+  ARAB
+  ASIAN
+  EUROPEAN
+  LATIN
+  NORTH_AMERICAN
+  UNDISCLOSED
+}
+
 enum Gender {
   FEMALE
   MALE
@@ -133,6 +151,18 @@ model User {
   profession        String?
   bio               String?   @db.Text
   hasChildren       Boolean   @default(false)
+  /// Souhait d'enfants. Nullable — `null` = non renseigné, contrairement à
+  /// `hasChildren` qui, non nullable et par défaut false, ne sait pas
+  /// distinguer « non » de « pas répondu ».
+  wantsChildren     Boolean?
+  heightCm          Int?
+  weightKg          Int?
+  bodyType          BodyType?
+  ethnicity         Ethnicity?
+  /// Langues parlées, codes ISO encadrés de virgules : ",FR,WO,".
+  /// MySQL ne supporte pas les tableaux Prisma ; les sentinelles rendent la
+  /// recherche exacte (`contains: ',FR,'` ne peut pas matcher ",FRA,").
+  languages         String?
   educationLevel    String?
 
   status            UserStatus         @default(PENDING_VERIFICATION)

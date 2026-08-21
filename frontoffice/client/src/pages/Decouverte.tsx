@@ -4,21 +4,31 @@ import AppHeader from '../components/AppHeader'
 import { fetchMe, type MeResponse } from '../api/auth'
 import {
   discoveryApi, sharedLabels, ApiError,
-  COUNTRY_LABELS, INTENT_LABELS, RELIGION_LABELS,
+  COUNTRY_LABELS, INTENT_LABELS, RELIGION_LABELS, GENDER_LABELS,
+  BODY_TYPE_LABELS, ETHNICITY_LABELS, LANGUAGE_LABELS, LAST_ACTIVE_LABELS,
   type DiscoveryFilters, type Profile,
 } from '../api/discovery'
 import styles from './Decouverte.module.css'
 
-/** Filtres vides — sert aussi de référence pour compter ceux qui sont actifs. */
-const EMPTY: DiscoveryFilters = {}
+/** Filtres vides. `lastActive: 'all'` et `includeUnspecified: true` sont les
+ *  défauts de l'API : les poser ici évite de les compter comme « actifs ». */
+const EMPTY: DiscoveryFilters = { lastActive: 'all', includeUnspecified: true }
 
+/** Nombre de critères réellement restrictifs (les défauts ne comptent pas). */
 function countActive(f: DiscoveryFilters): number {
-  return Object.values(f).filter(v => v !== undefined && v !== '' && v !== false).length
+  let n = 0
+  for (const [key, value] of Object.entries(f)) {
+    if (value === undefined || value === '' || value === null) continue
+    if (key === 'lastActive' && value === 'all') continue
+    if (key === 'includeUnspecified' && value === true) continue
+    if (value === false) continue
+    n++
+  }
+  return n
 }
 
 /**
- * Découverte : grille de profils recommandés par l'API (score de compatibilité),
- * avec un tiroir de filtres.
+ * Découverte : recherche et grille de profils recommandés par l'API.
  *
  * Les filtres proposés sont exactement ceux que `discoveryFiltersSchema` sait
  * traiter. Ce que l'API ne sait pas filtrer n'est pas affiché : un contrôle
@@ -32,6 +42,7 @@ export default function Decouverte() {
   const [error, setError] = useState('')
   const [filters, setFilters] = useState<DiscoveryFilters>(EMPTY)
   const [draft, setDraft] = useState<DiscoveryFilters>(EMPTY)
+  const [search, setSearch] = useState('')
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const activeCount = countActive(filters)
@@ -63,9 +74,23 @@ export default function Decouverte() {
 
   useEffect(() => { load(filters) }, [filters, load])
 
+  function submitSearch(e: React.FormEvent) {
+    e.preventDefault()
+    setFilters(f => ({ ...f, q: search.trim() || undefined }))
+  }
+
   function openDrawer() { setDraft(filters); setDrawerOpen(true) }
   function applyFilters() { setFilters(draft); setDrawerOpen(false) }
-  function clearFilters() { setFilters(EMPTY); setDraft(EMPTY); setDrawerOpen(false) }
+  function clearFilters() {
+    setFilters(EMPTY); setDraft(EMPTY); setSearch(''); setDrawerOpen(false)
+  }
+
+  /** Raccourci de mise à jour d'un champ du brouillon. */
+  const set = <K extends keyof DiscoveryFilters>(key: K, value: DiscoveryFilters[K]) =>
+    setDraft(d => ({ ...d, [key]: value }))
+
+  /** Champ numérique : chaîne vide ⇒ critère retiré. */
+  const num = (v: string) => (v === '' ? undefined : Number(v))
 
   return (
     <div className={styles.page}>
@@ -80,25 +105,41 @@ export default function Decouverte() {
             <p className={styles.subtitle}>
               {loading
                 ? 'Recherche des profils les plus compatibles…'
-                : `${profiles.length} profil${profiles.length > 1 ? 's' : ''} recommandé${profiles.length > 1 ? 's' : ''} pour vous`}
+                : `${profiles.length} profil${profiles.length > 1 ? 's' : ''} trouvé${profiles.length > 1 ? 's' : ''}`}
             </p>
           </div>
-
-          <div className={styles.headActions}>
-            {activeCount > 0 && (
-              <button className={styles.clearBtn} onClick={clearFilters}>Tout effacer</button>
-            )}
-            <button
-              className={`${styles.filterBtn} ${activeCount > 0 ? styles.on : ''}`}
-              onClick={openDrawer}
-            >
-              {activeCount > 0 ? `${activeCount} filtre${activeCount > 1 ? 's' : ''} actif${activeCount > 1 ? 's' : ''}` : 'Filtrer'}
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 6h16M7 12h10M10 18h4" />
-              </svg>
-            </button>
-          </div>
         </div>
+
+        {/* Formulaire de recherche : le pseudo est le critère le plus courant,
+            il reste accessible sans ouvrir le tiroir. */}
+        <form className={styles.searchBar} onSubmit={submitSearch}>
+          <div className={styles.searchField}>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9">
+              <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" strokeLinecap="round" />
+            </svg>
+            <input
+              type="search" placeholder="Pseudo, profession, ville…"
+              value={search} onChange={e => setSearch(e.target.value)}
+              aria-label="Rechercher un profil"
+            />
+          </div>
+          <button type="submit" className={styles.searchBtn}>Rechercher</button>
+          <button
+            type="button"
+            className={`${styles.filterBtn} ${activeCount > 0 ? styles.on : ''}`}
+            onClick={openDrawer}
+          >
+            {activeCount > 0 ? `${activeCount} filtre${activeCount > 1 ? 's' : ''}` : 'Filtres'}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 6h16M7 12h10M10 18h4" />
+            </svg>
+          </button>
+          {activeCount > 0 && (
+            <button type="button" className={styles.clearBtn} onClick={clearFilters}>
+              Tout effacer
+            </button>
+          )}
+        </form>
 
         {error && (
           <div className={styles.state}>
@@ -119,7 +160,7 @@ export default function Decouverte() {
             <h2>Aucun profil ne correspond</h2>
             <p>
               {activeCount > 0
-                ? 'Vos filtres sont peut-être trop restrictifs. Élargissez-les pour voir plus de monde.'
+                ? 'Vos critères sont peut-être trop restrictifs. Élargissez-les, ou activez « Afficher les profils non renseignés » pour inclure les membres qui n’ont pas rempli ces informations.'
                 : 'Revenez bientôt : de nouveaux membres rejoignent Téranga chaque jour.'}
             </p>
             {activeCount > 0 && (
@@ -138,105 +179,151 @@ export default function Decouverte() {
       {drawerOpen && (
         <>
           <div className={styles.overlay} onClick={() => setDrawerOpen(false)} />
-          <aside className={styles.drawer} role="dialog" aria-label="Filtres">
+          <aside className={styles.drawer} role="dialog" aria-label="Filtres de recherche">
             <div className={styles.drawerHead}>
               <h2>Filtres</h2>
               <button className={styles.close} onClick={() => setDrawerOpen(false)} aria-label="Fermer">×</button>
             </div>
 
             <div className={styles.drawerBody}>
-              <div className={styles.group}>
-                <label htmlFor="f-q">Recherche</label>
+              <Group label="Pseudo">
                 <input
-                  id="f-q" type="text" placeholder="Prénom, profession, ville…"
+                  type="text" placeholder="Prénom, profession, ville…"
                   value={draft.q ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, q: e.target.value || undefined }))}
+                  onChange={e => set('q', e.target.value || undefined)}
                 />
-              </div>
+              </Group>
 
-              <div className={styles.group}>
-                <label>Âge</label>
-                <div className={styles.ageRow}>
-                  <input
-                    type="number" min={18} max={99} placeholder="18"
-                    value={draft.minAge ?? ''}
-                    onChange={e => setDraft(d => ({ ...d, minAge: e.target.value ? Number(e.target.value) : undefined }))}
-                  />
-                  <span className={styles.ageSep}>à</span>
-                  <input
-                    type="number" min={18} max={99} placeholder="99"
-                    value={draft.maxAge ?? ''}
-                    onChange={e => setDraft(d => ({ ...d, maxAge: e.target.value ? Number(e.target.value) : undefined }))}
-                  />
-                </div>
-              </div>
+              <Group label="Genre">
+                <select value={draft.gender ?? ''} onChange={e => set('gender', e.target.value || undefined)}>
+                  <option value="">Peu importe</option>
+                  {Object.entries(GENDER_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
 
-              <div className={styles.group}>
-                <label htmlFor="f-country">Pays</label>
-                <select
-                  id="f-country" value={draft.country ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, country: e.target.value || undefined }))}
-                >
+              <Group label="Âge">
+                <Range
+                  min={draft.minAge} max={draft.maxAge}
+                  minPlaceholder="18" maxPlaceholder="99" unit="ans"
+                  onMin={v => set('minAge', num(v))} onMax={v => set('maxAge', num(v))}
+                />
+              </Group>
+
+              <Group label="Pays">
+                <select value={draft.country ?? ''} onChange={e => set('country', e.target.value || undefined)}>
                   <option value="">Tous les pays</option>
-                  {Object.entries(COUNTRY_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>{label}</option>
-                  ))}
+                  {Object.entries(COUNTRY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
-              </div>
+              </Group>
 
-              <div className={styles.group}>
-                <label htmlFor="f-city">Ville</label>
+              <Group label="Ville">
                 <input
-                  id="f-city" type="text" placeholder="Dakar, Abidjan…"
+                  type="text" placeholder="Dakar, Abidjan…"
                   value={draft.city ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, city: e.target.value || undefined }))}
+                  onChange={e => set('city', e.target.value || undefined)}
                 />
-              </div>
+              </Group>
 
-              <div className={styles.group}>
-                <label htmlFor="f-intent">Intention</label>
-                <select
-                  id="f-intent" value={draft.intent ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, intent: e.target.value || undefined }))}
-                >
+              <Group label="Langue parlée">
+                <select value={draft.language ?? ''} onChange={e => set('language', e.target.value || undefined)}>
                   <option value="">Peu importe</option>
-                  {Object.entries(INTENT_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>{label}</option>
-                  ))}
+                  {Object.entries(LANGUAGE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
-              </div>
+              </Group>
 
-              <div className={styles.group}>
-                <label htmlFor="f-religion">Religion</label>
-                <select
-                  id="f-religion" value={draft.religion ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, religion: e.target.value || undefined }))}
-                >
-                  <option value="">Peu importe</option>
-                  {Object.entries(RELIGION_LABELS).map(([code, label]) => (
-                    <option key={code} value={code}>{label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.group}>
-                <label htmlFor="f-profession">Profession</label>
-                <input
-                  id="f-profession" type="text" placeholder="Enseignante, ingénieur…"
-                  value={draft.profession ?? ''}
-                  onChange={e => setDraft(d => ({ ...d, profession: e.target.value || undefined }))}
+              <Group label="Taille">
+                <Range
+                  min={draft.minHeightCm} max={draft.maxHeightCm}
+                  minPlaceholder="150" maxPlaceholder="200" unit="cm"
+                  onMin={v => set('minHeightCm', num(v))} onMax={v => set('maxHeightCm', num(v))}
                 />
-              </div>
+              </Group>
+
+              <Group label="Poids">
+                <Range
+                  min={draft.minWeightKg} max={draft.maxWeightKg}
+                  minPlaceholder="45" maxPlaceholder="100" unit="kg"
+                  onMin={v => set('minWeightKg', num(v))} onMax={v => set('maxWeightKg', num(v))}
+                />
+              </Group>
+
+              <Group label="Silhouette">
+                <select value={draft.bodyType ?? ''} onChange={e => set('bodyType', e.target.value || undefined)}>
+                  <option value="">Peu importe</option>
+                  {Object.entries(BODY_TYPE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
+
+              <Group label="Religion">
+                <select value={draft.religion ?? ''} onChange={e => set('religion', e.target.value || undefined)}>
+                  <option value="">Peu importe</option>
+                  {Object.entries(RELIGION_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
+
+              <Group label="Origine ethnique" hint="Information déclarative et facultative.">
+                <select value={draft.ethnicity ?? ''} onChange={e => set('ethnicity', e.target.value || undefined)}>
+                  <option value="">Peu importe</option>
+                  {Object.entries(ETHNICITY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
+
+              <Group label="Intention">
+                <select value={draft.intent ?? ''} onChange={e => set('intent', e.target.value || undefined)}>
+                  <option value="">Peu importe</option>
+                  {Object.entries(INTENT_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
+
+              <Group label="A des enfants ?">
+                <Tri
+                  value={draft.hasChildren}
+                  onChange={v => set('hasChildren', v)}
+                  yes="Oui" no="Non"
+                />
+              </Group>
+
+              <Group label="Veut des enfants ?">
+                <Tri
+                  value={draft.wantsChildren}
+                  onChange={v => set('wantsChildren', v)}
+                  yes="Oui" no="Non"
+                />
+              </Group>
+
+              <Group label="Statut de connexion" hint="Estimé d’après la dernière activité.">
+                <select
+                  value={draft.lastActive ?? 'all'}
+                  onChange={e => set('lastActive', e.target.value as DiscoveryFilters['lastActive'])}
+                >
+                  {Object.entries(LAST_ACTIVE_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+              </Group>
 
               <div className={styles.group}>
-                <label className={styles.checkRow} htmlFor="f-children">
+                <label className={styles.checkRow}>
                   <input
-                    id="f-children" type="checkbox"
-                    checked={draft.hasChildren ?? false}
-                    onChange={e => setDraft(d => ({ ...d, hasChildren: e.target.checked || undefined }))}
+                    type="checkbox"
+                    checked={draft.hasPhoto ?? false}
+                    onChange={e => set('hasPhoto', e.target.checked || undefined)}
                   />
-                  A déjà des enfants
+                  A une photo
                 </label>
+              </div>
+
+              <div className={styles.group}>
+                <label className={styles.checkRow}>
+                  <input
+                    type="checkbox"
+                    checked={draft.includeUnspecified !== false}
+                    onChange={e => set('includeUnspecified', e.target.checked)}
+                  />
+                  Afficher les profils non renseignés
+                </label>
+                <p className={styles.hint}>
+                  Décochez pour n’afficher que les membres ayant rempli les critères
+                  ci-dessus. Beaucoup de profils sont encore incomplets.
+                </p>
               </div>
             </div>
 
@@ -247,6 +334,68 @@ export default function Decouverte() {
           </aside>
         </>
       )}
+    </div>
+  )
+}
+
+// ——— Éléments de formulaire ———
+
+function Group({ label, hint, children }: {
+  label: string; hint?: string; children: React.ReactNode
+}) {
+  return (
+    <div className={styles.group}>
+      <label>{label}</label>
+      {children}
+      {hint && <p className={styles.hint}>{hint}</p>}
+    </div>
+  )
+}
+
+/** Bornes min / max d'un intervalle numérique. */
+function Range({ min, max, minPlaceholder, maxPlaceholder, unit, onMin, onMax }: {
+  min?: number; max?: number
+  minPlaceholder: string; maxPlaceholder: string; unit: string
+  onMin: (v: string) => void; onMax: (v: string) => void
+}) {
+  return (
+    <div className={styles.rangeRow}>
+      <input
+        type="number" placeholder={minPlaceholder} value={min ?? ''}
+        onChange={e => onMin(e.target.value)} aria-label={`Minimum en ${unit}`}
+      />
+      <span className={styles.rangeSep}>à</span>
+      <input
+        type="number" placeholder={maxPlaceholder} value={max ?? ''}
+        onChange={e => onMax(e.target.value)} aria-label={`Maximum en ${unit}`}
+      />
+      <span className={styles.rangeUnit}>{unit}</span>
+    </div>
+  )
+}
+
+/**
+ * Choix à trois états : indifférent / oui / non. Une case à cocher ne saurait
+ * pas exprimer « non », qu'un simple décochage confondrait avec « peu importe ».
+ */
+function Tri({ value, onChange, yes, no }: {
+  value?: boolean; onChange: (v: boolean | undefined) => void
+  yes: string; no: string
+}) {
+  const options: [string, boolean | undefined][] = [
+    ['Peu importe', undefined], [yes, true], [no, false],
+  ]
+  return (
+    <div className={styles.triGroup}>
+      {options.map(([label, v]) => (
+        <button
+          key={label} type="button"
+          className={`${styles.triBtn} ${value === v ? styles.triOn : ''}`}
+          onClick={() => onChange(v)}
+        >
+          {label}
+        </button>
+      ))}
     </div>
   )
 }

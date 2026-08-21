@@ -84,16 +84,49 @@ export const biometricSchema = z.object({
 
 // ==================== DISCOVERY ====================
 
+/** `?a=false` arrive en chaîne : `z.coerce.boolean()` la rendrait `true`. */
+const boolFlag = z
+  .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+  .transform((v) => v === true || v === 'true' || v === '1');
+
 export const discoveryFiltersSchema = z.object({
+  q: z.string().trim().min(1).max(60).optional(), // pseudo / recherche plein-texte
+  gender: z.enum(['FEMALE', 'MALE', 'NON_BINARY', 'UNDISCLOSED']).optional(),
   minAge: z.coerce.number().min(18).max(99).optional(),
   maxAge: z.coerce.number().min(18).max(99).optional(),
   city: z.string().max(80).optional(),
   country: z.string().length(2).optional(),
   religion: z.enum(['CHRISTIAN', 'MUSLIM', 'OTHER', 'UNDISCLOSED']).optional(),
   intent: z.enum(['SERIOUS_RELATIONSHIP', 'MARRIAGE', 'FAMILY']).optional(),
-  hasChildren: z.coerce.boolean().optional(),
   profession: z.string().max(80).optional(),
-  q: z.string().trim().min(1).max(60).optional(), // recherche plein-texte
+
+  // Physique et origine — tous facultatifs côté profil, donc tous soumis au
+  // drapeau `includeUnspecified` ci-dessous.
+  minHeightCm: z.coerce.number().min(120).max(230).optional(),
+  maxHeightCm: z.coerce.number().min(120).max(230).optional(),
+  minWeightKg: z.coerce.number().min(35).max(250).optional(),
+  maxWeightKg: z.coerce.number().min(35).max(250).optional(),
+  bodyType: z.enum(['MINCE', 'MOYENNE', 'RONDE']).optional(),
+  ethnicity: z
+    .enum(['AFRICAN', 'ARAB', 'ASIAN', 'EUROPEAN', 'LATIN', 'NORTH_AMERICAN', 'UNDISCLOSED'])
+    .optional(),
+  /** Code ISO d'une langue parlée (ex. FR, WO). Voir User.languages. */
+  language: z.string().trim().min(2).max(5).optional(),
+
+  hasChildren: boolFlag.optional(),
+  wantsChildren: boolFlag.optional(),
+  hasPhoto: boolFlag.optional(),
+
+  /** Tous / actifs récemment (7 j) / actifs à l'instant (5 min). */
+  lastActive: z.enum(['all', 'recent', 'online']).default('all'),
+
+  /**
+   * Inclure les profils qui n'ont pas renseigné le critère filtré. Activé par
+   * défaut : les champs physiques et l'origine sont facultatifs, les exclure
+   * d'office viderait la liste pour tous les profils encore incomplets.
+   */
+  includeUnspecified: boolFlag.default(true),
+
   limit: z.coerce.number().min(1).max(50).default(20),
 });
 
