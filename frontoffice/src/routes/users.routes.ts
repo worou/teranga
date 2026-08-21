@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
-import { requireAuth, requireCompleteProfile } from '../middleware/auth';
+import { optionalAuth, requireAuth } from '../middleware/auth';
 import { usersService } from '../services/users.service';
 import { updateProfileSchema, addPhotoSchema, biometricSchema } from '../validators';
 import { photoUpload } from '../config/upload';
@@ -10,7 +10,13 @@ import { AppError } from '../utils/AppError';
 
 const router = Router();
 
-router.use(requireAuth);
+/**
+ * Gardes posées par route. Tout `/users/me*` exige un compte ; seule la
+ * consultation d'un profil (`GET /users/:id`) est publique.
+ *
+ * L'ordre de déclaration compte : les routes `/me` sont déclarées avant
+ * `/:id`, sinon « me » serait pris pour un identifiant.
+ */
 
 // Enveloppe multer : convertit ses erreurs (taille, format…) en 400 propres.
 function uploadPhotos(req: Request, res: Response, next: NextFunction) {
@@ -37,6 +43,7 @@ function uploadPhotos(req: Request, res: Response, next: NextFunction) {
  */
 router.get(
   '/me',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const user = await usersService.getById(req.auth!.userId);
     res.json(user);
@@ -64,6 +71,7 @@ router.get(
  */
 router.patch(
   '/me',
+  requireAuth,
   validate(updateProfileSchema),
   asyncHandler(async (req, res) => {
     const user = await usersService.updateProfile(req.auth!.userId, req.body);
@@ -83,6 +91,7 @@ router.patch(
  */
 router.delete(
   '/me',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const result = await usersService.deleteAccount(req.auth!.userId);
     res.json(result);
@@ -111,14 +120,17 @@ router.delete(
  */
 router.get(
   '/:id',
-  // Consulter un autre membre, c'est utiliser l'application : même exigence que
-  // la découverte. `/users/me` reste ouvert (il faut pouvoir suivre sa propre
-  // progression tant que le profil est incomplet).
-  requireCompleteProfile,
+  // Consultable sans être connecté : un visiteur doit pouvoir parcourir les
+  // profils avant de créer un compte. `optionalAuth` sert uniquement à
+  // rafraîchir l'activité du membre s'il est identifié.
+  //
+  // La réponse vient d'une liste blanche explicite (getPublicProfile) et non de
+  // `serialize` amputé : par soustraction, la date de naissance exacte, le
+  // statut de vérification, l'abonnement et la dernière activité partiraient
+  // avec, et tout champ ajouté plus tard au modèle fuirait en silence.
+  optionalAuth,
   asyncHandler(async (req, res) => {
-    const user = await usersService.getById(req.params.id);
-    const { phone, email, passwordHash, ...publicFields } = user;
-    res.json(publicFields);
+    res.json(await usersService.getPublicProfile(req.params.id));
   }),
 );
 
@@ -147,6 +159,7 @@ router.get(
  */
 router.post(
   '/me/photos',
+  requireAuth,
   validate(addPhotoSchema),
   asyncHandler(async (req, res) => {
     const photo = await usersService.addPhoto(req.auth!.userId, req.body.url);
@@ -188,6 +201,7 @@ router.post(
  */
 router.post(
   '/me/photos/upload',
+  requireAuth,
   uploadPhotos,
   asyncHandler(async (req, res) => {
     const files = (req.files as Express.Multer.File[]) || [];
@@ -218,6 +232,7 @@ router.post(
  */
 router.delete(
   '/me/photos/:photoId',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const result = await usersService.deletePhoto(req.auth!.userId, req.params.photoId);
     res.json(result);
@@ -241,6 +256,7 @@ router.delete(
  */
 router.put(
   '/me/photos/:photoId/main',
+  requireAuth,
   asyncHandler(async (req, res) => {
     const result = await usersService.setMainPhoto(req.auth!.userId, req.params.photoId);
     res.json(result);
@@ -275,6 +291,7 @@ router.put(
  */
 router.post(
   '/me/biometric-verification',
+  requireAuth,
   validate(biometricSchema),
   asyncHandler(async (req, res) => {
     const result = await usersService.submitBiometricVerification(

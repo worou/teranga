@@ -25,14 +25,10 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/decouverte"
-          element={
-            <RequireAuth>
-              <Decouverte />
-            </RequireAuth>
-          }
-        />
+        {/* Publiques : un visiteur parcourt et recherche les profils sans
+            compte. Interagir (liker, écrire) reste réservé aux membres, la
+            garde étant posée côté API. */}
+        <Route path="/decouverte" element={<Decouverte />} />
         <Route
           path="/mon-profil"
           element={
@@ -41,14 +37,7 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/profil/:id"
-          element={
-            <RequireAuth>
-              <Profil />
-            </RequireAuth>
-          }
-        />
+        <Route path="/profil/:id" element={<Profil />} />
         {/* Version 1 : tunnel d'abonnement retiré du routage. La page reste
             en place et redevient accessible en réactivant le drapeau. */}
         {SUBSCRIPTIONS_ENABLED && (

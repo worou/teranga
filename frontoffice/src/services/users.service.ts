@@ -169,6 +169,54 @@ export class UsersService {
   }
 
   /**
+   * Profil public d'un autre membre.
+   *
+   * Liste blanche explicite, et non `serialize` amputé de quelques clés :
+   * cette route est consultable **sans être connecté**. Un retrait par
+   * soustraction laisserait fuiter la date de naissance exacte, le statut de
+   * vérification, l'abonnement et la dernière activité — et tout champ ajouté
+   * plus tard au modèle partirait silencieusement avec.
+   *
+   * Seul l'âge est exposé, jamais `birthDate`.
+   */
+  async getPublicProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { photos: { orderBy: { order: 'asc' } } },
+    });
+    if (!user || user.status !== 'ACTIVE' || user.deletedAt) {
+      throw AppError.notFound('Profil introuvable');
+    }
+
+    return {
+      id: user.id,
+      firstName: user.firstName,
+      age: calculateAge(user.birthDate),
+      city: user.city,
+      country: user.country,
+      profession: user.profession,
+      educationLevel: user.educationLevel,
+      bio: user.bio,
+      intent: user.intent,
+      religion: user.religion,
+      isVerified: user.isVerified,
+      hasChildren: user.hasChildren,
+      wantsChildren: user.wantsChildren,
+      heightCm: user.heightCm,
+      weightKg: user.weightKg,
+      bodyType: user.bodyType,
+      ethnicity: user.ethnicity,
+      languages: parseLanguages(user.languages),
+      photos: user.photos.map((p: any) => ({
+        id: p.id,
+        url: p.url,
+        isMain: p.isMain,
+        order: p.order,
+      })),
+    };
+  }
+
+  /**
    * Sérialisation exposée au client. Quand les photos sont chargées, on ajoute
    * l'état de complétude du profil : le client (inscription, espace membre) s'y
    * fie plutôt que de recoder le seuil de son côté.

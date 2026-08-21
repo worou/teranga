@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { fetchMe, type MeResponse } from '../api/auth'
+import { fetchMe, isAuthenticated, type MeResponse } from '../api/auth'
 import {
   discoveryApi, sharedLabels, ApiError,
   COUNTRY_LABELS, INTENT_LABELS, RELIGION_LABELS, GENDER_LABELS,
@@ -58,8 +58,11 @@ export default function Decouverte() {
         navigate('/inscription', { replace: true })
         return
       }
+      // Un 401 ne peut venir que d'un jeton périmé : la page est publique.
+      // On n'éjecte pas le visiteur, l'API répondra en anonyme au rechargement.
       if (err instanceof ApiError && err.status === 401) {
-        navigate('/connexion', { replace: true })
+        setProfiles([])
+        setError('Votre session a expiré. Reconnectez-vous pour interagir.')
         return
       }
       setError(err instanceof Error ? err.message : 'Chargement impossible.')
@@ -68,9 +71,12 @@ export default function Decouverte() {
     }
   }, [navigate])
 
+  const signedIn = isAuthenticated()
+
   useEffect(() => {
+    if (!signedIn) return
     fetchMe().then(setMe).catch(() => { /* l'en-tête sait faire sans */ })
-  }, [])
+  }, [signedIn])
 
   useEffect(() => { load(filters) }, [filters, load])
 
@@ -100,7 +106,9 @@ export default function Decouverte() {
         <div className={styles.head}>
           <div>
             <h1 className={styles.greeting}>
-              Bonjour <em>{me?.firstName ?? ''}</em>
+              {signedIn && me
+                ? <>Bonjour <em>{me.firstName}</em></>
+                : <>Rencontrez des <em>personnes sérieuses</em></>}
             </h1>
             <p className={styles.subtitle}>
               {loading
@@ -109,6 +117,16 @@ export default function Decouverte() {
             </p>
           </div>
         </div>
+
+        {!signedIn && (
+          <div className={styles.guestBanner}>
+            <div>
+              <strong>Vous parcourez Téranga en visiteur.</strong> Créez un compte
+              pour aimer un profil et échanger avec vos correspondances.
+            </div>
+            <Link to="/inscription" className="btn btn-primary">Créer mon compte</Link>
+          </div>
+        )}
 
         {/* Formulaire de recherche : le pseudo est le critère le plus courant,
             il reste accessible sans ouvrir le tiroir. */}

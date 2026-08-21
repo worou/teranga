@@ -33,6 +33,32 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
 }
 
 /**
+ * Authentification facultative : pose `req.auth` si un token valide est
+ * présent, laisse passer sinon.
+ *
+ * Sert les surfaces publiques — recherche et consultation de profils — où un
+ * visiteur non connecté doit voir la même liste qu'un membre, en moins
+ * personnalisée.
+ *
+ * Un token **invalide ou expiré** retombe volontairement en anonyme plutôt que
+ * de répondre 401 : sinon un jeton périmé traînant dans le localStorage
+ * rendrait la page publique inaccessible à un visiteur de retour.
+ */
+export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const header = req.headers.authorization;
+  if (header?.startsWith('Bearer ')) {
+    try {
+      const payload = verifyAccessToken(header.substring(7));
+      req.auth = payload;
+      touchLastActive(payload.userId);
+    } catch {
+      // Token illisible : on poursuit en visiteur anonyme.
+    }
+  }
+  next();
+}
+
+/**
  * Rafraîchit `lastActiveAt` au plus une fois toutes les 5 minutes par membre.
  *
  * Écrire à chaque requête coûterait un UPDATE par appel d'API. La condition est

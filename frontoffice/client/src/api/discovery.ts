@@ -82,14 +82,21 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Appel API. Le jeton n'est joint que s'il existe : les routes publiques
+ * (fil de profils, profil public) répondent alors en anonyme, et les routes
+ * protégées renvoient un vrai 401 du serveur.
+ *
+ * Refuser l'appel côté client faute de jeton priverait le visiteur des pages
+ * publiques — c'est le serveur qui décide de ce qui est ouvert.
+ */
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken()
-  if (!token) throw new ApiError('Non authentifié', 401)
 
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     headers: {
-      Authorization: `Bearer ${token}`,
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init.body ? { 'Content-Type': 'application/json' } : {}),
       ...init.headers,
     },

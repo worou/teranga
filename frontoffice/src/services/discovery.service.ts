@@ -45,21 +45,30 @@ export class DiscoveryService {
    *  - users already liked / passed
    *  - users blocked or who blocked them
    */
-  async getFeed(userId: string, filters: DiscoveryFilters = {}, limit = 20) {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      include: { subscription: true },
-    });
-    if (!user) throw AppError.notFound('Utilisateur introuvable');
+  /**
+   * Fil de profils. `userId` vaut `null` pour un visiteur non connecté : il voit
+   * la même liste, en moins personnalisée — pas d'exclusion de ses propres
+   * interactions (il n'en a pas), pas de score de compatibilité ni de traits
+   * communs (il n'y a personne à comparer), et aucun genre cible par défaut.
+   * Le tri retombe alors sur l'activité récente.
+   */
+  async getFeed(userId: string | null, filters: DiscoveryFilters = {}, limit = 20) {
+    const user = userId
+      ? await prisma.user.findUnique({
+          where: { id: userId },
+          include: { subscription: true },
+        })
+      : null;
+    if (userId && !user) throw AppError.notFound('Utilisateur introuvable');
 
     // Free-tier daily limit for men
-    if (user.gender === 'MALE') {
+    if (user && user.gender === 'MALE') {
       const isSubscribed = !config.subscriptionsEnabled || this.isSubscribed(user.subscription);
       if (!isSubscribed) {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
         const viewedToday = await prisma.like.count({
-          where: { senderId: userId, createdAt: { gte: startOfDay } },
+          where: { senderId: user.id, createdAt: { gte: startOfDay } },
         });
         if (viewedToday >= config.freeTierLimits.dailyProfileViews) {
           throw AppError.forbidden(
@@ -74,28 +83,23 @@ export class DiscoveryService {
     // voir. Sans filtre, on retombe sur le défaut hétéro habituel.
     let targetGender: string | undefined;
     if (filters.gender) targetGender = filters.gender;
-    else if (user.gender === 'MALE') targetGender = 'FEMALE';
-    else if (user.gender === 'FEMALE') targetGender = 'MALE';
+    else if (user?.gender === 'MALE') targetGender = 'FEMALE';
+    else if (user?.gender === 'FEMALE') targetGender = 'MALE';
     // NON_BINARY / UNDISCLOSED sans filtre : tout le monde.
 
-    const alreadyInteracted = await prisma.like.findMany({
-      where: { senderId: userId },
-      select: { receiverId: true },
-    });
-    const blockedByMe = await prisma.block.findMany({
-      where: { blockerId: userId },
-      select: { blockedId: true },
-    });
-    const blockedMe = await prisma.block.findMany({
-      where: { blockedId: userId },
-      select: { blockerId: true },
-    });
-    const excludeIds = new Set<string>([
-      userId,
-      ...alreadyInteracted.map((l: { receiverId: string }) => l.receiverId),
-      ...blockedByMe.map((b: { blockedId: string }) => b.blockedId),
-      ...blockedMe.map((b: { blockerId: string }) => b.blockerId),
-    ]);
+    // Un visiteur anonyme n'a ni likes passés ni blocages : rien à exclure.
+    const excludeIds = new Set<string>();
+    if (userId) {
+      const [alreadyInteracted, blockedByMe, blockedMe] = await Promise.all([
+        prisma.like.findMany({ where: { senderId: userId }, select: { receiverId: true } }),
+        prisma.block.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
+        prisma.block.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
+      ]);
+      excludeIds.add(userId);
+      alreadyInteracted.forEach((l: { receiverId: string }) => excludeIds.add(l.receiverId));
+      blockedByMe.forEach((b: { blockedId: string }) => excludeIds.add(b.blockedId));
+      blockedMe.forEach((b: { blockerId: string }) => excludeIds.add(b.blockerId));
+    }
 
     const minAge = filters.minAge ?? 18;
     const maxAge = filters.maxAge ?? 99;
@@ -196,15 +200,20 @@ export class DiscoveryService {
       take: poolSize,
     });
 
-    const searcherAge = calculateAge(user.birthDate);
-
-    const scored = pool
-      .map((c: any) => ({ c, ...this.compatibilityScore(user, searcherAge, c, now) }))
-      .sort(
-        (a, b) =>
-          b.score - a.score ||
-          new Date(b.c.lastActiveAt).getTime() - new Date(a.c.lastActiveAt).getTime(),
-      );
+    // Sans chercheur, on garde l'ordre du vivier (activité récente) et on
+    // n'invente ni score ni traits communs.
+    const scored = user
+      ? pool
+          .map((c: any) => ({
+            c,
+            ...this.compatibilityScore(user, calculateAge(user.birthDate), c, now),
+          }))
+          .sort(
+            (a, b) =>
+              b.score - a.score ||
+              new Date(b.c.lastActiveAt).getTime() - new Date(a.c.lastActiveAt).getTime(),
+          )
+      : pool.map((c: any) => ({ c, score: undefined, sharedTraits: undefined }));
 
     return scored.slice(0, limit).map(({ c, score, sharedTraits }) => ({
       id: c.id,

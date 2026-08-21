@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
-import { fetchMe, type MeResponse } from '../api/auth'
+import { fetchMe, isAuthenticated, type MeResponse } from '../api/auth'
 import {
   discoveryApi, sharedLabels, ApiError,
   COUNTRY_LABELS, INTENT_LABELS, RELIGION_LABELS,
@@ -29,9 +29,12 @@ export default function Profil() {
   const [notice, setNotice] = useState('')
   const [acting, setActing] = useState(false)
 
+  const signedIn = isAuthenticated()
+
   useEffect(() => {
+    if (!signedIn) return
     fetchMe().then(setMe).catch(() => { /* l'en-tête sait faire sans */ })
-  }, [])
+  }, [signedIn])
 
   useEffect(() => {
     let alive = true
@@ -43,9 +46,9 @@ export default function Profil() {
         if (err instanceof ApiError && err.code === 'PHOTOS_REQUIRED') {
           navigate('/inscription', { replace: true }); return
         }
-        if (err instanceof ApiError && err.status === 401) {
-          navigate('/connexion', { replace: true }); return
-        }
+        // Page publique : un 401 vient d'un jeton périmé, pas d'un droit
+        // manquant. On affiche l'erreur sans éjecter le visiteur.
+
         setError(err instanceof Error ? err.message : 'Profil introuvable.')
         setLoading(false)
       })
@@ -153,6 +156,18 @@ export default function Profil() {
               </div>
             )}
 
+            {!signedIn ? (
+              <div className={styles.notice}>
+                <span>♥</span>
+                <div>
+                  <strong>Créez un compte pour aller plus loin.</strong> La consultation
+                  des profils est libre ; aimer {profile.firstName} et lui écrire
+                  demande d'être membre.
+                  {' '}<Link to="/inscription">Créer mon compte</Link>
+                  {' '}· <Link to="/connexion">Se connecter</Link>
+                </div>
+              </div>
+            ) : (
             <div className={styles.actions}>
               <button
                 className={`${styles.iconBtn} ${liked ? styles.liked : ''}`}
@@ -173,6 +188,7 @@ export default function Profil() {
                 </svg>
               </button>
             </div>
+            )}
 
             {shared.length > 0 && (
               <div className={styles.tags}>

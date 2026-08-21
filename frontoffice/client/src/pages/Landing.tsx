@@ -144,7 +144,8 @@ export default function Landing() {
             </p>
             <div className={`${styles.heroCta} ${styles.reveal4}`}>
               <Link to="/inscription" className="btn btn-primary" style={{ fontSize: 16, padding: '14px 32px' }}>Créer mon profil</Link>
-              <a href="#unions" className="btn btn-ghost" style={{ fontSize: 16, padding: '14px 32px' }}>Voir des histoires</a>
+              {/* Parcourir est libre : c'est le premier pas, avant l'inscription. */}
+              <Link to="/decouverte" className="btn btn-ghost" style={{ fontSize: 16, padding: '14px 32px' }}>Voir les profils</Link>
             </div>
             <p className={`${styles.heroSub} ${styles.reveal4}`}>
               Déjà plus de 1 200 bêta-testeurs inscrits à Dakar, Abidjan et Douala.

@@ -247,3 +247,15 @@
   .name { font-size: 17px; }
   .dots { bottom: 88px; }
 }
+
+/* Bandeau visiteur : dit ce qui est possible sans compte, et ce qui ne l'est pas. */
+.guestBanner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 20px; flex-wrap: wrap;
+  padding: 16px 22px; margin-bottom: 22px;
+  border-radius: 12px;
+  background: rgba(212, 144, 96, 0.18);
+  border: 1px solid rgba(184, 105, 26, 0.3);
+  font-size: 14px; line-height: 1.55; color: var(--ink);
+}
+.guestBanner strong { color: var(--terra-deep); }

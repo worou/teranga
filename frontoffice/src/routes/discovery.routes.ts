@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
 import {
+  optionalAuth,
   requireAuth,
   requireCompleteProfile,
   requireSubscriptionForMessaging,
@@ -11,10 +12,19 @@ import { matchesService } from '../services/matches.service';
 import { discoveryFiltersSchema, likeSchema, sendMessageSchema } from '../validators';
 
 const router = Router();
-router.use(requireAuth);
-// Découverte, likes, matchs et messagerie exigent une inscription complète
-// (photos). Le profil incomplet reste authentifié pour pouvoir les envoyer.
-router.use(requireCompleteProfile);
+
+/**
+ * Gardes posées **par route**, plus globalement : la consultation est publique,
+ * l'interaction ne l'est pas.
+ *
+ *   - `GET /discovery/feed` — `optionalAuth` : un visiteur voit les profils.
+ *   - tout le reste (like, pass, matchs, messages) — `requireAuth` +
+ *     `requireCompleteProfile` : agir suppose un compte, et un compte complet.
+ *
+ * `requireCompleteProfile` est volontairement absent du fil : un membre à deux
+ * photos ne doit pas être moins bien traité qu'un inconnu de passage.
+ */
+const canAct = [requireAuth, requireCompleteProfile];
 
 /**
  * @openapi
@@ -29,7 +39,12 @@ router.use(requireCompleteProfile);
  *       - Les utilisateurs bloqués ou qui vous ont bloqué
  *
  *       **Limitations free-tier pour les hommes** : 10 profils max / jour.
- *     security: [{ bearerAuth: [] }]
+ *
+ *       **Consultable sans être connecté.** Un visiteur anonyme obtient la même
+ *       liste, sans score de compatibilité ni traits communs (il n'y a personne
+ *       à qui le comparer) et sans genre cible par défaut. Interagir — liker,
+ *       matcher, écrire — exige en revanche un compte.
+ *     security: [{ bearerAuth: [] }, {}]
  *     parameters:
  *       - in: query
  *         name: minAge
@@ -75,10 +90,12 @@ router.use(requireCompleteProfile);
  */
 router.get(
   '/discovery/feed',
+  optionalAuth,
   validate(discoveryFiltersSchema, 'query'),
   asyncHandler(async (req, res) => {
     const { limit, ...filters } = req.query as any;
-    const profiles = await discoveryService.getFeed(req.auth!.userId, filters, limit);
+    // `optionalAuth` : `req.auth` est absent pour un visiteur non connecté.
+    const profiles = await discoveryService.getFeed(req.auth?.userId ?? null, filters, limit);
     res.json(profiles);
   }),
 );
@@ -107,6 +124,7 @@ router.get(
  */
 router.post(
   '/discovery/like',
+  ...canAct,
   validate(likeSchema),
   asyncHandler(async (req, res) => {
     const result = await discoveryService.like(
@@ -139,6 +157,7 @@ router.post(
  */
 router.post(
   '/discovery/pass',
+  ...canAct,
   asyncHandler(async (req, res) => {
     const result = await discoveryService.pass(req.auth!.userId, req.body.receiverId);
     res.json(result);
@@ -175,6 +194,7 @@ router.post(
  */
 router.get(
   '/matches',
+  ...canAct,
   asyncHandler(async (req, res) => {
     const page = parseInt((req.query.page as string) || '1', 10);
     const limit = parseInt((req.query.limit as string) || '20', 10);
@@ -200,6 +220,7 @@ router.get(
  */
 router.delete(
   '/matches/:matchId',
+  ...canAct,
   asyncHandler(async (req, res) => {
     const result = await matchesService.unmatch(req.auth!.userId, req.params.matchId);
     res.json(result);
@@ -240,6 +261,7 @@ router.delete(
  */
 router.get(
   '/matches/:matchId/messages',
+  ...canAct,
   asyncHandler(async (req, res) => {
     const page = parseInt((req.query.page as string) || '1', 10);
     const limit = parseInt((req.query.limit as string) || '50', 10);
@@ -286,6 +308,7 @@ router.get(
  */
 router.post(
   '/matches/:matchId/messages',
+  ...canAct,
   requireSubscriptionForMessaging,
   validate(sendMessageSchema),
   asyncHandler(async (req, res) => {
