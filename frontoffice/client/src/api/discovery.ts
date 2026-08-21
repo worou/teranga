@@ -182,11 +182,16 @@ export const RELIGION_LABELS: Record<string, string> = {
   UNDISCLOSED: 'Non précisée',
 }
 
+/**
+ * Genres proposables à la recherche. « Ne se prononce pas » (UNDISCLOSED) est
+ * volontairement absent : l'inscription ne l'offre pas, aucun membre ne peut
+ * donc le porter, et le filtre ne renverrait jamais personne.
+ * L'enum Prisma le conserve pour les comptes historiques.
+ */
 export const GENDER_LABELS: Record<string, string> = {
   FEMALE: 'Une femme',
   MALE: 'Un homme',
   NON_BINARY: 'Non binaire',
-  UNDISCLOSED: 'Ne se prononce pas',
 }
 
 export const BODY_TYPE_LABELS: Record<string, string> = {
