@@ -9,6 +9,12 @@ export const config = {
     expiresIn: process.env.JWT_EXPIRES_IN || '8h',
   },
   adminSecret: process.env.ADMIN_SECRET || 'admin-secret-change-me',
+  // Système d'abonnement. DOIT valoir la même chose que le SUBSCRIPTIONS_ENABLED
+  // du frontoffice : le backoffice ne fait que masquer les écrans correspondants
+  // (onglets Abonnements/Paiements et indicateurs de revenus). Les routes de
+  // l'API restent servies — l'historique garde sa valeur et un virement en
+  // attente doit rester régularisable.
+  subscriptionsEnabled: process.env.SUBSCRIPTIONS_ENABLED === 'true',
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173',
   },

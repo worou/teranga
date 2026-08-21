@@ -4,6 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler';
 import { AppError } from '../utils/AppError';
 import { prisma } from '../config/prisma';
 import { signAdminToken } from '../utils/jwt';
+import { config } from '../config';
 import { requireAdmin } from '../middleware/requireAdmin';
 
 const router = Router();
@@ -31,6 +32,8 @@ router.post(
     res.json({
       token,
       admin: { id: admin.id, email: admin.email, name: admin.name, role: admin.role },
+      // Le tableau de bord masque les écrans d'abonnement quand c'est false.
+      subscriptionsEnabled: config.subscriptionsEnabled,
     });
   }),
 );
@@ -48,7 +51,7 @@ router.get(
       select: { id: true, email: true, name: true, role: true, lastLoginAt: true },
     });
     if (!admin) throw AppError.unauthorized('Session invalide');
-    res.json({ admin });
+    res.json({ admin, subscriptionsEnabled: config.subscriptionsEnabled });
   }),
 );
 

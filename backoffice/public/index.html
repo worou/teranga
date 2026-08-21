@@ -65,7 +65,7 @@
         try {
           const data = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
           localStorage.setItem(TOKEN_KEY, data.token);
-          onLogged(data.admin);
+          onLogged(data.admin, data.subscriptionsEnabled);
         } catch (err) { setError(err.message || 'Identifiants invalides'); }
         finally { setLoading(false); }
       }
@@ -123,20 +123,25 @@
     }
 
     // ── Tableau de bord ───────────────────────────────────
-    function Dashboard() {
+    function Dashboard({ subsEnabled }) {
       const { loading, error, data } = useAsync(() => api('/stats'), []);
       if (loading) return <Spinner />;
       if (error) return <ErrorBox msg={error} />;
       const k = data.kpis;
+      // Abonnements payants, conversion et revenus ne veulent rien dire tant
+      // que le modèle payant est éteint : on retire les indicateurs plutôt que
+      // d'afficher des zéros qu'il faudrait expliquer.
       const cards = [
         { label: 'Utilisateurs', value: k.totalUsers },
         { label: 'Femmes actives', value: k.activeWomen },
         { label: 'Hommes actifs', value: k.activeMen },
-        { label: 'Abonnements payants', value: k.activeSubscriptions },
-        { label: 'Conversion', value: (k.conversionRate * 100).toFixed(1) + '%' },
         { label: 'Matches', value: k.totalMatches },
         { label: 'Signalements en attente', value: k.pendingReports },
-        { label: 'Revenus 30 j', value: fcfa(k.revenue30dFcfa) },
+        ...(subsEnabled ? [
+          { label: 'Abonnements payants', value: k.activeSubscriptions },
+          { label: 'Conversion', value: (k.conversionRate * 100).toFixed(1) + '%' },
+          { label: 'Revenus 30 j', value: fcfa(k.revenue30dFcfa) },
+        ] : []),
       ];
       return (
         <div>
@@ -148,8 +153,8 @@
               </div>
             ))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-4 shadow-sm lg:col-span-2">
+          <div className={'grid grid-cols-1 gap-4 ' + (subsEnabled ? 'lg:grid-cols-3' : '')}>
+            <div className={'bg-white rounded-xl p-4 shadow-sm ' + (subsEnabled ? 'lg:col-span-2' : '')}>
               <div className="font-semibold mb-3">Croissance des inscriptions</div>
               <ResponsiveContainer width="100%" height={240}>
                 <LineChart data={data.usersGrowth}>
@@ -161,6 +166,7 @@
                 </LineChart>
               </ResponsiveContainer>
             </div>
+            {subsEnabled && (
             <div className="bg-white rounded-xl p-4 shadow-sm">
               <div className="font-semibold mb-3">Répartition des formules</div>
               <ResponsiveContainer width="100%" height={240}>
@@ -172,6 +178,7 @@
                 </PieChart>
               </ResponsiveContainer>
             </div>
+            )}
           </div>
         </div>
       );
@@ -442,29 +449,37 @@
     const SECTIONS = [
       { key:'dashboard', label:'Tableau de bord', icon:'📊', comp: Dashboard },
       { key:'users', label:'Utilisateurs', icon:'👥', comp: Users },
-      { key:'subs', label:'Abonnements', icon:'⭐', comp: Subscriptions },
-      { key:'payments', label:'Paiements', icon:'💳', comp: Payments },
+      { key:'subs', label:'Abonnements', icon:'⭐', comp: Subscriptions, subsOnly: true },
+      { key:'payments', label:'Paiements', icon:'💳', comp: Payments, subsOnly: true },
       { key:'reports', label:'Modération', icon:'🛡️', comp: Reports },
       { key:'admins', label:'Admins', icon:'🔑', comp: Admins, superOnly: true },
     ];
 
     function App() {
       const [admin, setAdmin] = useState(null);
+      // Modèle d'abonnement : annoncé par l'API, jamais deviné côté écran.
+      const [subsEnabled, setSubsEnabled] = useState(false);
       const [ready, setReady] = useState(false);
       const [section, setSection] = useState('dashboard');
 
       useEffect(() => {
         if (!getToken()) { setReady(true); return; }
-        api('/auth/me').then(d => setAdmin(d.admin)).catch(() => {}).finally(() => setReady(true));
+        api('/auth/me')
+          .then(d => { setAdmin(d.admin); setSubsEnabled(!!d.subscriptionsEnabled); })
+          .catch(() => {}).finally(() => setReady(true));
       }, []);
 
       function logout() { localStorage.removeItem(TOKEN_KEY); setAdmin(null); }
 
       if (!ready) return <div className="min-h-screen flex items-center justify-center"><Spinner/></div>;
-      if (!admin) return <Login onLogged={setAdmin} />;
+      if (!admin) return <Login onLogged={(a, subs) => { setAdmin(a); setSubsEnabled(!!subs); }} />;
 
-      // Sections visibles selon le rôle (Admins réservé aux super admins).
-      const visible = SECTIONS.filter(s => !s.superOnly || admin.role === 'SUPERADMIN');
+      // Sections visibles selon le rôle (Admins réservé aux super admins) et
+      // selon le modèle économique (Abonnements/Paiements masqués en version 1 ;
+      // les routes de l'API, elles, restent servies).
+      const visible = SECTIONS.filter(s =>
+        (!s.superOnly || admin.role === 'SUPERADMIN') && (!s.subsOnly || subsEnabled)
+      );
       const active = visible.find(s => s.key === section) || visible[0];
       const Current = active.comp;
       return (
@@ -490,7 +505,7 @@
           </aside>
           <main className="flex-1 p-6 overflow-x-hidden">
             <h1 className="text-2xl font-bold mb-5">{active.label}</h1>
-            <Current />
+            <Current subsEnabled={subsEnabled} />
           </main>
         </div>
       );
