@@ -7,6 +7,7 @@ import Abonnement from './pages/Abonnement'
 import Decouverte from './pages/Decouverte'
 import Profil from './pages/Profil'
 import RequireAuth from './components/RequireAuth'
+import { SUBSCRIPTIONS_ENABLED } from './config'
 
 export default function App() {
   return (
@@ -39,14 +40,18 @@ export default function App() {
             </RequireAuth>
           }
         />
-        <Route
-          path="/abonnement"
-          element={
-            <RequireAuth>
-              <Abonnement />
-            </RequireAuth>
-          }
-        />
+        {/* Version 1 : tunnel d'abonnement retiré du routage. La page reste
+            en place et redevient accessible en réactivant le drapeau. */}
+        {SUBSCRIPTIONS_ENABLED && (
+          <Route
+            path="/abonnement"
+            element={
+              <RequireAuth>
+                <Abonnement />
+              </RequireAuth>
+            }
+          />
+        )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

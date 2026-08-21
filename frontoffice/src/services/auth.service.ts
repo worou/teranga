@@ -206,7 +206,9 @@ export class AuthService {
     subscription?: { plan: string; status: string; expiresAt: Date | null } | null;
   }) {
     const now = new Date();
-    const isSubscribed = !!(
+    // Sans système d'abonnement, l'accès est complet pour tous : le claim doit
+    // le refléter, sinon tout code qui s'y fierait afficherait une relance.
+    const isSubscribed = !config.subscriptionsEnabled || !!(
       user.subscription &&
       user.subscription.status === 'ACTIVE' &&
       user.subscription.plan !== 'FREE' &&

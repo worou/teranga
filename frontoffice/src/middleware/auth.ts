@@ -43,6 +43,11 @@ export async function requireSubscriptionForMessaging(
   try {
     if (!req.auth) throw AppError.unauthorized();
 
+    // Version 1 : le système d'abonnement est désactivé, la messagerie est
+    // ouverte à tous. Le contrôle ci-dessous reprend tel quel si le drapeau
+    // est remis à true.
+    if (!config.subscriptionsEnabled) return next();
+
     const user = await prisma.user.findUnique({
       where: { id: req.auth.userId },
       include: { subscription: true },
@@ -113,6 +118,30 @@ export async function requireCompleteProfile(
   } catch (err) {
     next(err);
   }
+}
+
+/**
+ * Routes du tunnel d'abonnement (tarifs, souscription, historique). Quand le
+ * système est désactivé (version 1), elles n'existent tout simplement pas :
+ * 404, comme n'importe quelle route inconnue, plutôt qu'un 403 qui laisserait
+ * croire à une restriction de droits.
+ *
+ * N'est PAS posé sur les webhooks ni sur les routes admin internes : un
+ * paiement encore en vol doit pouvoir aboutir et être régularisé.
+ */
+export function requireSubscriptionsEnabled(
+  _req: Request,
+  _res: Response,
+  next: NextFunction,
+) {
+  if (!config.subscriptionsEnabled) {
+    return next(
+      new AppError("L'abonnement n'est pas disponible.", 404, {
+        code: 'SUBSCRIPTIONS_DISABLED',
+      }),
+    );
+  }
+  next();
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TerangaSymbol } from '../components/Logo'
+import { SUBSCRIPTIONS_ENABLED } from '../config'
 import styles from './Landing.module.css'
 
 // ——— NAV ———
@@ -35,7 +36,7 @@ function Nav() {
       <a href="#unions" onClick={close}>Unions</a>
       <a href="#comment" onClick={close}>Comment ça marche</a>
       <a href="#valeurs" onClick={close}>Nos valeurs</a>
-      <a href="#tarifs" onClick={close}>Abonnement</a>
+      {SUBSCRIPTIONS_ENABLED && <a href="#tarifs" onClick={close}>Abonnement</a>}
       <Link to="/connexion" className="btn btn-ghost" style={{ padding: '10px 20px', fontSize: 14 }} onClick={close}>Se connecter</Link>
       <Link to="/inscription" className="btn btn-primary" style={{ padding: '10px 20px', fontSize: 14 }} onClick={close}>Commencer</Link>
     </>
@@ -348,6 +349,8 @@ export default function Landing() {
       </section>
 
       {/* ====== TARIFS ====== */}
+      {/* Masquée en version 1 : le modèle freemium est désactivé. */}
+      {SUBSCRIPTIONS_ENABLED && (
       <section className={styles.pricing} id="tarifs">
         <div className={styles.pricingInner}>
           <Reveal>
@@ -387,6 +390,8 @@ export default function Landing() {
           </Reveal>
         </div>
       </section>
+
+      )}
 
       {/* ====== FAQ ====== */}
       <section className={styles.section}>
@@ -447,7 +452,7 @@ export default function Landing() {
             <a href="#unions">Nos unions</a>
             <a href="#comment">Comment ça marche</a>
             <a href="#valeurs">Nos valeurs</a>
-            <a href="#tarifs">Abonnement</a>
+            {SUBSCRIPTIONS_ENABLED && <a href="#tarifs">Abonnement</a>}
           </div>
           <div className={styles.footerCol}>
             <h4>Entreprise</h4>

@@ -105,6 +105,12 @@ export const config = {
     max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
   },
 
+  // Système d'abonnement. DÉSACTIVÉ par défaut (version 1 : accès complet et
+  // gratuit pour tout le monde). Mettre SUBSCRIPTIONS_ENABLED=true réactive le
+  // modèle freemium sans rien remettre en place : le code de paiement, les
+  // quotas et le cycle de vie sont conservés et testés.
+  subscriptionsEnabled: process.env.SUBSCRIPTIONS_ENABLED === 'true',
+
   // Pricing in F CFA
   pricing: {
     DISCOVERY: { amount: 1000, months: 1 },

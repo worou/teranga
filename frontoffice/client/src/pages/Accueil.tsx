@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import { SUBSCRIPTIONS_ENABLED } from '../config'
 import { fetchMe, clearTokens, type MeResponse } from '../api/auth'
 import styles from './AuthForms.module.css'
 
@@ -59,7 +60,10 @@ export default function Accueil() {
   // Chez Téranga, seuls les hommes paient : femmes / non-binaires ont l'accès
   // complet gratuitement. Un homme sans abonnement payant est en accès limité.
   const isMan = me?.gender === 'MALE'
-  const manNeedsSubscription = isMan && !hasPaidAccess
+  // Le serveur est seul juge du modèle économique ; SUBSCRIPTIONS_ENABLED n'est
+  // qu'un repli tant que /users/me n'a pas répondu.
+  const subsOn = me?.subscriptionsEnabled ?? SUBSCRIPTIONS_ENABLED
+  const manNeedsSubscription = subsOn && isMan && !hasPaidAccess
 
   // Inscription non finalisée : sans le minimum de photos, l'API refuse la
   // découverte, les matchs et la messagerie (403 PHOTOS_REQUIRED).
@@ -112,14 +116,16 @@ export default function Accueil() {
                 <div className={styles.summaryRow}>
                   <span>Statut du compte</span><strong>{me.status}</strong>
                 </div>
-                <div className={styles.summaryRow}>
-                  <span>Abonnement</span>
-                  <strong>
-                    {planDisplay}
-                    {hasPaidAccess && me.subscription?.expiresAt &&
-                      ` · jusqu'au ${new Date(me.subscription.expiresAt).toLocaleDateString('fr-FR')}`}
-                  </strong>
-                </div>
+                {subsOn && (
+                  <div className={styles.summaryRow}>
+                    <span>Abonnement</span>
+                    <strong>
+                      {planDisplay}
+                      {hasPaidAccess && me.subscription?.expiresAt &&
+                        ` · jusqu'au ${new Date(me.subscription.expiresAt).toLocaleDateString('fr-FR')}`}
+                    </strong>
+                  </div>
+                )}
               </div>
 
               {/* Inscription à finaliser : priorité sur l'incitation à s'abonner,

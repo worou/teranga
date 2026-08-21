@@ -147,9 +147,9 @@ export default function Profil() {
             {notice && (
               <div className={styles.notice}>
                 <span>⚠</span>
-                <div>
-                  {notice} <Link to="/abonnement">Voir les formules</Link>
-                </div>
+                {/* Le quota de likes n'existe plus en version 1 : plus de
+                    renvoi vers un tunnel d'abonnement masqué. */}
+                <div>{notice}</div>
               </div>
             )}
 

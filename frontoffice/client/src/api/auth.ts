@@ -110,6 +110,8 @@ export interface MeResponse {
   profileComplete?: boolean
   minPhotos?: number
   maxPhotos?: number
+  /** Modèle freemium actif côté serveur. Faux en version 1. */
+  subscriptionsEnabled?: boolean
 }
 
 /** Récupère le profil courant. Lève si le token est absent/expiré (401). */

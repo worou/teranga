@@ -255,10 +255,20 @@ const userTable = new Table('user', {
     email: null,
     firstName: 'Awa',
     lastName: 'Diop',
+    gender: 'FEMALE',
     country: 'SN',
     createdAt: new Date(),
     updatedAt: new Date(),
   }),
+  // `subscription` est une relation 1-1 : `include` la résout comme une ligne
+  // unique, ce que fait `project`. Utilisée par requireSubscriptionForMessaging.
+  relations: {
+    subscription: {
+      table: () => subscriptionTable,
+      localField: 'id',
+      foreignField: 'userId',
+    },
+  },
 });
 
 const subscriptionTable = new Table('subscription', {

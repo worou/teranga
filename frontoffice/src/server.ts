@@ -12,6 +12,7 @@ import { swaggerSpec } from './config/swagger';
 import { prisma } from './config/prisma';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { requireSubscriptionsEnabled } from './middleware/auth';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -97,7 +98,10 @@ app.use('/api/v1/users', usersRoutes);
 // `/api/v1` dont le `requireAuth` global intercepterait sinon /admin/*.
 app.use('/api/v1/admin', adminPaymentsRoutes); // validation virements
 app.use('/api/v1', discoveryRoutes);   // /discovery/*, /matches/*
-app.use('/api/v1', paymentsRoutes);    // /pricing, /subscriptions/me, /payments/*
+// Tunnel d'abonnement (/pricing, /subscriptions/me, /payments/*) : n'existe
+// que si le système est activé. Les webhooks (montés plus haut) et les routes
+// admin internes restent ouverts pour régulariser un paiement encore en vol.
+app.use('/api/v1', requireSubscriptionsEnabled, paymentsRoutes);
 app.use('/api/v1', featuresRoutes);    // /events, /moderation, /trusted-circle, /notifications
 
 // SPA fallback — React Router gère le routing côté client
@@ -116,7 +120,9 @@ async function start() {
   try {
     await prisma.$connect();
     logger.info('Database connected');
-    startSubscriptionScheduler();
+    // Sans abonnements, il n'y a ni expiration ni rappel de renouvellement à
+    // planifier. `runSubscriptionLifecycle()` reste appelable directement.
+    if (config.subscriptionsEnabled) startSubscriptionScheduler();
     server.listen(config.port, () => {
       logger.info('Téranga Frontoffice running', { port: config.port, env: config.env });
       console.log(`\n  ✅ Frontoffice API démarré sur ${config.apiBaseUrl}\n  📚 Docs: ${config.apiBaseUrl}/api-docs\n`);

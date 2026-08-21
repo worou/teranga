@@ -32,7 +32,7 @@ export class DiscoveryService {
 
     // Free-tier daily limit for men
     if (user.gender === 'MALE') {
-      const isSubscribed = this.isSubscribed(user.subscription);
+      const isSubscribed = !config.subscriptionsEnabled || this.isSubscribed(user.subscription);
       if (!isSubscribed) {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -201,7 +201,7 @@ export class DiscoveryService {
 
     // Daily like limit for free-tier men
     if (sender.gender === 'MALE') {
-      const isSubscribed = this.isSubscribed(sender.subscription);
+      const isSubscribed = !config.subscriptionsEnabled || this.isSubscribed(sender.subscription);
       if (!isSubscribed) {
         const startOfDay = new Date();
         startOfDay.setHours(0, 0, 0, 0);
@@ -257,6 +257,10 @@ export class DiscoveryService {
     return { passed: true };
   }
 
+  /**
+   * Accès payant actif. Quand le système d'abonnement est désactivé (version 1),
+   * les appelants court-circuitent ce prédicat : tout le monde a l'accès complet.
+   */
   private isSubscribed(sub: any): boolean {
     if (!sub) return false;
     const now = new Date();

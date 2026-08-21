@@ -150,6 +150,9 @@ export class UsersService {
       passwordHash: undefined,
       minPhotos: config.profile.minPhotos,
       maxPhotos: config.profile.maxPhotos,
+      // Le client masque tout le tunnel d'abonnement quand c'est false : il ne
+      // décide pas du modèle économique, il le lit.
+      subscriptionsEnabled: config.subscriptionsEnabled,
       ...(hasPhotos
         ? {
             photosCount: user.photos.length,
