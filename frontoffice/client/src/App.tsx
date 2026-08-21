@@ -6,6 +6,7 @@ import Accueil from './pages/Accueil'
 import Abonnement from './pages/Abonnement'
 import Decouverte from './pages/Decouverte'
 import Profil from './pages/Profil'
+import MonProfil from './pages/MonProfil'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 
@@ -29,6 +30,14 @@ export default function App() {
           element={
             <RequireAuth>
               <Decouverte />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/mon-profil"
+          element={
+            <RequireAuth>
+              <MonProfil />
             </RequireAuth>
           }
         />

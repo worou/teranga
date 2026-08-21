@@ -1,0 +1,157 @@
+.page { min-height: 100vh; background: var(--cream); padding-top: 70px; }
+.wrap { max-width: 880px; margin: 0 auto; padding: 30px 32px 90px; }
+
+.head { margin-bottom: 26px; }
+.eyebrow {
+  font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ocre-deep); margin-bottom: 8px;
+}
+.title { font-family: Georgia, serif; font-size: 38px; font-weight: 400; color: var(--terra-deep); line-height: 1.15; }
+.title em { font-style: normal; color: var(--ocre-deep); }
+.lead { color: var(--ink-soft); font-size: 14.5px; margin-top: 8px; max-width: 620px; }
+
+/* ——— Bandeaux ——— */
+.alert {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 13px 16px; margin-bottom: 20px; border-radius: 9px;
+  font-size: 13.5px; line-height: 1.5;
+}
+.alertError { background: rgba(192, 57, 43, 0.1); border: 1px solid rgba(192, 57, 43, 0.3); color: #8B2A20; }
+.alertOk { background: rgba(93, 114, 70, 0.12); border: 1px solid rgba(93, 114, 70, 0.32); color: #3E5030; }
+.alertWarn { background: rgba(212, 144, 96, 0.2); border: 1px solid rgba(184, 105, 26, 0.35); color: var(--ink); }
+.alert a { color: var(--terra-deep); font-weight: 600; }
+
+/* ——— Sections ——— */
+.section {
+  background: var(--sand-light);
+  border: 1px solid rgba(184, 105, 26, 0.18);
+  border-radius: 14px;
+  padding: 24px 26px;
+  margin-bottom: 20px;
+}
+.sectionTitle {
+  font-family: Georgia, serif; font-size: 21px; font-weight: 400;
+  color: var(--terra-deep); margin-bottom: 4px;
+}
+.sectionLead { font-size: 13px; color: var(--ink-soft); margin-bottom: 20px; }
+
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; }
+.field > label {
+  margin-bottom: 7px;
+  font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ocre-deep);
+}
+.field input[type='text'],
+.field input[type='number'],
+.field select,
+.field textarea {
+  width: 100%; padding: 11px 13px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px;
+  background: var(--cream); color: var(--ink);
+  font-family: 'Inter', sans-serif; font-size: 14px;
+}
+.field textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+.field input:focus, .field select:focus, .field textarea:focus {
+  outline: none; border-color: var(--ocre-deep);
+}
+.hint { margin-top: 6px; font-size: 12px; color: var(--ink-soft); opacity: 0.85; line-height: 1.45; }
+.counter { margin-top: 6px; font-size: 11px; color: var(--ink-soft); text-align: right; }
+
+.readonly {
+  padding: 11px 13px; border-radius: 8px;
+  background: rgba(184, 105, 26, 0.08);
+  border: 1.5px dashed rgba(184, 105, 26, 0.28);
+  color: var(--ink-soft); font-size: 14px;
+}
+
+/* Choix à trois états : indifférent / oui / non. */
+.triGroup { display: flex; gap: 6px; }
+.triBtn {
+  flex: 1; padding: 10px 6px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 8px;
+  background: var(--cream); color: var(--ink-soft);
+  font-family: 'Inter', sans-serif; font-size: 13px;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.triBtn:hover { border-color: var(--ocre-deep); color: var(--terra-deep); }
+.triOn { background: var(--terra-deep); border-color: var(--terra-deep); color: var(--sand); }
+
+/* Langues : cases à cocher en pastilles. */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 14px; border-radius: 999px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3);
+  background: var(--cream); color: var(--ink-soft);
+  font-size: 13px; cursor: pointer; transition: all 0.2s ease;
+}
+.chip:hover { border-color: var(--ocre-deep); }
+.chipOn { background: var(--terra-deep); border-color: var(--terra-deep); color: var(--sand); }
+.chip input { display: none; }
+
+/* ——— Photos ——— */
+.photoGrid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 14px;
+}
+.photoCard {
+  position: relative; aspect-ratio: 3 / 4; border-radius: 11px; overflow: hidden;
+  background: var(--sand); border: 2px solid transparent;
+}
+.photoCard.isMain { border-color: var(--ocre-deep); }
+.photoCard img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photoBadge {
+  position: absolute; top: 7px; left: 7px;
+  padding: 3px 9px; border-radius: 999px;
+  background: var(--ocre-deep); color: var(--cream);
+  font-size: 10px; font-weight: 600;
+}
+.photoActions {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  display: flex; gap: 1px;
+}
+.photoAction {
+  flex: 1; padding: 7px 4px; border: none;
+  background: rgba(43, 22, 5, 0.82); color: var(--cream);
+  font-family: 'Inter', sans-serif; font-size: 11px; cursor: pointer;
+}
+.photoAction:hover:not(:disabled) { background: var(--terra-deep); }
+.photoAction:disabled { opacity: 0.45; cursor: not-allowed; }
+.photoAdd {
+  aspect-ratio: 3 / 4; border-radius: 11px;
+  border: 2px dashed rgba(184, 105, 26, 0.4);
+  background: var(--cream);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; cursor: pointer; color: var(--ocre-deep);
+  transition: all 0.2s ease;
+}
+.photoAdd:hover { border-color: var(--ocre-deep); background: var(--sand-light); }
+.photoAddPlus { font-size: 30px; line-height: 1; }
+.photoAddText { font-size: 12px; }
+
+/* ——— Barre d'enregistrement ——— */
+.saveBar {
+  position: sticky; bottom: 0;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 16px 22px; margin-top: 8px;
+  border-radius: 12px;
+  background: rgba(253, 248, 240, 0.96);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(184, 105, 26, 0.22);
+  box-shadow: 0 -2px 18px rgba(43, 22, 5, 0.08);
+}
+.saveState { font-size: 13px; color: var(--ink-soft); }
+.saveActions { display: flex; gap: 10px; }
+
+.loading { text-align: center; padding: 80px 20px; color: var(--ink-soft); }
+
+@media (max-width: 700px) {
+  .wrap { padding: 22px 16px 90px; }
+  .title { font-size: 29px; }
+  .grid { grid-template-columns: 1fr; }
+  .section { padding: 20px 18px; }
+  .saveBar { flex-direction: column; align-items: stretch; }
+  .saveActions > * { flex: 1; justify-content: center; }
+}

@@ -18,6 +18,7 @@ import './registerValidation.test';
 import './profilePhotos.test';
 import './subscriptionsFlag.test';
 import './discoveryFilters.test';
+import './profileEdit.test';
 import './mobileMoney.test';
 import './payments.initiate.test';
 import './bankTransfer.test';

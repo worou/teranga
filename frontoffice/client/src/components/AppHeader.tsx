@@ -64,7 +64,7 @@ export default function AppHeader({ initial }: { initial?: string }) {
           {unread > 0 && <span className={styles.badge}>{unread > 99 ? '99+' : unread}</span>}
         </Link>
 
-        <Link to="/accueil" className={styles.avatar} aria-label="Mon espace" title="Mon espace">
+        <Link to="/mon-profil" className={styles.avatar} aria-label="Mon profil" title="Mon profil">
           {(initial || '?').slice(0, 1).toUpperCase()}
         </Link>
       </nav>

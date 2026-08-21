@@ -112,6 +112,40 @@ export interface MeResponse {
   maxPhotos?: number
   /** Modèle freemium actif côté serveur. Faux en version 1. */
   subscriptionsEnabled?: boolean
+
+  // Champs modifiables depuis « Mon profil » (cf. updateProfileSchema).
+  bio?: string | null
+  profession?: string | null
+  educationLevel?: string | null
+  religion?: string | null
+  intent?: string | null
+  hasChildren?: boolean
+  wantsChildren?: boolean | null
+  heightCm?: number | null
+  weightKg?: number | null
+  bodyType?: string | null
+  ethnicity?: string | null
+  /** Codes ISO. L'API expose et attend un tableau ; le stockage est interne. */
+  languages?: string[]
+}
+
+/** Champs acceptés par PATCH /users/me. `null` efface une valeur. */
+export interface ProfileUpdate {
+  firstName?: string
+  lastName?: string
+  bio?: string
+  profession?: string
+  city?: string
+  educationLevel?: string
+  religion?: string
+  intent?: string
+  hasChildren?: boolean
+  wantsChildren?: boolean | null
+  heightCm?: number | null
+  weightKg?: number | null
+  bodyType?: string | null
+  ethnicity?: string | null
+  languages?: string[] | null
 }
 
 /** Récupère le profil courant. Lève si le token est absent/expiré (401). */
@@ -151,4 +185,49 @@ export async function uploadPhotos(files: File[], token: string): Promise<Upload
     throw new Error(data?.message || "Échec de l'envoi des photos.")
   }
   return data as UploadedPhoto[]
+}
+
+function authHeaders(): Record<string, string> {
+  const token = getToken()
+  if (!token) throw new Error('Non authentifié')
+  return { Authorization: `Bearer ${token}` }
+}
+
+/** Enregistre les modifications du profil et renvoie le profil relu. */
+export async function updateMe(patch: ProfileUpdate): Promise<MeResponse> {
+  const res = await fetch('/api/v1/users/me', {
+    method: 'PATCH',
+    headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(patch),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data?.message || 'Enregistrement impossible.')
+  return data as MeResponse
+}
+
+/**
+ * Supprime une photo. Repasser sous le minimum exigé suspend l'accès à la
+ * découverte et à la messagerie : l'appelant doit prévenir avant.
+ */
+export async function deletePhoto(photoId: string): Promise<void> {
+  const res = await fetch(`/api/v1/users/me/photos/${photoId}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data?.message || 'Suppression impossible.')
+  }
+}
+
+/** Définit la photo principale (celle affichée sur les cartes). Route en PUT. */
+export async function setMainPhoto(photoId: string): Promise<void> {
+  const res = await fetch(`/api/v1/users/me/photos/${photoId}/main`, {
+    method: 'PUT',
+    headers: authHeaders(),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data?.message || 'Mise à jour impossible.')
+  }
 }

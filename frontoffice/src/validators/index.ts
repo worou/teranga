@@ -72,6 +72,21 @@ export const updateProfileSchema = z.object({
   hasChildren: z.boolean().optional(),
   religion: z.enum(['CHRISTIAN', 'MUSLIM', 'OTHER', 'UNDISCLOSED']).optional(),
   intent: z.enum(['SERIOUS_RELATIONSHIP', 'MARRIAGE', 'FAMILY']).optional(),
+
+  // Critères de recherche facultatifs. `null` est accepté explicitement :
+  // c'est ainsi qu'un membre efface une valeur déjà renseignée. Zod supprime
+  // les clés inconnues, ces champs doivent donc figurer ici pour atteindre
+  // la liste blanche du service.
+  wantsChildren: z.boolean().nullable().optional(),
+  heightCm: z.number().int().min(120).max(230).nullable().optional(),
+  weightKg: z.number().int().min(35).max(250).nullable().optional(),
+  bodyType: z.enum(['MINCE', 'MOYENNE', 'RONDE']).nullable().optional(),
+  ethnicity: z
+    .enum(['AFRICAN', 'ARAB', 'ASIAN', 'EUROPEAN', 'LATIN', 'NORTH_AMERICAN', 'UNDISCLOSED'])
+    .nullable()
+    .optional(),
+  /** Codes ISO ; le service les normalise en ",FR,WO,". */
+  languages: z.array(z.string().min(2).max(5)).max(12).nullable().optional(),
 });
 
 export const addPhotoSchema = z.object({

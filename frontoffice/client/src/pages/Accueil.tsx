@@ -158,6 +158,12 @@ export default function Accueil() {
                 </div>
               )}
 
+              <div className={styles.actions}>
+                <Link to="/mon-profil" className={`btn btn-ghost ${styles.btnFull}`}>
+                  Modifier mon profil
+                </Link>
+              </div>
+
               {/* Le profil complet donne accès à la découverte : on y mène. */}
               {!profileIncomplete && (
                 <div className={styles.actions}>

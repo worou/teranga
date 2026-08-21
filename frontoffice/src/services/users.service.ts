@@ -3,6 +3,25 @@ import { config } from '../config';
 import { AppError } from '../utils/AppError';
 import { calculateAge } from '../utils/helpers';
 
+/**
+ * Les langues sont persistées encadrées de virgules (",FR,WO,") pour que la
+ * recherche par `contains` soit exacte — MySQL ne supporte pas les tableaux
+ * Prisma. Ce format reste interne : l'API expose et reçoit un tableau de codes.
+ */
+export function parseLanguages(stored: string | null | undefined): string[] {
+  if (!stored) return [];
+  return stored.split(',').map((c) => c.trim()).filter(Boolean);
+}
+
+export function formatLanguages(codes: unknown): string | null {
+  if (codes === null || codes === undefined) return null;
+  const list = Array.isArray(codes) ? codes : String(codes).split(',');
+  const unique = Array.from(
+    new Set(list.map((c) => String(c).trim().toUpperCase()).filter(Boolean)),
+  );
+  return unique.length ? `,${unique.join(',')},` : null;
+}
+
 export class UsersService {
   async getById(userId: string) {
     const user = await prisma.user.findUnique({
@@ -37,17 +56,9 @@ export class UsersService {
       if (data[key] !== undefined) updateData[key] = data[key];
     }
 
-    // Les langues sont stockées encadrées de virgules (",FR,WO,") pour que la
-    // recherche par `contains` soit exacte. On accepte un tableau ou une chaîne
-    // libre et on normalise ici, seul endroit qui écrit ce champ.
+    // `null` efface la valeur ; un tableau (ou une chaîne libre) est normalisé.
     if (updateData.languages !== undefined) {
-      const codes = (Array.isArray(updateData.languages)
-        ? updateData.languages
-        : String(updateData.languages).split(','))
-        .map((c: string) => c.trim().toUpperCase())
-        .filter(Boolean);
-      const unique = Array.from(new Set(codes));
-      updateData.languages = unique.length ? `,${unique.join(',')},` : null;
+      updateData.languages = formatLanguages(updateData.languages);
     }
 
     const user = await prisma.user.update({
@@ -168,6 +179,9 @@ export class UsersService {
       ...user,
       age: calculateAge(user.birthDate),
       passwordHash: undefined,
+      // Format interne (",FR,WO,") converti en tableau : le client n'a pas a
+      // connaître les sentinelles, et il réémet ce même tableau à l'écriture.
+      languages: parseLanguages(user.languages),
       minPhotos: config.profile.minPhotos,
       maxPhotos: config.profile.maxPhotos,
       // Le client masque tout le tunnel d'abonnement quand c'est false : il ne
