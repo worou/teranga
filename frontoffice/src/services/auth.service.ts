@@ -28,9 +28,30 @@ export class AuthService {
     // Uniqueness check
     const existing = await prisma.user.findFirst({
       where: { OR: [{ phone: input.phone }, ...(input.email ? [{ email: input.email }] : [])] },
+      include: { subscription: true, photos: true },
     });
+
     if (existing) {
-      throw AppError.conflict('Un compte existe déjà avec ce numéro ou cet email');
+      // Inscription abandonnée avant la vérification du numéro : le compte
+      // existe mais n'a jamais servi. On renvoie simplement un nouveau code
+      // plutôt que de condamner le numéro par un 409 définitif. Les données du
+      // compte ne sont PAS écrasées : seul le détenteur du téléphone pourra le
+      // vérifier, et rien ne doit pouvoir être modifié sans cette preuve.
+      const resumable =
+        existing.phone === input.phone &&
+        !existing.phoneVerified &&
+        existing.status === 'PENDING_VERIFICATION';
+
+      if (!resumable) {
+        throw AppError.conflict('Un compte existe déjà avec ce numéro ou cet email');
+      }
+
+      const otp = await this.requestOtp(existing.phone, 'registration');
+      return {
+        user: existing,
+        devCode: (otp as { devCode?: string }).devCode,
+        resumed: true,
+      };
     }
 
     const passwordHash = input.password ? await bcrypt.hash(input.password, 10) : null;
@@ -59,10 +80,12 @@ export class AuthService {
       include: { subscription: true, photos: true },
     });
 
-    // Request OTP for phone verification
-    await this.requestOtp(user.phone, 'registration');
+    // Request OTP for phone verification. En développement sans fournisseur
+    // SMS, `requestOtp` renvoie le code : on le fait remonter pour que le
+    // premier envoi soit exploitable comme le renvoi.
+    const otp = await this.requestOtp(user.phone, 'registration');
 
-    return user;
+    return { user, devCode: (otp as { devCode?: string }).devCode, resumed: false };
   }
 
   async requestOtp(phone: string, purpose: 'registration' | 'login' | 'password_reset') {
@@ -101,15 +124,24 @@ export class AuthService {
         logger.error('OTP SMS delivery failed', { phone, purpose, error: (err as Error).message });
         throw new AppError("Impossible d'envoyer le SMS de vérification. Réessayez.", 502);
       }
-    } else {
-      logger.warn('OTP generated (SMS non configuré — repli journalisation)', {
-        phone,
-        purpose,
-        code: config.env === 'development' ? code : '***',
-      });
+      return { sent: true, expiresAt };
     }
 
-    return { sent: true, expiresAt };
+    // Aucun fournisseur configuré : le code est journalisé, et — en
+    // développement uniquement — renvoyé à l'appelant pour que l'inscription
+    // reste testable sans compte SMS. `config.env` vaut 'production' en prod :
+    // ce champ n'y est jamais présent.
+    logger.warn('OTP generated (SMS non configuré — repli journalisation)', {
+      phone,
+      purpose,
+      code: config.env === 'development' ? code : '***',
+    });
+
+    return {
+      sent: true,
+      expiresAt,
+      ...(config.env === 'development' ? { devCode: code } : {}),
+    };
   }
 
   async verifyOtp(phone: string, code: string) {

@@ -46,15 +46,27 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return data as T
 }
 
+/**
+ * Réponses portant l'OTP. `devCode` n'est renvoyé qu'en développement et
+ * seulement si aucun fournisseur SMS n'est configuré : il permet de finaliser
+ * l'inscription en local sans compte Twilio. Absent en production.
+ */
+export interface OtpResponse {
+  message?: string
+  devCode?: string
+  /** Vrai si une inscription non vérifiée existait déjà pour ce numéro. */
+  resumed?: boolean
+}
+
 export const authApi = {
   register: (payload: RegisterPayload) =>
-    post<{ message: string }>('/register', payload),
+    post<OtpResponse>('/register', payload),
 
   login: (payload: LoginPayload) =>
     post<AuthResponse>('/login', payload),
 
   otpRequest: (phone: string) =>
-    post<{ message: string }>('/otp/request', { phone }),
+    post<OtpResponse>('/otp/request', { phone }),
 
   otpVerify: (payload: OtpVerifyPayload) =>
     post<AuthResponse>('/otp/verify', payload),

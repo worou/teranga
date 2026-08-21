@@ -144,6 +144,9 @@ export default function Inscription() {
   const [otpReset, setOtpReset] = useState(false)
   const [otpCode, setOtpCode] = useState('')
   const [token, setToken] = useState('')
+  // Code renvoyé par l'API en développement sans fournisseur SMS (jamais en
+  // production) : évite d'aller le chercher dans la console du serveur.
+  const [devCode, setDevCode] = useState('')
   const [photos, setPhotos] = useState<File[]>([])
   // Seuils annoncés par l'API (config.profile) ; ces valeurs ne sont qu'un repli.
   const [minPhotos, setMinPhotos] = useState(3)
@@ -272,7 +275,11 @@ export default function Inscription() {
     if (s1.profession.trim()) payload.profession = s1.profession.trim()
 
     try {
-      await authApi.register(payload)
+      const res = await authApi.register(payload)
+      setDevCode(res.devCode ?? '')
+      // Inscription déjà entamée pour ce numéro : l'API a renvoyé un code au
+      // lieu d'un 409, on le signale sans bloquer.
+      setSuccess(res.resumed ? (res.message ?? '') : '')
       setStep(3)
       startCountdown()
     } catch (err: unknown) {
@@ -344,7 +351,8 @@ export default function Inscription() {
   async function resendOtp() {
     setError(''); setSuccess('')
     try {
-      await authApi.otpRequest(phone)
+      const res = await authApi.otpRequest(phone)
+      setDevCode(res.devCode ?? '')
       setSuccess('Nouveau code envoyé !')
       startCountdown()
       setOtpReset(true); setTimeout(() => setOtpReset(false), 100)
@@ -574,6 +582,16 @@ export default function Inscription() {
                 <div className={styles.otpPhone}>{phone}</div>
                 <div className={styles.otpSub}>Code envoyé par SMS</div>
               </div>
+
+              {devCode && (
+                <div className={styles.alertSuccess}>
+                  <span>🛠</span>
+                  <span>
+                    Mode développement — aucun fournisseur SMS configuré.
+                    Votre code : <strong style={{ letterSpacing: '0.18em' }}>{devCode}</strong>
+                  </span>
+                </div>
+              )}
 
               <OtpInput onComplete={setOtpCode} onReset={otpReset} />
 

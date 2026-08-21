@@ -47,11 +47,16 @@ router.post(
   '/register',
   validate(registerSchema),
   asyncHandler(async (req, res) => {
-    const user = await authService.register(req.body);
-    res.status(201).json({
+    const { user, devCode, resumed } = await authService.register(req.body);
+    res.status(resumed ? 200 : 201).json({
       user: usersService.serialize(user),
       otpSent: true,
-      message: `Un code a été envoyé au ${user.phone}`,
+      message: resumed
+        ? `Une inscription est déjà en cours pour le ${user.phone}. Un nouveau code vient d'être envoyé.`
+        : `Un code a été envoyé au ${user.phone}`,
+      resumed,
+      // Développement sans fournisseur SMS uniquement (cf. requestOtp).
+      ...(devCode ? { devCode } : {}),
     });
   }),
 );
