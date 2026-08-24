@@ -308,6 +308,18 @@ model Like {
   @@index([senderId])
 }
 
+/// ⚠️ Ce modèle porte une **conversation**, plus un match.
+///
+/// Le système de match a été retiré : tout membre au profil complet peut
+/// écrire à tout membre actif, et la ligne naît du premier message envoyé —
+/// non plus d'un like réciproque. Le nom du modèle et des colonnes est
+/// conservé pour éviter une migration à deux dépôts (le backoffice duplique ce
+/// schéma sur la même base). L'API, elle, ne parle plus que de conversations.
+///
+/// Conséquences à connaître :
+///   - `status` n'est jamais mis à UNMATCHED : rompre un match n'existe plus ;
+///   - `matchedAt` est la date d'ouverture de la conversation ;
+///   - `unmatchedAt` / `unmatchedBy` ne sont plus jamais renseignés.
 model Match {
   id          String      @id @default(uuid())
   userAId     String      // always the one with the smaller UUID string

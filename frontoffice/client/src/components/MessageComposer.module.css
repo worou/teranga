@@ -1,0 +1,50 @@
+/* Zone de saisie d'un message. Partagée par le fil de conversation et la
+   boîte posée sous une fiche de membre : le refus de l'IA anti-brouteur est un
+   chemin de sécurité, il ne doit exister qu'en un seul endroit. */
+
+.composer {
+  display: flex; align-items: flex-end; gap: 10px;
+}
+.input {
+  flex: 1;
+  resize: none;
+  padding: 12px 16px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3);
+  border-radius: 18px;
+  background: var(--sand-light);
+  font-family: 'Inter', sans-serif; font-size: 14.5px; line-height: 1.5;
+  color: var(--ink);
+  outline: none;
+  max-height: 140px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.input:focus { border-color: var(--ocre-deep); background: var(--cream); }
+.input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.send {
+  flex: 0 0 auto;
+  width: 46px; height: 46px;
+  border: none; border-radius: 50%;
+  background: var(--terra-deep); color: var(--sand);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+.send:hover:not(:disabled) { transform: translateY(-2px); }
+.send:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.counter { font-size: 11px; color: var(--ocre-deep); text-align: right; padding: 0 6px 6px; }
+
+/* ——— Message refusé par la modération ——— */
+/* Un refus anti-brouteur n'est pas une panne : le texte du serveur porte la
+   consigne de sécurité, on l'affiche tel quel et bien visible. */
+.blocked {
+  display: flex; gap: 12px; align-items: flex-start;
+  margin: 0 0 12px;
+  padding: 14px 16px;
+  background: rgba(192, 57, 43, 0.07);
+  border: 1.5px solid rgba(192, 57, 43, 0.4);
+  border-radius: 12px;
+  color: var(--error); font-size: 13.5px; line-height: 1.55;
+}
+.blockedIcon { font-size: 17px; line-height: 1.3; }

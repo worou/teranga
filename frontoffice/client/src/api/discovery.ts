@@ -68,6 +68,18 @@ export interface DiscoveryFilters {
 }
 
 /**
+ * Réponse de `POST /discovery/like`.
+ *
+ * Le like n'ouvre plus aucune conversation — la messagerie est accessible à
+ * tout membre sans accord préalable. `reciprocal` n'est qu'une information :
+ * l'autre vous avait déjà aimé.
+ */
+export interface LikeResult {
+  liked?: boolean
+  reciprocal?: boolean
+}
+
+/**
  * Erreur d'API porteuse du code applicatif. `PHOTOS_REQUIRED` signale une
  * inscription non finalisée : l'appelant redirige vers l'étape photos plutôt
  * que d'afficher un message d'échec générique.
@@ -135,7 +147,7 @@ export const discoveryApi = {
   profile: (id: string) => request<Profile>(`/users/${id}`),
 
   like: (receiverId: string, isSuperLike = false) =>
-    request<{ isMatch?: boolean; matchId?: string }>('/discovery/like', {
+    request<LikeResult>('/discovery/like', {
       method: 'POST',
       body: JSON.stringify({ receiverId, isSuperLike }),
     }),
@@ -145,9 +157,6 @@ export const discoveryApi = {
       method: 'POST',
       body: JSON.stringify({ receiverId }),
     }),
-
-  matches: () =>
-    request<{ data: unknown[]; pagination: { total: number } }>('/matches?limit=1'),
 
   notifications: () =>
     request<{ data: { id: string; readAt?: string | null }[] }>('/notifications?limit=30'),

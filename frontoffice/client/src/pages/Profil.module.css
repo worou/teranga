@@ -113,3 +113,52 @@
   .name { font-size: 34px; }
   .wrap { padding: 20px 16px 64px; }
 }
+
+/* ——— Boîte de discussion, sous la fiche de renseignements ——— */
+.chatBox {
+  margin-top: 22px;
+  padding: 20px;
+  border: 1.5px solid rgba(184, 105, 26, 0.28);
+  border-radius: 14px;
+  background: var(--sand-light);
+}
+.chatHead {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.chatTitle {
+  font-family: Georgia, serif; font-size: 20px; font-weight: 400;
+  color: var(--terra-deep); line-height: 1.2;
+  margin-bottom: 10px;
+}
+.chatHead .chatTitle { margin-bottom: 0; }
+
+.chatOpen {
+  font-size: 13px; color: var(--ocre-deep);
+  text-decoration: underline; text-underline-offset: 3px;
+  white-space: nowrap;
+}
+.chatOpen:hover { color: var(--terra-deep); }
+
+.chatMuted { font-size: 14px; line-height: 1.6; color: var(--ink-soft); margin-bottom: 16px; }
+
+/* Dernier message reçu et messages tout juste envoyés : un rappel de contexte,
+   pas un fil. Le fil complet est à un clic, et lui seul marque les messages
+   comme lus. */
+.chatLast, .chatSent {
+  font-size: 14px; line-height: 1.6;
+  padding: 10px 14px; margin-bottom: 10px;
+  border-radius: 12px;
+  background: var(--cream);
+  border: 1px solid rgba(184, 105, 26, 0.18);
+  overflow-wrap: anywhere;
+}
+.chatLast span, .chatSent span {
+  display: block;
+  font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: 600; color: var(--ocre-deep);
+  margin-bottom: 3px;
+}
+.chatSent { border-color: rgba(93, 114, 70, 0.45); }
+.chatSent span { color: var(--green); }

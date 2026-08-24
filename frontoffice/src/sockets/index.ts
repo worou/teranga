@@ -41,17 +41,17 @@ export function initSockets(httpServer: HttpServer): Server {
     // Join personal room - used to push notifications & new matches
     socket.join(`user:${userId}`);
 
-    socket.on('join_match', (matchId: string) => {
-      socket.join(`match:${matchId}`);
+    socket.on('join_conversation', (conversationId: string) => {
+      socket.join(`conversation:${conversationId}`);
     });
 
-    socket.on('leave_match', (matchId: string) => {
-      socket.leave(`match:${matchId}`);
+    socket.on('leave_conversation', (conversationId: string) => {
+      socket.leave(`conversation:${conversationId}`);
     });
 
-    socket.on('typing', (data: { matchId: string; isTyping: boolean }) => {
-      if (!data?.matchId) return;
-      socket.to(`match:${data.matchId}`).emit('typing', {
+    socket.on('typing', (data: { conversationId: string; isTyping: boolean }) => {
+      if (!data?.conversationId) return;
+      socket.to(`conversation:${data.conversationId}`).emit('typing', {
         userId,
         isTyping: !!data.isTyping,
       });
@@ -66,19 +66,15 @@ export function initSockets(httpServer: HttpServer): Server {
 }
 
 /**
- * Helper: emit a "new_message" event to all participants of a match.
+ * Diffuse un message à tous les participants d'une conversation.
+ *
+ * ⚠️ Aucun client web ne rejoint `conversation:{id}` aujourd'hui : le fil se
+ * rafraîchit par interrogation périodique. La diffusion part donc dans une
+ * salle vide. Elle est maintenue pour qu'un client mobile — ou une évolution du
+ * web — n'ait rien à ajouter côté serveur.
  */
-export function emitNewMessage(io: Server, matchId: string, message: unknown) {
-  io.to(`match:${matchId}`).emit('new_message', message);
-}
-
-/**
- * Helper: notify both users of a new match.
- */
-export function emitNewMatch(io: Server, userIds: string[], match: unknown) {
-  userIds.forEach((uid) => {
-    io.to(`user:${uid}`).emit('new_match', match);
-  });
+export function emitNewMessage(io: Server, conversationId: string, message: unknown) {
+  io.to(`conversation:${conversationId}`).emit('new_message', message);
 }
 
 /**

@@ -51,8 +51,7 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
     { name: 'Auth', description: "Inscription, connexion, OTP SMS, vérification d'identité" },
     { name: 'Users', description: 'Profils utilisateurs, photos, préférences' },
     { name: 'Discovery', description: 'Découverte de profils, likes, super-likes' },
-    { name: 'Matches', description: 'Gestion des matches et unmatches' },
-    { name: 'Messages', description: 'Messagerie entre matches (anti-brouteur intégré)' },
+    { name: 'Messages', description: 'Messagerie ouverte entre membres (anti-brouteur intégré)' },
     { name: 'Subscriptions', description: 'Abonnements mensuels pour les hommes' },
     { name: 'Payments', description: 'Paiements Mobile Money, carte, facturation' },
     { name: 'Events', description: 'Événements communautaires visio / présentiel' },
@@ -273,19 +272,21 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
       },
       LikeResponse: {
         type: 'object',
+        description:
+          "Le like n'ouvre aucune conversation : la messagerie est accessible sans accord préalable.",
         properties: {
-          isMatch: { type: 'boolean' },
-          match: { $ref: '#/components/schemas/Match', nullable: true },
+          liked: { type: 'boolean' },
+          reciprocal: { type: 'boolean', description: "L'autre membre vous a déjà liké." },
         },
       },
 
-      // ==================== MATCH ====================
-      Match: {
+      // ==================== CONVERSATION ====================
+      Conversation: {
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
           otherUser: { $ref: '#/components/schemas/DiscoveryProfile' },
-          matchedAt: { type: 'string', format: 'date-time' },
+          startedAt: { type: 'string', format: 'date-time' },
           lastMessage: { $ref: '#/components/schemas/Message', nullable: true },
           unreadCount: { type: 'integer' },
         },
@@ -296,10 +297,9 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
         type: 'object',
         properties: {
           id: { type: 'string', format: 'uuid' },
-          matchId: { type: 'string', format: 'uuid' },
+          conversationId: { type: 'string', format: 'uuid' },
           senderId: { type: 'string', format: 'uuid' },
           content: { type: 'string' },
-          flaggedByAi: { type: 'boolean' },
           readAt: { type: 'string', format: 'date-time', nullable: true },
           createdAt: { type: 'string', format: 'date-time' },
         },

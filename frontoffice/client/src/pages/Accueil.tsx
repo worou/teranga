@@ -66,7 +66,7 @@ export default function Accueil() {
   const manNeedsSubscription = subsOn && isMan && !hasPaidAccess
 
   // Inscription non finalisée : sans le minimum de photos, l'API refuse la
-  // découverte, les matchs et la messagerie (403 PHOTOS_REQUIRED).
+  // découverte et la messagerie (403 PHOTOS_REQUIRED).
   const minPhotos = me?.minPhotos ?? 3
   const photosCount = me?.photosCount ?? 0
   const profileIncomplete = !!me && me.profileComplete === false
@@ -150,7 +150,7 @@ export default function Accueil() {
                   <strong>Débloquez la messagerie 💬</strong>
                   <p>
                     Votre accès est limité (10 profils et 5 likes par jour, messagerie
-                    bloquée). Abonnez-vous pour échanger sans limite avec vos matchs.
+                    bloquée). Abonnez-vous pour écrire sans limite aux membres.
                   </p>
                   <Link to="/abonnement" className={`btn btn-primary ${styles.btnFull}`}>
                     S'abonner — dès 1 000 F CFA

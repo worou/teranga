@@ -1,7 +1,7 @@
 import { prisma } from '../config/prisma';
 import { config } from '../config';
 import { AppError } from '../utils/AppError';
-import { calculateAge, orderUserIds } from '../utils/helpers';
+import { calculateAge } from '../utils/helpers';
 
 export interface DiscoveryFilters {
   /** Pseudo / recherche plein-texte : prénom, profession, bio, ville. */
@@ -316,26 +316,18 @@ export class DiscoveryService {
       update: { isSuperLike },
     });
 
-    // Did the receiver also like the sender? → Match !
+    // Le like ne crée plus rien d'autre que lui-même.
+    //
+    // Il ouvrait auparavant une conversation dès qu'il était réciproque : c'est
+    // le système de match, retiré. Écrire ne suppose plus d'accord préalable
+    // (voir `conversations.service`), le like n'est donc qu'un signal d'intérêt.
+    // On indique tout de même la réciprocité : elle reste une information utile
+    // à afficher, elle ne débloque simplement plus rien.
     const reciprocal = await prisma.like.findUnique({
       where: { senderId_receiverId: { senderId: receiverId, receiverId: senderId } },
     });
 
-    if (reciprocal) {
-      const [userAId, userBId] = orderUserIds(senderId, receiverId);
-      const match = await prisma.match.upsert({
-        where: { userAId_userBId: { userAId, userBId } },
-        create: { userAId, userBId, status: 'MATCHED' },
-        update: { status: 'MATCHED', unmatchedAt: null, unmatchedBy: null },
-        include: {
-          userA: { include: { photos: true } },
-          userB: { include: { photos: true } },
-        },
-      });
-      return { isMatch: true, match };
-    }
-
-    return { isMatch: false, match: null };
+    return { liked: true, reciprocal: !!reciprocal };
   }
 
   async pass(senderId: string, receiverId: string) {

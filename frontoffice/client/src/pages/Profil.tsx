@@ -1,20 +1,27 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
+import MessageComposer from '../components/MessageComposer'
+import { SUBSCRIPTIONS_ENABLED } from '../config'
 import { fetchMe, isAuthenticated, type MeResponse } from '../api/auth'
 import {
   discoveryApi, sharedLabels, ApiError,
   COUNTRY_LABELS, INTENT_LABELS, RELIGION_LABELS,
   type Profile,
 } from '../api/discovery'
+import {
+  messagesApi, isMessagingLocked, formatListTime,
+  type ConversationRef, type Message,
+} from '../api/messages'
 import styles from './Profil.module.css'
 
 /**
- * Fiche d'un membre : photos, présentation et actions.
+ * Fiche d'un membre : photos, présentation, actions et boîte de discussion.
  *
- * Les actions se limitent à ce que l'API sait faire depuis cet écran — aimer et
- * passer. La messagerie n'existe qu'une fois le match établi (`/matches/:id/
- * messages`) : on annonce le match plutôt que d'exposer un bouton qui échouerait.
+ * Depuis la suppression du système de match, la boîte n'a plus qu'un état : un
+ * champ de saisie, toujours. Écrire ne suppose aucun accord préalable — la
+ * conversation naît du premier message. Le like reste offert comme signal
+ * d'intérêt, il ne débloque plus rien.
  */
 export default function Profil() {
   const { id = '' } = useParams()
@@ -25,9 +32,16 @@ export default function Profil() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [liked, setLiked] = useState(false)
-  const [matched, setMatched] = useState(false)
+  const [reciprocal, setReciprocal] = useState(false)
   const [notice, setNotice] = useState('')
   const [acting, setActing] = useState(false)
+
+  /** Conversation déjà entamée avec ce membre, s'il y en a une. */
+  const [conversation, setConversation] = useState<ConversationRef | null>(null)
+  /** Identifiant obtenu à la volée quand le premier message ouvre la conversation. */
+  const [openedId, setOpenedId] = useState<string | null>(null)
+  /** Messages envoyés depuis cette boîte, affichés en confirmation. */
+  const [justSent, setJustSent] = useState<Message[]>([])
 
   const signedIn = isAuthenticated()
 
@@ -35,6 +49,25 @@ export default function Profil() {
     if (!signedIn) return
     fetchMe().then(setMe).catch(() => { /* l'en-tête sait faire sans */ })
   }, [signedIn])
+
+  // Historique éventuel avec ce membre. `findWith` ne crée rien : consulter une
+  // fiche ne doit pas faire surgir une conversation vide chez l'autre.
+  //
+  // Volontairement pas `messagesApi.thread` : cette route marque les messages
+  // reçus comme lus, si bien qu'ouvrir une fiche viderait la pastille de
+  // non-lus sans que personne n'ait rien lu.
+  useEffect(() => {
+    if (!signedIn || !id) return
+    let alive = true
+    setConversation(null)
+    setOpenedId(null)
+    setJustSent([])
+    messagesApi
+      .findWith(id)
+      .then(c => { if (alive) setConversation(c) })
+      .catch(() => { /* page publique : profil incomplet ou session expirée, la fiche reste lisible */ })
+    return () => { alive = false }
+  }, [signedIn, id])
 
   useEffect(() => {
     let alive = true
@@ -61,7 +94,9 @@ export default function Profil() {
     try {
       const res = await discoveryApi.like(profile.id)
       setLiked(true)
-      if (res.isMatch) { setMatched(true); setNotice('') }
+      // La réciprocité n'ouvre plus rien — la messagerie est déjà ouverte.
+      // Elle reste une information agréable à afficher.
+      setReciprocal(!!res.reciprocal)
     } catch (err) {
       // Limite quotidienne du palier gratuit : le message de l'API porte déjà
       // le quota, on y ajoute le chemin vers l'abonnement.
@@ -106,6 +141,10 @@ export default function Profil() {
   const shared = sharedLabels(profile.sharedTraits)
   const place = [profile.city, profile.country && COUNTRY_LABELS[profile.country]]
     .filter(Boolean).join(' · ')
+  // `/profil/:id` est une route publique sans garde : rien n'empêche d'y
+  // ouvrir sa propre fiche. Ni s'aimer soi-même ni s'écrire n'a de sens.
+  const isSelf = !!me && me.id === profile.id
+  const locked = isMessagingLocked(me, SUBSCRIPTIONS_ENABLED)
 
   return (
     <div className={styles.page}>
@@ -137,12 +176,11 @@ export default function Profil() {
               {profile.profession ? ` · ${profile.profession}` : ''}
             </p>
 
-            {matched && (
+            {reciprocal && (
               <div className={styles.notice}>
-                <span>🎉</span>
+                <span>💛</span>
                 <div>
-                  <strong>C'est un match !</strong> {profile.firstName} vous a aimé aussi.
-                  {' '}<Link to="/accueil">Ouvrir la conversation</Link>
+                  <strong>C'est réciproque !</strong> {profile.firstName} vous a aimé aussi.
                 </div>
               </div>
             )}
@@ -165,6 +203,14 @@ export default function Profil() {
                   demande d'être membre.
                   {' '}<Link to="/inscription">Créer mon compte</Link>
                   {' '}· <Link to="/connexion">Se connecter</Link>
+                </div>
+              </div>
+            ) : isSelf ? (
+              <div className={styles.notice}>
+                <span>👤</span>
+                <div>
+                  <strong>C'est votre profil,</strong> tel que les autres membres le voient.
+                  {' '}<Link to="/mon-profil">Le modifier</Link>
                 </div>
               </div>
             ) : (
@@ -223,6 +269,23 @@ export default function Profil() {
                 <div className={styles.fact}><span>Profession</span><strong>{profile.profession}</strong></div>
               )}
             </div>
+
+            {signedIn && !isSelf && (
+              <ChatBox
+                recipientId={profile.id}
+                firstName={profile.firstName}
+                conversationId={openedId ?? conversation?.id ?? null}
+                lastMessage={conversation?.lastMessage ?? null}
+                justSent={justSent}
+                locked={locked}
+                onSent={m => {
+                  setJustSent(prev => [...prev, m])
+                  // Premier message : le serveur vient d'ouvrir la conversation,
+                  // sa réponse en porte l'identifiant.
+                  setOpenedId(m.conversationId)
+                }}
+              />
+            )}
           </div>
 
           <div className={styles.gallery}>
@@ -249,6 +312,87 @@ export default function Profil() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+
+/**
+ * Boîte de discussion posée sous la fiche.
+ *
+ * Un seul état : le champ de saisie. Écrire à quelqu'un ne suppose plus
+ * d'accord préalable, il n'y a donc plus rien à débloquer ni à expliquer —
+ * sauf le cas de l'abonnement, seule restriction restante côté produit.
+ *
+ * La conversation est ouverte par le serveur au premier message accepté. Tant
+ * qu'aucun n'est parti, rien n'est créé : consulter une fiche ne laisse aucune
+ * trace chez la personne consultée.
+ */
+function ChatBox({
+  recipientId, firstName, conversationId, lastMessage, justSent, locked, onSent,
+}: {
+  recipientId: string
+  firstName: string
+  /** Conversation existante ou tout juste ouverte — sinon `null`. */
+  conversationId: string | null
+  lastMessage: Message | null
+  justSent: Message[]
+  locked: boolean
+  onSent: (message: Message) => void
+}) {
+  if (locked) {
+    return (
+      <div className={styles.chatBox}>
+        <h2 className={styles.chatTitle}>Écrire à {firstName}</h2>
+        <p className={styles.chatMuted}>
+          L'accès à la messagerie est réservé aux membres abonnés. Les femmes
+          échangent gratuitement et sans limite.
+        </p>
+        <Link to="/abonnement" className="btn btn-primary">S'abonner — dès 1 000 F CFA</Link>
+      </div>
+    )
+  }
+
+  const started = !!conversationId
+
+  return (
+    <div className={styles.chatBox}>
+      <div className={styles.chatHead}>
+        <h2 className={styles.chatTitle}>
+          {started ? `Votre conversation avec ${firstName}` : `Écrire à ${firstName}`}
+        </h2>
+        {started && (
+          <Link to={`/messages/${conversationId}`} className={styles.chatOpen}>Tout afficher</Link>
+        )}
+      </div>
+
+      {/* Le dernier message vient de `findWith`, jamais du fil : lire le fil
+          marquerait les messages reçus comme lus. */}
+      {lastMessage && justSent.length === 0 && (
+        <p className={styles.chatLast}>
+          <span>{formatListTime(lastMessage.createdAt)}</span> {lastMessage.content}
+        </p>
+      )}
+
+      {justSent.map(m => (
+        <p key={m.id} className={styles.chatSent}>
+          <span>Envoyé</span> {m.content}
+        </p>
+      ))}
+
+      {!started && justSent.length === 0 && (
+        <p className={styles.chatMuted}>
+          Une question sur son profil ouvre mieux la conversation qu'un simple « salut ».
+        </p>
+      )}
+
+      {/* `sendTo` plutôt que `send` : la conversation peut ne pas exister
+          encore, c'est au serveur de l'ouvrir. */}
+      <MessageComposer
+        send={content => messagesApi.sendTo(recipientId, content)}
+        placeholder={`Écrire à ${firstName}…`}
+        onSent={onSent}
+      />
     </div>
   )
 }

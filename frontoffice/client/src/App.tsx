@@ -7,6 +7,8 @@ import Abonnement from './pages/Abonnement'
 import Decouverte from './pages/Decouverte'
 import Profil from './pages/Profil'
 import MonProfil from './pages/MonProfil'
+import Messages from './pages/Messages'
+import Conversation from './pages/Conversation'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 
@@ -38,6 +40,24 @@ export default function App() {
           }
         />
         <Route path="/profil/:id" element={<Profil />} />
+        {/* Messagerie : réservée aux membres au profil complet. Écrire ne
+            suppose aucun accord préalable — le système de match a été retiré. */}
+        <Route
+          path="/messages"
+          element={
+            <RequireAuth>
+              <Messages />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/messages/:conversationId"
+          element={
+            <RequireAuth>
+              <Conversation />
+            </RequireAuth>
+          }
+        />
         {/* Version 1 : tunnel d'abonnement retiré du routage. La page reste
             en place et redevient accessible en réactivant le drapeau. */}
         {SUBSCRIPTIONS_ENABLED && (

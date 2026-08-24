@@ -18,6 +18,7 @@ import { requireSubscriptionsEnabled } from './middleware/auth';
 import authRoutes from './routes/auth.routes';
 import usersRoutes from './routes/users.routes';
 import discoveryRoutes from './routes/discovery.routes';
+import conversationsRoutes from './routes/conversations.routes';
 import paymentsRoutes from './routes/payments.routes';
 import adminPaymentsRoutes from './routes/adminPayments.routes';
 import webhooksRoutes from './routes/webhooks.routes';
@@ -112,7 +113,10 @@ app.use('/api/v1/users', usersRoutes);
 // Interne (backoffice → frontoffice) : monté AVANT les routers génériques
 // `/api/v1` dont le `requireAuth` global intercepterait sinon /admin/*.
 app.use('/api/v1/admin', adminPaymentsRoutes); // validation virements
-app.use('/api/v1', discoveryRoutes);   // /discovery/*, /matches/*
+app.use('/api/v1', discoveryRoutes);   // /discovery/*
+// Messagerie ouverte : écrire ne suppose plus de match, seulement un compte
+// complet et l'absence de blocage (contrôlé dans le service).
+app.use('/api/v1', conversationsRoutes); // /conversations/*
 // Tunnel d'abonnement (/pricing, /subscriptions/me, /payments/*) : n'existe
 // que si le système est activé. Les webhooks (montés plus haut) et les routes
 // admin internes restent ouverts pour régulariser un paiement encore en vol.

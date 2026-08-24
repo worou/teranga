@@ -1,15 +1,9 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
-import {
-  optionalAuth,
-  requireAuth,
-  requireCompleteProfile,
-  requireSubscriptionForMessaging,
-} from '../middleware/auth';
+import { optionalAuth, requireAuth, requireCompleteProfile } from '../middleware/auth';
 import { discoveryService } from '../services/discovery.service';
-import { matchesService } from '../services/matches.service';
-import { discoveryFiltersSchema, likeSchema, sendMessageSchema } from '../validators';
+import { discoveryFiltersSchema, likeSchema } from '../validators';
 
 const router = Router();
 
@@ -18,11 +12,13 @@ const router = Router();
  * l'interaction ne l'est pas.
  *
  *   - `GET /discovery/feed` — `optionalAuth` : un visiteur voit les profils.
- *   - tout le reste (like, pass, matchs, messages) — `requireAuth` +
- *     `requireCompleteProfile` : agir suppose un compte, et un compte complet.
+ *   - like et pass — `requireAuth` + `requireCompleteProfile` : agir suppose un
+ *     compte, et un compte complet.
  *
  * `requireCompleteProfile` est volontairement absent du fil : un membre à deux
  * photos ne doit pas être moins bien traité qu'un inconnu de passage.
+ *
+ * La messagerie a quitté ce routeur : voir `conversations.routes.ts`.
  */
 const canAct = [requireAuth, requireCompleteProfile];
 
@@ -107,8 +103,9 @@ router.get(
  *     tags: [Discovery]
  *     summary: Liker un profil
  *     description: |
- *       Enregistre un like. Si la personne vous a déjà liké, c'est un **match** —
- *       la messagerie s'ouvre alors.
+ *       Enregistre un like — un signal d'intérêt, et rien de plus. Il n'ouvre
+ *       aucune conversation : la messagerie est accessible à tout membre sans
+ *       accord préalable. La réponse indique si l'intérêt est réciproque.
  *     security: [{ bearerAuth: [] }]
  *     requestBody:
  *       required: true
@@ -164,161 +161,5 @@ router.post(
   }),
 );
 
-/**
- * @openapi
- * /matches:
- *   get:
- *     tags: [Matches]
- *     summary: Lister mes matches
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: query
- *         name: page
- *         schema: { type: integer, default: 1 }
- *       - in: query
- *         name: limit
- *         schema: { type: integer, default: 20 }
- *     responses:
- *       200:
- *         description: Liste paginée
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/PaginatedResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items: { $ref: '#/components/schemas/Match' }
- */
-router.get(
-  '/matches',
-  ...canAct,
-  asyncHandler(async (req, res) => {
-    const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '20', 10);
-    const result = await matchesService.getMatches(req.auth!.userId, page, limit);
-    res.json(result);
-  }),
-);
-
-/**
- * @openapi
- * /matches/{matchId}:
- *   delete:
- *     tags: [Matches]
- *     summary: Unmatch (rompre le match)
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: path
- *         name: matchId
- *         required: true
- *         schema: { type: string, format: uuid }
- *     responses:
- *       200: { description: "Unmatched" }
- */
-router.delete(
-  '/matches/:matchId',
-  ...canAct,
-  asyncHandler(async (req, res) => {
-    const result = await matchesService.unmatch(req.auth!.userId, req.params.matchId);
-    res.json(result);
-  }),
-);
-
-/**
- * @openapi
- * /matches/{matchId}/messages:
- *   get:
- *     tags: [Messages]
- *     summary: Lister les messages d'un match
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: path
- *         name: matchId
- *         required: true
- *         schema: { type: string, format: uuid }
- *       - in: query
- *         name: page
- *         schema: { type: integer, default: 1 }
- *       - in: query
- *         name: limit
- *         schema: { type: integer, default: 50 }
- *     responses:
- *       200:
- *         description: Liste des messages (du plus ancien au plus récent)
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/PaginatedResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: array
- *                       items: { $ref: '#/components/schemas/Message' }
- */
-router.get(
-  '/matches/:matchId/messages',
-  ...canAct,
-  asyncHandler(async (req, res) => {
-    const page = parseInt((req.query.page as string) || '1', 10);
-    const limit = parseInt((req.query.limit as string) || '50', 10);
-    const result = await matchesService.getMessages(req.auth!.userId, req.params.matchId, page, limit);
-    res.json(result);
-  }),
-);
-
-/**
- * @openapi
- * /matches/{matchId}/messages:
- *   post:
- *     tags: [Messages]
- *     summary: Envoyer un message
- *     description: |
- *       **Hommes** : nécessite un abonnement actif.
- *       **Femmes** : gratuit et illimité.
- *
- *       Chaque message passe par l'IA anti-brouteur. Un message détecté comme
- *       demande d'argent ou harcèlement est bloqué et l'expéditeur est signalé
- *       à la modération.
- *     security: [{ bearerAuth: [] }]
- *     parameters:
- *       - in: path
- *         name: matchId
- *         required: true
- *         schema: { type: string, format: uuid }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema: { $ref: '#/components/schemas/SendMessageRequest' }
- *     responses:
- *       201:
- *         description: Message envoyé
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Message' }
- *       403:
- *         description: Message bloqué (abonnement requis ou détecté comme brouteur)
- *         content:
- *           application/json:
- *             schema: { $ref: '#/components/schemas/Error' }
- */
-router.post(
-  '/matches/:matchId/messages',
-  ...canAct,
-  requireSubscriptionForMessaging,
-  validate(sendMessageSchema),
-  asyncHandler(async (req, res) => {
-    const message = await matchesService.sendMessage(
-      req.auth!.userId,
-      req.params.matchId,
-      req.body.content,
-    );
-    res.status(201).json(message);
-  }),
-);
 
 export default router;

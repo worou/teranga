@@ -134,6 +134,23 @@ export const config = {
     canMessage: false,
   },
 
+  messaging: {
+    /**
+     * Nombre de conversations qu'un membre peut **ouvrir** par jour.
+     *
+     * Frein anti-spam, apparu avec la messagerie ouverte : tant qu'écrire
+     * supposait un match, personne ne pouvait être démarché sans son accord.
+     * Ce n'est plus vrai, et l'IA anti-brouteur détecte des motifs — argent,
+     * harcèlement — pas du volume.
+     *
+     * La limite ne porte que sur les conversations **nouvelles** : répondre
+     * dans une conversation déjà entamée n'est jamais compté, quel qu'en soit
+     * le nombre. Elle s'applique à tout le monde, abonnés compris — c'est une
+     * mesure de sécurité, pas un palier commercial.
+     */
+    dailyNewConversations: parseInt(process.env.MESSAGING_DAILY_NEW_CONVERSATIONS || '30', 10),
+  },
+
   // Cycle de vie des abonnements (auto-renouvellement)
   subscriptions: {
     // Envoi du rappel de renouvellement N jours avant l'expiration.
