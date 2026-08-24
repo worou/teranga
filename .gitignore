@@ -2,6 +2,11 @@ node_modules/
 dist/
 .env
 .env.local
+# Tout dérivé de .env — sauvegardes, variantes d'environnement, copies de
+# travail. Une seule de ces copies commitée suffit à publier les secrets.
+# `!.env.example` remet l'exception : ce fichier-là doit rester versionné.
+.env.*
+!.env.example
 *.log
 .DS_Store
 coverage/
