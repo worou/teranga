@@ -7,6 +7,7 @@ import path from 'path';
 import rateLimit from 'express-rate-limit';
 
 import { config } from './config';
+import { assertProductionConfig } from './config/preflight';
 import { errorHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
 
@@ -66,6 +67,19 @@ app.get('*', (_req, res) => {
 app.use(errorHandler);
 
 // ── Démarrage ────────────────────────────────────────────
+// Un serveur qui démarrerait avec une clé de signature publique ne doit pas
+// démarrer : un jeton forgé donne ici accès aux membres et aux paiements.
+try {
+  assertProductionConfig();
+} catch (err) {
+  const message = (err as Error).message;
+  logger.error('Failed to start', { error: message });
+  console.error(`
+  ❌ ${message}
+`);
+  process.exit(1);
+}
+
 app.listen(config.port, () => {
   logger.info(`🚀 Backoffice Téranga démarré`, {
     url: `http://localhost:${config.port}`,

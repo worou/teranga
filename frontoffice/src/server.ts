@@ -8,6 +8,7 @@ import { createServer } from 'http';
 import path from 'path';
 
 import { config } from './config';
+import { assertProductionConfig, warnProductionConfig } from './config/preflight';
 import { swaggerSpec } from './config/swagger';
 import { prisma } from './config/prisma';
 import { logger } from './utils/logger';
@@ -34,6 +35,11 @@ const app = express();
 const server = createServer(app);
 
 // ========== SECURITY & MIDDLEWARE ==========
+
+// Derrière un reverse proxy, `req.ip` vaut l'adresse du proxy tant qu'on ne le
+// déclare pas : la limitation de débit compterait alors tous les utilisateurs
+// dans un seul seau. Voir `config.trustProxy` pour le choix du défaut.
+if (config.trustProxy > 0) app.set('trust proxy', config.trustProxy);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 
@@ -137,6 +143,11 @@ app.set('io', io);
 // ========== STARTUP ==========
 async function start() {
   try {
+    // Avant toute chose : un serveur qui démarrerait avec une clé de signature
+    // publique ne doit pas démarrer.
+    assertProductionConfig();
+    warnProductionConfig().forEach((w) => logger.warn(w));
+
     await prisma.$connect();
     logger.info('Database connected');
     // Sans abonnements, il n'y a ni expiration ni rappel de renouvellement à
@@ -147,7 +158,13 @@ async function start() {
       console.log(`\n  ✅ Frontoffice API démarré sur ${config.apiBaseUrl}\n  📚 Docs: ${config.apiBaseUrl}/api-docs\n`);
     });
   } catch (err) {
-    logger.error('Failed to start', { error: (err as Error).message });
+    const message = (err as Error).message;
+    logger.error('Failed to start', { error: message });
+    // Le journal structuré peut n'être lu nulle part au premier démarrage :
+    // une configuration refusée doit être lisible dans la sortie du conteneur.
+    console.error(`
+  ❌ ${message}
+`);
     process.exit(1);
   }
 }

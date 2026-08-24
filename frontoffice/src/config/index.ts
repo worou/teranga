@@ -100,9 +100,34 @@ export const config = {
     apiSecret: process.env.SIGHTENGINE_API_SECRET || '',
   },
 
+  /**
+   * Nombre de reverse proxys de confiance devant l'application
+   * (`app.set('trust proxy', n)`). 0 = aucun.
+   *
+   * À renseigner impérativement en production derrière nginx, un load balancer
+   * ou une plateforme type Heroku/Render : sans cela, express-rate-limit voit
+   * l'adresse du proxy et compte tous les utilisateurs dans un seul seau.
+   *
+   * Le défaut est 0, et non 1, parce que se tromper dans l'autre sens est pire :
+   * faire confiance à `X-Forwarded-For` sans proxy devant permet à n'importe qui
+   * de forger son adresse et d'échapper à la limitation de débit.
+   */
+  trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
-    max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+    /**
+     * 300 requêtes / 15 min, soit 20 par minute.
+     *
+     * L'ancien plafond de 100 (6,6/min) était intenable pour une application à
+     * page unique : le fil de conversation s'actualise toutes les 8 secondes,
+     * soit 7,5 requêtes/minute à lui seul — 112 sur la fenêtre. Tout membre
+     * gardant une conversation ouverte un quart d'heure se prenait un 429.
+     *
+     * Les routes d'authentification gardent leur plafond strict de 20/15 min,
+     * posé séparément dans server.ts.
+     */
+    max: parseInt(process.env.RATE_LIMIT_MAX || '300', 10),
   },
 
   // Système d'abonnement. DÉSACTIVÉ par défaut (version 1 : accès complet et
