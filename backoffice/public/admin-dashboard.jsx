@@ -12,7 +12,7 @@ const MOCK = {
     ratioMaleFemale: 0.79,
     activeSubscriptions: 2187,
     conversionRate: 0.33,
-    totalMatches: 9456,
+    totalConversations: 9456,
     pendingReports: 23,
     mrr30dFcfa: 8740000,
   },
@@ -179,7 +179,7 @@ const DashboardPage = ({ data }) => {
         <MetricCard label="Utilisateurs" value={new Intl.NumberFormat("fr-FR").format(s.totalUsers)} sub={`${new Intl.NumberFormat("fr-FR").format(s.activeWomen)} F / ${new Intl.NumberFormat("fr-FR").format(s.activeMen)} H`} icon={Icons.users} color="text-blue-600" />
         <MetricCard label="MRR (30j)" value={fmtCFA(s.mrr30dFcfa)} sub="Revenu mensuel récurrent" icon={Icons.dollarSign} color="text-emerald-600" />
         <MetricCard label="Abonnements actifs" value={new Intl.NumberFormat("fr-FR").format(s.activeSubscriptions)} sub={`Conversion : ${fmtPct(s.conversionRate)}`} icon={Icons.trending} color="text-pink-600" />
-        <MetricCard label="Matches" value={new Intl.NumberFormat("fr-FR").format(s.totalMatches)} sub={`${s.pendingReports} signalements en attente`} icon={Icons.heart} color="text-purple-600" />
+        <MetricCard label="Conversations" value={new Intl.NumberFormat("fr-FR").format(s.totalConversations)} sub={`${s.pendingReports} signalements en attente`} icon={Icons.heart} color="text-purple-600" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

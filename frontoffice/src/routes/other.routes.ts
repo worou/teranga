@@ -425,7 +425,7 @@ router.post(
 router.get(
   '/admin/stats',
   asyncHandler(async (_req, res) => {
-    const [totalUsers, activeWomen, activeMen, activeSubs, totalMatches, pendingReports] =
+    const [totalUsers, activeWomen, activeMen, activeSubs, totalConversations, pendingReports] =
       await Promise.all([
         prisma.user.count({ where: { status: 'ACTIVE' } }),
         prisma.user.count({ where: { status: 'ACTIVE', gender: 'FEMALE' } }),
@@ -452,7 +452,7 @@ router.get(
       ratioMaleFemale: activeWomen > 0 ? activeMen / activeWomen : 0,
       activeSubscriptions: activeSubs,
       conversionRate: activeMen > 0 ? activeSubs / activeMen : 0,
-      totalMatches,
+      totalConversations,
       pendingReports,
       mrr30dFcfa: mrr._sum.amountFcfa || 0,
     });
