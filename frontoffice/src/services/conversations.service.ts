@@ -82,6 +82,22 @@ function toMessage(m: {
   };
 }
 
+/**
+ * Violation de contrainte d'unicité Prisma (P2002).
+ *
+ * Testé sur le nom du constructeur plutôt que par `instanceof` : c'est la
+ * convention déjà retenue dans `errorHandler.ts`, qui évite d'importer le
+ * runtime Prisma pour un simple test de type.
+ */
+function isUniqueConstraintError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    err.constructor?.name === 'PrismaClientKnownRequestError' &&
+    (err as { code?: string }).code === 'P2002'
+  );
+}
+
 export class ConversationsService {
   /**
    * Deux membres peuvent-ils s'écrire ?
@@ -129,16 +145,34 @@ export class ConversationsService {
     await this.assertNotBlocked(userId, otherUserId);
 
     const [userAId, userBId] = orderUserIds(userId, otherUserId);
-    const existing = await prisma.match.findUnique({
-      where: { userAId_userBId: { userAId, userBId } },
-    });
+    const key = { userAId_userBId: { userAId, userBId } };
+
+    const existing = await prisma.match.findUnique({ where: key });
     if (existing) return existing;
 
     // Le quota ne se vérifie qu'ici, sur la branche « nouvelle conversation » :
     // répondre à quelqu'un ne consomme rien.
     await this.assertDailyQuota(userId);
 
-    return prisma.match.create({ data: { userAId, userBId, status: 'MATCHED' } });
+    try {
+      return await prisma.match.create({ data: { userAId, userBId, status: 'MATCHED' } });
+    } catch (err) {
+      // Course : la lecture et la création ne sont pas atomiques, et deux
+      // premiers messages partis en même temps — un double-clic suffit —
+      // trouvent tous deux `null` puis tentent tous deux la création. Le
+      // second heurte `Match_userAId_userBId_key` et remontait en 409
+      // « Cette ressource existe déjà », ce qui n'a aucun sens pour un
+      // expéditeur.
+      //
+      // Un `upsert` serait atomique, mais ne laisserait pas la place au
+      // contrôle de quota, qui doit distinguer ouverture et réponse. On
+      // rattrape donc la collision : elle prouve que la conversation existe.
+      if (isUniqueConstraintError(err)) {
+        const raced = await prisma.match.findUnique({ where: key });
+        if (raced) return raced;
+      }
+      throw err;
+    }
   }
 
   /**
