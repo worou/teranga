@@ -143,6 +143,18 @@ export const config = {
     ENGAGEMENT: { amount: 5000, months: 6, monthlyDisplay: 833 },
   },
 
+  /**
+   * Dossier de stockage des photos de membres.
+   *
+   * Relatif à la racine du service, ou absolu. **Doit pointer sur un volume
+   * persistant en production** : dans un conteneur, le système de fichiers est
+   * éphémère et toutes les photos disparaîtraient à chaque redéploiement.
+   *
+   * Jamais sous `public/` : c'est la sortie de `vite build`, qui tourne avec
+   * `emptyOutDir: true` et efface son contenu à chaque construction.
+   */
+  uploadDir: process.env.UPLOAD_DIR || 'uploads',
+
   // Complétude du profil exigée à l'inscription. Un compte dont le profil n'est
   // pas complet est créé et authentifié (il faut un token pour uploader les
   // photos), mais n'accède pas à l'application tant que le minimum n'est pas

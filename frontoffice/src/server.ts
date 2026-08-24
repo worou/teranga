@@ -11,6 +11,7 @@ import { config } from './config';
 import { assertProductionConfig, warnProductionConfig } from './config/preflight';
 import { swaggerSpec } from './config/swagger';
 import { prisma } from './config/prisma';
+import { uploadDir } from './config/upload';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
 import { requireSubscriptionsEnabled } from './middleware/auth';
@@ -31,6 +32,10 @@ import { initSockets } from './sockets';
 // Jobs planifiés
 import { startSubscriptionScheduler } from './jobs/subscriptionLifecycle';
 
+// Version réellement déployée, plutôt qu'une constante figée qui ne suit
+// aucune livraison.
+const APP_VERSION: string = require('../package.json').version;
+
 const app = express();
 const server = createServer(app);
 
@@ -49,7 +54,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 // pour que l'URL `/uploads/...` ne dépende pas de la sortie de compilation.
 app.use(
   '/uploads',
-  express.static(path.join(__dirname, '..', 'uploads'), {
+  express.static(uploadDir, {
     dotfiles: 'ignore',
     // Contenu déposé par des membres : jamais interprété comme du code. Helmet
     // pose déjà `X-Content-Type-Options: nosniff` globalement.
@@ -96,19 +101,33 @@ const authLimiter = rateLimit({
 app.get('/health', async (_req: Request, res: Response) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: 'ok', timestamp: new Date().toISOString(), environment: config.env, version: '1.0.0', service: 'frontoffice' });
+    res.json({ status: 'ok', timestamp: new Date().toISOString(), environment: config.env, version: APP_VERSION, service: 'frontoffice' });
   } catch {
     res.status(503).json({ status: 'degraded', database: 'unreachable' });
   }
 });
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
-  customCss: '.topbar { display: none; } .swagger-ui .info .title { color: #5B2E0C; font-family: Georgia, serif; }',
-  customSiteTitle: 'Téranga Frontoffice — Documentation',
-  swaggerOptions: { persistAuthorization: true, docExpansion: 'none', filter: true, tryItOutEnabled: true },
-}));
+// Documentation interactive. Publiée hors production seulement : elle décrit
+// toute la surface de l'API, jeton compris, et son bouton « try it out »
+// exécute de vraies requêtes. ENABLE_API_DOCS=true la rouvre sur un
+// environnement de recette.
+const apiDocsEnabled = config.env !== 'production' || process.env.ENABLE_API_DOCS === 'true';
 
-app.get('/api-docs.json', (_req, res) => { res.json(swaggerSpec); });
+if (apiDocsEnabled) {
+  app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+    customCss: '.topbar { display: none; } .swagger-ui .info .title { color: #5B2E0C; font-family: Georgia, serif; }',
+    customSiteTitle: 'Téranga Frontoffice — Documentation',
+    swaggerOptions: { persistAuthorization: true, docExpansion: 'none', filter: true, tryItOutEnabled: true },
+  }));
+
+  app.get('/api-docs.json', (_req, res) => { res.json(swaggerSpec); });
+} else {
+  // Sans cela, le repli SPA renverrait index.html : une URL de documentation
+  // qui sert l'application est plus déroutante qu'un 404 franc.
+  app.all(['/api-docs', '/api-docs/*', '/api-docs.json'], (_req, res) => {
+    res.status(404).json({ statusCode: 404, error: 'Not Found', message: 'Documentation non publiée' });
+  });
+}
 
 // Webhooks (publics, avant rate-limit)
 app.use('/api/v1/payments/webhook', webhooksRoutes);

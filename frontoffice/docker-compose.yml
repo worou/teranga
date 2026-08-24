@@ -2,7 +2,10 @@ version: '3.8'
 
 # ============================================================
 #  Téranga — Frontoffice
-#  Lance : PostgreSQL (base partagée) + API utilisateurs
+#  Lance : MySQL (base partagée) + API utilisateurs
+#
+#  Le schéma Prisma déclare `provider = "mysql"` : la pile montait auparavant
+#  un PostgreSQL, contre lequel Prisma ne pouvait pas parler. Corrigé.
 #
 #  Démarrage :  docker compose up -d
 #  Arrêt :      docker compose down
@@ -14,23 +17,24 @@ networks:
 
 services:
   # ── Base de données (partagée avec le backoffice) ──────────
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.4
     container_name: teranga-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: teranga
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-      POSTGRES_DB: teranga
+      MYSQL_DATABASE: teranga
+      MYSQL_USER: teranga
+      MYSQL_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD est obligatoire}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD est obligatoire}
     ports:
-      - '5432:5432'
+      - '3306:3306'
     volumes:
-      - teranga-data:/var/lib/postgresql/data
+      - teranga-data:/var/lib/mysql
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U teranga -d teranga']
+      test: ['CMD', 'mysqladmin', 'ping', '-h', 'localhost', '-u', 'teranga', '-p${DB_PASSWORD}']
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
     networks:
       - teranga-network
 
@@ -47,8 +51,17 @@ services:
       NODE_ENV: production
       PORT: 3000
       API_BASE_URL: ${API_BASE_URL:-http://localhost:3000}
-      DATABASE_URL: postgresql://teranga:${DB_PASSWORD:-password}@postgres:5432/teranga?schema=public
-      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      DATABASE_URL: mysql://teranga:${DB_PASSWORD}@mysql:3306/teranga
+      # `:?` — Compose refuse de démarrer si la variable est absente, plutôt
+      # que de substituer une clé publique. Le preflight du serveur refuserait
+      # de toute façon, mais échouer ici est plus lisible.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET est obligatoire — openssl rand -base64 48}
+      INTERNAL_API_SECRET: ${INTERNAL_API_SECRET:?INTERNAL_API_SECRET est obligatoire, identique au backoffice}
+      # Derrière un reverse proxy, poser TRUST_PROXY=1 (voir .env.example).
+      TRUST_PROXY: ${TRUST_PROXY:-0}
+      # Photos des membres : volume monté ci-dessous.
+      UPLOAD_DIR: /app/uploads
+      MESSAGING_DAILY_NEW_CONVERSATIONS: ${MESSAGING_DAILY_NEW_CONVERSATIONS:-30}
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3001,https://teranga.africa}
       # CinetPay
       CINETPAY_API_KEY: ${CINETPAY_API_KEY:-}
@@ -74,13 +87,19 @@ services:
       SIGHTENGINE_API_SECRET: ${SIGHTENGINE_API_SECRET:-}
       # Rate limit
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-900000}
-      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-100}
+      RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-300}
+    volumes:
+      # Sans ce montage, les photos des membres disparaissent à chaque
+      # redéploiement du conteneur.
+      - teranga-uploads:/app/uploads
     depends_on:
-      postgres:
+      mysql:
         condition: service_healthy
     networks:
       - teranga-network
 
 volumes:
   teranga-data:
-    name: teranga-data   # volume partagé nommé (accessible depuis les deux compose)
+    name: teranga-data      # volume partagé nommé (accessible depuis les deux compose)
+  teranga-uploads:
+    name: teranga-uploads   # photos de membres — état persistant, hors artefact de build

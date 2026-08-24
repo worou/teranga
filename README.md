@@ -33,9 +33,21 @@ Pour **chaque** service (`frontoffice`, `backoffice`) :
 cd frontoffice            # puis, séparément, cd backoffice
 cp .env.example .env      # renseigner les valeurs (DB, secrets, paiements…)
 npm install
-npx prisma db push        # applique le schéma à la base (frontoffice = propriétaire du schéma)
+npx prisma migrate deploy # applique le schéma (frontoffice = propriétaire du schéma)
 npm run dev               # API en mode watch
 ```
+
+> **Base déjà créée par `db push` ?** Les migrations ont été introduites après
+> coup. Une base existante doit être *baselinée* une fois, sinon
+> `migrate deploy` tentera de recréer des tables déjà là :
+>
+> ```bash
+> cd frontoffice
+> npx prisma migrate resolve --applied 0_init
+> ```
+>
+> Le backoffice n'a pas de migrations : il partage la base du frontoffice, qui
+> seul possède le schéma. Ne jamais y lancer `prisma migrate`.
 
 Client React (frontoffice) :
 
@@ -51,6 +63,34 @@ Compte administrateur initial (backoffice) :
 cd backoffice
 npx ts-node --transpile-only prisma/seedAdmin.ts   # mot de passe généré et affiché une fois
 ```
+
+## Mise en production
+
+Points bloquants vérifiés avant tout déploiement :
+
+1. **Secrets.** `JWT_SECRET`, `INTERNAL_API_SECRET` (frontoffice) et en plus
+   `ADMIN_SECRET` (backoffice) doivent être renseignés, longs d'au moins 32
+   caractères, et différents des valeurs d'exemple — celles-ci sont publiées
+   dans ce dépôt. Les deux services **refusent de démarrer** sinon.
+   `INTERNAL_API_SECRET` doit être **identique** des deux côtés.
+
+   ```bash
+   openssl rand -base64 48
+   ```
+
+2. **Reverse proxy.** Derrière nginx, un load balancer ou une plateforme type
+   Heroku/Render, poser `TRUST_PROXY=1`. Sans cela, la limitation de débit voit
+   l'adresse du proxy et compte tous les utilisateurs dans un seul seau. Ne pas
+   le poser sans proxy devant : `X-Forwarded-For` deviendrait forgeable.
+
+3. **Photos des membres.** Elles sont écrites sur disque, dans `UPLOAD_DIR`
+   (`frontoffice/uploads` par défaut). **Ce dossier doit être un volume
+   persistant**, sinon toutes les photos disparaissent à chaque redéploiement.
+   Le `Dockerfile` le déclare en `VOLUME` ; il reste à le monter côté
+   orchestrateur.
+
+4. **Base de données.** `prisma migrate deploy` s'exécute au démarrage du
+   conteneur. Sur une base préexistante, la baseliner d'abord (voir ci-dessus).
 
 ## Build de production
 

@@ -42,6 +42,14 @@ RUN npx prisma generate
 COPY --from=api-builder /app/dist ./dist
 COPY --from=client-builder /app/public ./public
 
+# Photos des membres. Le système de fichiers d'un conteneur est éphémère :
+# sans volume monté ici, toutes les photos disparaissent au redéploiement.
+# La déclaration ne suffit pas — il reste à monter un volume persistant côté
+# orchestrateur (docker run -v, volume Compose, PVC Kubernetes…).
+ENV UPLOAD_DIR=/app/uploads
+RUN mkdir -p /app/uploads
+VOLUME ["/app/uploads"]
+
 EXPOSE 3000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

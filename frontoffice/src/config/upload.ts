@@ -2,6 +2,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { v4 as uuid } from 'uuid';
+import { config } from './index';
 
 /**
  * Upload local des photos de profil (développement).
@@ -15,10 +16,17 @@ import { v4 as uuid } from 'uuid';
  * contenu** à chaque construction. Des photos de membres rangées là sont
  * perdues au premier `npm run build:all` — c'est déjà arrivé sur ce projet.
  *
- * En production, on remplacera ce stockage disque par un envoi vers S3.
+ * Le chemin est configurable par `UPLOAD_DIR` : en conteneur, il doit désigner
+ * un volume persistant, faute de quoi toutes les photos disparaissent au
+ * redéploiement. Un envoi vers S3 reste la solution cible ; le volume est ce
+ * qui rend le déploiement possible sans elle.
  */
-const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+export const uploadDir = path.isAbsolute(config.uploadDir)
+  ? config.uploadDir
+  : path.join(__dirname, '..', '..', config.uploadDir);
+
 // Le dossier doit exister au runtime, sinon multer.diskStorage lève ENOENT.
+// Vaut aussi pour un chemin configuré : un volume fraîchement monté est vide.
 fs.mkdirSync(uploadDir, { recursive: true });
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
