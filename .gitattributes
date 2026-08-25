@@ -1,0 +1,14 @@
+# Normalisation des fins de ligne.
+#
+# Sur Windows, core.autocrlf=true convertit en CRLF à l'extraction. Pour un
+# script destiné à s'exécuter sur le serveur Linux, c'est fatal : bash lit le
+# retour chariot comme faisant partie de la commande et répond
+# « \r: command not found » sur chaque ligne.
+#
+# `eol=lf` force le LF dans le dépôt ET dans la copie de travail, quel que
+# soit le poste.
+*.sh text eol=lf
+
+# Même raison : lus par des outils POSIX ou embarqués dans des images.
+*.bash    text eol=lf
+Dockerfile text eol=lf
