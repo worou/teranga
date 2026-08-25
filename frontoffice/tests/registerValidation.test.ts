@@ -11,6 +11,8 @@ import { registerSchema } from '../src/validators';
 function base(over: Record<string, any> = {}) {
   return {
     phone: '+221771234567',
+    // Obligatoire depuis que le code de verification part par e-mail.
+    email: 'awa@example.com',
     firstName: 'Awa',
     birthDate: '1995-06-15',
     gender: 'FEMALE',
@@ -56,5 +58,22 @@ describe('registerSchema — cohérence indicatif / pays', () => {
 
   test('le format E.164 reste exigé', () => {
     assert.equal(registerSchema.safeParse(base({ phone: '0771234567' })).success, false);
+  });
+});
+
+describe('registerSchema — l’e-mail est le canal de vérification', () => {
+  test('une inscription sans e-mail est refusée', () => {
+    const sans = base();
+    delete (sans as any).email;
+    const r = registerSchema.safeParse(sans);
+    assert.equal(r.success, false, 'sans adresse, le code ne peut aller nulle part');
+  });
+
+  test('une adresse mal formée est refusée', () => {
+    assert.equal(registerSchema.safeParse(base({ email: 'pas-une-adresse' })).success, false);
+  });
+
+  test('une adresse valide passe', () => {
+    assert.equal(registerSchema.safeParse(base({ email: 'fatou@exemple.sn' })).success, true);
   });
 });

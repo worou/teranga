@@ -13,6 +13,7 @@ import './cinetpayHmac.test';
 import './orangeSms.test';
 import './twilioSms.test';
 import './smsSender.test';
+import './otpDelivery.test';
 import './paypal.test';
 import './paypalIpn.test';
 import './registerValidation.test';

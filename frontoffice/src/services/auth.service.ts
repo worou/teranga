@@ -6,7 +6,7 @@ import { AppError } from '../utils/AppError';
 import { signAccessToken } from '../utils/jwt';
 import { addDays, generateOtpCode } from '../utils/helpers';
 import { logger } from '../utils/logger';
-import { smsSender } from '../utils/smsSender';
+import { otpDelivery } from '../utils/otpDelivery';
 
 export interface RegisterInput {
   phone: string;
@@ -103,6 +103,8 @@ export class AuthService {
 
     const user = await prisma.user.findUnique({ where: { phone } });
 
+    const destination = { phone, email: user?.email ?? null };
+
     const otpRow = await prisma.otpCode.create({
       data: {
         userId: user?.id,
@@ -113,14 +115,17 @@ export class AuthService {
       },
     });
 
-    // Envoi réel via la chaîne de fournisseurs (Twilio puis Orange) ; sinon
-    // repli sur journalisation (dev local sans identifiants — le code reste
-    // récupérable dans les logs).
-    const smsText = `Téranga : votre code de vérification est ${code}. Il expire dans 10 minutes.`;
-    if (smsSender.isConfigured()) {
+    // Acheminement par e-mail puis SMS (cf. otpDelivery) ; sinon repli sur
+    // journalisation (dev local sans canal — le code reste dans les logs).
+    if (otpDelivery.isConfigured(destination)) {
       try {
-        const { provider, failures } = await smsSender.send(phone, smsText);
-        logger.info('OTP sent by SMS', { phone, purpose, provider, fallbacks: failures.length });
+        const { channel, provider, failures } = await otpDelivery.send(destination, code);
+        // Le canal est consigné : c'est lui qui dira, à la vérification, si
+        // l'on a prouvé la possession du téléphone ou celle de l'adresse.
+        await prisma.otpCode
+          .update({ where: { id: otpRow.id }, data: { channel } })
+          .catch(() => { /* colonne absente sur une base non migrée */ });
+        logger.info('OTP delivered', { phone, purpose, channel, provider, fallbacks: failures.length });
       } catch (err) {
         // Le quota (3 demandes par heure) ne doit compter que les codes
         // réellement partis. Sans cette suppression, trois pannes d'affilée
@@ -129,8 +134,8 @@ export class AuthService {
         await prisma.otpCode
           .delete({ where: { id: otpRow.id } })
           .catch(() => { /* déjà disparu : rien à rattraper */ });
-        logger.error('OTP SMS delivery failed', { phone, purpose, error: (err as Error).message });
-        throw new AppError("Impossible d'envoyer le SMS de vérification. Réessayez.", 502);
+        logger.error('OTP delivery failed', { phone, purpose, error: (err as Error).message });
+        throw new AppError("Impossible d'envoyer le code de vérification. Réessayez.", 502);
       }
       return { sent: true, expiresAt };
     }
@@ -139,7 +144,7 @@ export class AuthService {
     // développement uniquement — renvoyé à l'appelant pour que l'inscription
     // reste testable sans compte SMS. `config.env` vaut 'production' en prod :
     // ce champ n'y est jamais présent.
-    logger.warn('OTP generated (SMS non configuré — repli journalisation)', {
+    logger.warn('OTP generated (aucun canal configuré — repli journalisation)', {
       phone,
       purpose,
       code: config.env === 'development' ? code : '***',
@@ -180,10 +185,15 @@ export class AuthService {
 
     if (!matches) throw AppError.badRequest('Code incorrect');
 
+    // On ne certifie que ce qui a été prouvé : un code reçu par e-mail
+    // n'atteste rien du téléphone, et inversement. Un code d'avant l'ajout du
+    // canal e-mail n'a pas de `channel` — il venait forcément du SMS.
+    const parEmail = otp.channel === 'email';
+
     const user = await prisma.user.update({
       where: { phone },
       data: {
-        phoneVerified: true,
+        ...(parEmail ? { emailVerified: true } : { phoneVerified: true }),
         status: 'ACTIVE',
       },
       include: { subscription: true, photos: true },

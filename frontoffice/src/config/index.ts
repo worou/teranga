@@ -55,12 +55,38 @@ export const config = {
   // interne refuse tout si la valeur reste le défaut de dev (fail-closed).
   internalApiSecret: process.env.INTERNAL_API_SECRET || 'dev-internal-secret',
 
+  /**
+   * Courrier sortant (codes de vérification).
+   *
+   * Canal principal depuis que la vérification passe par e-mail : il ne dépend
+   * d'aucun compte tiers. Sur un hébergement mutualisé, le SMTP local écoute
+   * sur 127.0.0.1:25 sans authentification.
+   *
+   * `from` doit appartenir à un domaine réellement hébergé : un domaine sans
+   * DNS n'a ni SPF ni DKIM, et le message est traité comme falsifié.
+   */
+  email: {
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '25', 10),
+    secure: process.env.SMTP_SECURE === 'true',
+    user: process.env.SMTP_USER || '',
+    password: process.env.SMTP_PASSWORD || '',
+    from: process.env.MAIL_FROM || '',
+    fromName: process.env.MAIL_FROM_NAME || 'Téranga',
+  },
+
   // Twilio — fournisseur d'envoi des SMS OTP (par défaut). Sans ces valeurs,
   // le code est journalisé en repli (dev local). En production, renseigner
   // accountSid + authToken + (from OU messagingServiceSid).
   twilio: {
     accountSid: process.env.TWILIO_ACCOUNT_SID || '',
     authToken: process.env.TWILIO_AUTH_TOKEN || '',
+    // Clé d'API (SK…) — alternative recommandée au jeton de compte : elle se
+    // révoque seule, sans faire tourner les identifiants du compte entier.
+    // ⚠️  Elle ne remplace PAS l'Account SID : Twilio l'exige toujours dans le
+    //     chemin de l'URL. La clé ne sert qu'à l'authentification.
+    apiKeySid: process.env.TWILIO_API_KEY_SID || '',
+    apiKeySecret: process.env.TWILIO_API_KEY_SECRET || '',
     // Numéro émetteur SMS Twilio au format E.164 (ex. +12025550123), OU un
     // Messaging Service (recommandé pour l'Afrique de l'Ouest : permet un
     // Sender ID alphanumérique et le routage par pays).

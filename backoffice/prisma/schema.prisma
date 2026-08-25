@@ -8,6 +8,13 @@
 
 generator client {
   provider = "prisma-client-js"
+  // Le moteur de requête est un binaire lié à la version d'OpenSSL du système.
+  // En hébergement mutualisé, le shell SSH et le serveur d'applications ne
+  // tournent pas forcément dans le même environnement : ici, `prisma generate`
+  // détectait debian-openssl-1.1.x alors que Passenger exécute l'application
+  // en debian-openssl-1.0.x — le moteur restait introuvable au démarrage.
+  // Déclarer les deux cibles fait générer les deux binaires.
+  binaryTargets = ["native", "debian-openssl-1.0.x", "debian-openssl-1.1.x"]
 }
 
 datasource db {
@@ -224,6 +231,9 @@ model OtpCode {
   phone     String
   code      String
   purpose   String   // "registration", "login", "password_reset"
+  /// Canal d'acheminement ("email" ou "sms"). Null pour les codes emis avant
+  /// l'ajout du canal e-mail : ils venaient forcement du SMS.
+  channel   String?
   expiresAt DateTime
   consumedAt DateTime?
   attempts  Int      @default(0)

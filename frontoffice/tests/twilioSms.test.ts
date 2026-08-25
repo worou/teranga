@@ -56,6 +56,8 @@ describe('Client Twilio (SMS OTP)', () => {
     Object.assign(config.twilio, {
       accountSid: 'ACxxxxxxxx',
       authToken: 'tok-secret',
+      apiKeySid: '',
+      apiKeySecret: '',
       from: '+12025550123',
       messagingServiceSid: '',
     });
@@ -174,6 +176,58 @@ describe('Client Twilio (SMS OTP)', () => {
       m.failNetwork('ECONNRESET');
       const c = new TwilioSmsClient(m.http);
       await assert.rejects(() => c.sendSms('+229981234567', 'msg'), /ECONNRESET/);
+      restore();
+    });
+  });
+
+  describe('authentification par clé d’API', () => {
+    test('la clé d’API l’emporte sur le jeton de compte', async () => {
+      Object.assign(config.twilio, { apiKeySid: 'SK123', apiKeySecret: 'secret-cle' });
+      const m = makeHttp();
+      await new TwilioSmsClient(m.http).sendSms('+221770000000', 'code');
+      const call = m.sendCalls()[0];
+      assert.equal(
+        call.opts.headers.Authorization,
+        'Basic ' + Buffer.from('SK123:secret-cle').toString('base64'),
+        'une clé révocable doit primer sur le jeton du compte entier',
+      );
+      restore();
+    });
+
+    test('l’Account SID reste dans l’URL même avec une clé d’API', async () => {
+      Object.assign(config.twilio, { apiKeySid: 'SK123', apiKeySecret: 'secret-cle' });
+      const m = makeHttp();
+      await new TwilioSmsClient(m.http).sendSms('+221770000000', 'code');
+      assert.equal(
+        m.sendCalls()[0].url,
+        'https://api.twilio.com/2010-04-01/Accounts/ACxxxxxxxx/Messages.json',
+        'la clé authentifie, elle ne désigne pas le compte',
+      );
+      restore();
+    });
+
+    test('une clé d’API sans Account SID ne suffit pas', () => {
+      Object.assign(config.twilio, {
+        accountSid: '', authToken: '', apiKeySid: 'SK123', apiKeySecret: 'secret-cle',
+      });
+      assert.equal(new TwilioSmsClient(makeHttp().http).isConfigured(), false);
+      restore();
+    });
+
+    test('une clé incomplète retombe sur le jeton de compte', async () => {
+      Object.assign(config.twilio, { apiKeySid: 'SK123', apiKeySecret: '' });
+      const m = makeHttp();
+      await new TwilioSmsClient(m.http).sendSms('+221770000000', 'code');
+      assert.equal(
+        m.sendCalls()[0].opts.headers.Authorization,
+        'Basic ' + Buffer.from('ACxxxxxxxx:tok-secret').toString('base64'),
+      );
+      restore();
+    });
+
+    test('sans aucun identifiant, isConfigured est faux', () => {
+      Object.assign(config.twilio, { authToken: '', apiKeySid: '', apiKeySecret: '' });
+      assert.equal(new TwilioSmsClient(makeHttp().http).isConfigured(), false);
       restore();
     });
   });

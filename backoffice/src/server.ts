@@ -80,9 +80,23 @@ try {
   process.exit(1);
 }
 
-app.listen(config.port, () => {
+/**
+ * Montage sous un sous-chemin (`BASE_URI=/admin`).
+ *
+ * Derrière Passenger, une application servie sur `/admin` reçoit le chemin
+ * COMPLET — `/admin/api/admin/auth/login` — et non le chemin relatif. Sans
+ * remontage, toutes les routes tombent en 404 alors que l'application tourne.
+ *
+ * Vide (le cas en développement, et en production sur un domaine dédié),
+ * l'application est servie telle quelle : aucun changement de comportement.
+ */
+const baseUri = (process.env.BASE_URI || '').replace(/\/+$/, '');
+const listener = baseUri ? express().use(baseUri, app) : app;
+
+listener.listen(config.port, () => {
   logger.info(`🚀 Backoffice Téranga démarré`, {
-    url: `http://localhost:${config.port}`,
+    url: `http://localhost:${config.port}${baseUri}`,
+    baseUri: baseUri || '/',
     env: config.env,
   });
 });

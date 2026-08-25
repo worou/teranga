@@ -228,7 +228,10 @@ export default function Inscription() {
     else if (XOF_COUNTRIES.has(s1.country) && s2.dialCode !== COUNTRY_DIAL[s1.country]) {
       e.phone = `Indicatif ${COUNTRY_DIAL[s1.country]} attendu pour ce pays`
     }
-    if (s2.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s2.email)) e.email = 'Email invalide'
+    // L'adresse porte le code de vérification : sans elle, l'inscription
+    // ne peut pas aboutir. Elle n'est donc plus facultative.
+    if (!s2.email.trim()) e.email = 'Requis — le code de vérification y sera envoyé'
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s2.email)) e.email = 'Adresse invalide'
     setErrors2(e)
     return Object.keys(e).length === 0
   }
@@ -514,8 +517,8 @@ export default function Inscription() {
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
                 <div className={styles.stepLabel}>Étape 2 sur 4</div>
-                <h1>Votre <em>numéro</em></h1>
-                <p>Nous vous enverrons un code SMS pour confirmer votre identité.</p>
+                <h1>Vos <em>coordonnées</em></h1>
+                <p>Nous vous enverrons un code par e-mail pour confirmer votre inscription.</p>
               </div>
 
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
@@ -534,7 +537,7 @@ export default function Inscription() {
                   </div>
                 </div>
 
-                <Field label="Adresse e-mail" optional error={errors2.email} className={styles.fullWidth}>
+                <Field label="Adresse e-mail" error={errors2.email} className={styles.fullWidth}>
                   <input type="email" placeholder="aminata@exemple.com" autoComplete="email"
                     value={s2.email} className={errors2.email ? styles.inputError : ''}
                     onChange={e => setS2(p => ({ ...p, email: e.target.value }))} />
@@ -559,7 +562,7 @@ export default function Inscription() {
                 <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(1) }}>Retour</button>
                 <button className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
                   disabled={loading} onClick={nextStep2}>
-                  {!loading && <>Envoyer le code SMS <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 010 2.14 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.1V14.92z"/></svg></>}
+                  {!loading && <>Recevoir mon code <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 010 2.14 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.1V14.92z"/></svg></>}
                 </button>
               </div>
             </div>
@@ -570,24 +573,26 @@ export default function Inscription() {
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
                 <div className={styles.stepLabel}>Étape 3 sur 4</div>
-                <h1>Vérifiez votre <em>téléphone</em></h1>
-                <p>Entrez le code à 6 chiffres reçu par SMS.</p>
+                <h1>Vérifiez votre <em>adresse</em></h1>
+                <p>Entrez le code à 6 chiffres reçu par e-mail.</p>
               </div>
 
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
               {success && <div className={styles.alertSuccess}><span>✓</span> {success}</div>}
 
               <div className={styles.otpHero}>
-                <div className={styles.otpIcon}>📱</div>
-                <div className={styles.otpPhone}>{phone}</div>
-                <div className={styles.otpSub}>Code envoyé par SMS</div>
+                <div className={styles.otpIcon}>✉️</div>
+                <div className={styles.otpPhone}>{s2.email.trim() || phone}</div>
+                <div className={styles.otpSub}>
+                  Code envoyé par e-mail · pensez à regarder les indésirables
+                </div>
               </div>
 
               {devCode && (
                 <div className={styles.alertSuccess}>
                   <span>🛠</span>
                   <span>
-                    Mode développement — aucun fournisseur SMS configuré.
+                    Mode développement — aucun canal d'envoi configuré.
                     Votre code : <strong style={{ letterSpacing: '0.18em' }}>{devCode}</strong>
                   </span>
                 </div>
@@ -608,7 +613,7 @@ export default function Inscription() {
                   className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
                   disabled={loading || otpCode.length < 6}
                   onClick={verifyOtp}>
-                  {!loading && 'Vérifier mon numéro'}
+                  {!loading && 'Vérifier mon adresse'}
                 </button>
               </div>
             </div>

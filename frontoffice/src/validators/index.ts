@@ -8,7 +8,9 @@ const phoneRegex = /^\+\d{8,15}$/;
 export const registerSchema = z
   .object({
     phone: z.string().regex(phoneRegex, 'Numéro invalide (format E.164)'),
-    email: z.string().email().optional(),
+    // Obligatoire : c'est par e-mail qu'arrive le code de verification. Le
+    // laisser facultatif ouvrirait des inscriptions sans moyen d'aboutir.
+    email: z.string().email(),
     password: z.string().min(8).optional(),
     firstName: z.string().min(1).max(60),
     lastName: z.string().max(60).optional(),
