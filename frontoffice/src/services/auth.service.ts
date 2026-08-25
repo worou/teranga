@@ -6,7 +6,7 @@ import { AppError } from '../utils/AppError';
 import { signAccessToken } from '../utils/jwt';
 import { addDays, generateOtpCode } from '../utils/helpers';
 import { logger } from '../utils/logger';
-import { twilioSms } from '../utils/twilioSms';
+import { smsSender } from '../utils/smsSender';
 
 export interface RegisterInput {
   phone: string;
@@ -103,7 +103,7 @@ export class AuthService {
 
     const user = await prisma.user.findUnique({ where: { phone } });
 
-    await prisma.otpCode.create({
+    const otpRow = await prisma.otpCode.create({
       data: {
         userId: user?.id,
         phone,
@@ -113,14 +113,22 @@ export class AuthService {
       },
     });
 
-    // Envoi réel via Twilio si configuré ; sinon repli sur journalisation
-    // (dev local sans identifiants — le code reste récupérable dans les logs).
+    // Envoi réel via la chaîne de fournisseurs (Twilio puis Orange) ; sinon
+    // repli sur journalisation (dev local sans identifiants — le code reste
+    // récupérable dans les logs).
     const smsText = `Téranga : votre code de vérification est ${code}. Il expire dans 10 minutes.`;
-    if (twilioSms.isConfigured()) {
+    if (smsSender.isConfigured()) {
       try {
-        await twilioSms.sendSms(phone, smsText);
-        logger.info('OTP sent by SMS', { phone, purpose });
+        const { provider, failures } = await smsSender.send(phone, smsText);
+        logger.info('OTP sent by SMS', { phone, purpose, provider, fallbacks: failures.length });
       } catch (err) {
+        // Le quota (3 demandes par heure) ne doit compter que les codes
+        // réellement partis. Sans cette suppression, trois pannes d'affilée
+        // du fournisseur enfermaient l'utilisateur une heure sans qu'il ait
+        // jamais reçu le moindre SMS.
+        await prisma.otpCode
+          .delete({ where: { id: otpRow.id } })
+          .catch(() => { /* déjà disparu : rien à rattraper */ });
         logger.error('OTP SMS delivery failed', { phone, purpose, error: (err as Error).message });
         throw new AppError("Impossible d'envoyer le SMS de vérification. Réessayez.", 502);
       }

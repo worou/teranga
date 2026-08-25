@@ -47,7 +47,7 @@ export interface Conversation extends ConversationRef {
 
 export interface Paginated<T> {
   data: T[]
-  pagination: { page: number; limit: number; total: number; totalPages: number }
+  pagination: { page: number; limit: number; total: number | null; totalPages: number | null }
 }
 
 /**
@@ -113,8 +113,20 @@ export const messagesApi = {
    * charge de l'ordre. ⚠️ Effet de bord assumé côté serveur : cet appel marque
    * les messages reçus comme lus.
    */
-  thread: (conversationId: string, limit = 50) =>
-    request<Paginated<Message>>(`/conversations/${conversationId}/messages?limit=${limit}`),
+  /**
+   * Fil d'une conversation.
+   *
+   * `since` demande une lecture incrémentale : seuls les messages à partir de
+   * cet horodatage. La borne est inclusive côté serveur — deux messages
+   * peuvent partager la milliseconde — donc l'appelant dédoublonne par
+   * identifiant. `pagination.total` vaut alors `null` : un fragment n'est pas
+   * la taille du fil.
+   */
+  thread: (conversationId: string, limit = 50, since?: string) =>
+    request<Paginated<Message>>(
+      `/conversations/${conversationId}/messages?limit=${limit}` +
+        (since ? `&since=${encodeURIComponent(since)}` : ''),
+    ),
 
   /** Écrire dans une conversation déjà ouverte. */
   send: (conversationId: string, content: string) =>

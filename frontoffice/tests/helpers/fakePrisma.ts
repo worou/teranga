@@ -169,29 +169,43 @@ class Table {
 
   private project(row: Row, select?: Row, include?: Row): Row {
     let out: Row;
+    // Une relation peut figurer dans `select` aussi bien que dans `include` :
+    // Prisma accepte les deux, et `getConversations` s'en sert pour ne tirer
+    // que les colonnes utiles du correspondant. On rassemble les deux formes.
+    const relationsInSelect: Row = {};
     if (select) {
       out = {};
       for (const [field, wanted] of Object.entries(select)) {
-        if (wanted) out[field] = row[field];
+        if (!wanted) continue;
+        if (this.options.relations?.[field]) relationsInSelect[field] = wanted;
+        else out[field] = row[field];
       }
     } else {
       out = this.clone(row);
     }
-    for (const [relName, relOpts] of Object.entries(include || {})) {
+    for (const [relName, relOpts] of Object.entries({ ...relationsInSelect, ...(include || {}) })) {
       const rel = this.options.relations?.[relName];
       if (!rel) throw new Error(`fakePrisma: relation « ${relName} » inconnue sur ${this.name}`);
       const target = rel.table();
-      const relSelect = typeof relOpts === 'object' ? (relOpts as Row).select : undefined;
+      const opts = (typeof relOpts === 'object' ? relOpts : {}) as Row;
+      const relSelect = opts.select;
       if (rel.list) {
-        out[relName] = target.rows
-          .filter((r) => eq(r[rel.foreignField], row[rel.localField]))
-          .map((r) => target.project(r, relSelect));
+        let linkedRows = target.rows.filter((r) => eq(r[rel.foreignField], row[rel.localField]));
+        if (opts.where) linkedRows = linkedRows.filter((r) => matchWhere(r, opts.where));
+        if (opts.orderBy) linkedRows = target.sortRows(linkedRows, opts.orderBy);
+        if (typeof opts.take === 'number') linkedRows = linkedRows.slice(0, opts.take);
+        out[relName] = linkedRows.map((r) => target.project(r, relSelect));
       } else {
         const linked = target.rows.find((r) => eq(r[rel.foreignField], row[rel.localField]));
         out[relName] = linked ? target.project(linked, relSelect) : null;
       }
     }
     return out;
+  }
+
+  /** Tri accessible aux autres tables (resolution d'une relation 1-N). */
+  sortRows(rows: Row[], orderBy?: Row): Row[] {
+    return this.sort(rows, orderBy);
   }
 
   private sort(rows: Row[], orderBy?: Row): Row[] {
@@ -280,6 +294,28 @@ class Table {
     const before = this.rows.length;
     this.rows = this.rows.filter((r) => !matchWhere(r, args.where, this.options.relations));
     return { count: before - this.rows.length };
+  }
+
+  /**
+   * Regroupement sur une ou plusieurs colonnes, avec `_count`.
+   *
+   * Couvre l'usage de `getConversations` : compter les non-lus de toute une
+   * page en une requete, la ou une boucle emettait un COUNT par conversation.
+   */
+  async groupBy(args: { by: string[]; where?: Row; _count?: Row }) {
+    const rows = this.rows.filter((r) => matchWhere(r, args.where, this.options.relations));
+    const buckets = new Map<string, Row[]>();
+    for (const row of rows) {
+      const key = JSON.stringify(args.by.map((f) => row[f]));
+      const bucket = buckets.get(key);
+      if (bucket) bucket.push(row);
+      else buckets.set(key, [row]);
+    }
+    return [...buckets.entries()].map(([key, group]) => {
+      const values: Row = {};
+      (JSON.parse(key) as any[]).forEach((v, i) => { values[args.by[i]] = v; });
+      return { ...values, _count: { _all: group.length } };
+    });
   }
 
   async count(args: { where?: Row } = {}) {
@@ -387,6 +423,46 @@ const blockTable = new Table('block', {
   defaults: () => ({ reason: null, createdAt: new Date() }),
 });
 
+// Codes de verification a usage unique (inscription, connexion).
+const otpCodeTable = new Table('otp', {
+  prefix: 'otp',
+  defaults: () => ({
+    userId: null,
+    attempts: 0,
+    consumedAt: null,
+    createdAt: new Date(),
+  }),
+});
+
+// Conversations (le modele s'appelle Match) et messages echanges.
+const matchTable = new Table('match', {
+  prefix: 'match',
+  defaults: () => ({
+    status: 'MATCHED',
+    matchedAt: new Date(),
+    unmatchedAt: null,
+    unmatchedBy: null,
+    createdAt: new Date(),
+  }),
+  relations: {
+    userA: { table: () => userTable, localField: 'userAId', foreignField: 'id' },
+    userB: { table: () => userTable, localField: 'userBId', foreignField: 'id' },
+    messages: { table: () => messageTable, localField: 'id', foreignField: 'matchId', list: true },
+  },
+});
+
+const messageTable = new Table('message', {
+  prefix: 'msg',
+  defaults: () => ({
+    readAt: null,
+    blockedByAi: false,
+    createdAt: new Date(),
+  }),
+  relations: {
+    match: { table: () => matchTable, localField: 'matchId', foreignField: 'id' },
+  },
+});
+
 export const fakePrisma = {
   user: userTable,
   like: likeTable,
@@ -395,6 +471,9 @@ export const fakePrisma = {
   payment: paymentTable,
   notification: notificationTable,
   photo: photoTable,
+  otpCode: otpCodeTable,
+  match: matchTable,
+  message: messageTable,
   /**
    * Les appels passés à `$transaction([...])` sont déjà des promesses en cours
    * (Prisma en fait autant côté client). On se contente de les attendre : le
@@ -413,6 +492,9 @@ export function resetDb() {
   paymentTable.clear();
   notificationTable.clear();
   photoTable.clear();
+  otpCodeTable.clear();
+  matchTable.clear();
+  messageTable.clear();
   likeTable.clear();
   blockTable.clear();
   idCounter = 0;

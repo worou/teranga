@@ -139,12 +139,18 @@ router.get(
   asyncHandler(async (req, res) => {
     const page = parseInt((req.query.page as string) || '1', 10);
     const limit = parseInt((req.query.limit as string) || '50', 10);
+    // `since` (ISO) : lecture incrémentale pour le sondage. Une date illisible
+    // est ignorée — on retombe sur un chargement complet plutôt que d'échouer.
+    const raw = req.query.since as string | undefined;
+    const parsed = raw ? new Date(raw) : undefined;
+    const since = parsed && !Number.isNaN(parsed.getTime()) ? parsed : undefined;
     res.json(
       await conversationsService.getMessages(
         req.auth!.userId,
         req.params.conversationId,
         page,
         limit,
+        since,
       ),
     );
   }),

@@ -3,6 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { verifyAccessToken } from '../utils/jwt';
 import { config } from '../config';
 import { logger } from '../utils/logger';
+import { conversationsService } from '../services/conversations.service';
 
 interface AuthedSocket extends Socket {
   userId?: string;
@@ -41,20 +42,48 @@ export function initSockets(httpServer: HttpServer): Server {
     // Join personal room - used to push notifications & new matches
     socket.join(`user:${userId}`);
 
-    socket.on('join_conversation', (conversationId: string) => {
-      socket.join(`conversation:${conversationId}`);
+    // ⚠️  L'identifiant de salle vient du client : il DOIT être vérifié.
+    // Sans ce contrôle, n'importe quel membre authentifié rejoignait la
+    // conversation d'autrui en devinant son identifiant et recevait tout ce qui
+    // s'y diffusait. Le trou était inexploitable tant qu'aucun client web ne
+    // rejoignait de salle ; brancher le client l'aurait armé.
+    socket.on('join_conversation', async (conversationId: string) => {
+      if (typeof conversationId !== 'string' || !conversationId) return;
+      try {
+        if (!(await conversationsService.isParticipant(userId, conversationId))) {
+          logger.warn('Socket: adhésion refusée à une conversation tierce', {
+            userId,
+            conversationId,
+          });
+          socket.emit('join_denied', { conversationId });
+          return;
+        }
+        // La vérification est asynchrone : la connexion a pu tomber entre-temps.
+        if (!socket.connected) return;
+        socket.join(`conversation:${conversationId}`);
+      } catch (err) {
+        logger.error("Socket: échec du contrôle d'adhésion", {
+          userId,
+          conversationId,
+          error: (err as Error).message,
+        });
+      }
     });
 
+    // Quitter est sans risque : on ne peut sortir que d'une salle où l'on est.
     socket.on('leave_conversation', (conversationId: string) => {
+      if (typeof conversationId !== 'string' || !conversationId) return;
       socket.leave(`conversation:${conversationId}`);
     });
 
+    // « En train d'écrire » : même exigence. On émet dans la salle plutôt que
+    // d'après la donnée reçue, et seulement si l'on y appartient — `socket.rooms`
+    // ne contient la salle que si l'adhésion a été accordée ci-dessus.
     socket.on('typing', (data: { conversationId: string; isTyping: boolean }) => {
       if (!data?.conversationId) return;
-      socket.to(`conversation:${data.conversationId}`).emit('typing', {
-        userId,
-        isTyping: !!data.isTyping,
-      });
+      const room = `conversation:${data.conversationId}`;
+      if (!socket.rooms.has(room)) return;
+      socket.to(room).emit('typing', { userId, isTyping: !!data.isTyping });
     });
 
     socket.on('disconnect', (reason) => {
@@ -68,10 +97,9 @@ export function initSockets(httpServer: HttpServer): Server {
 /**
  * Diffuse un message à tous les participants d'une conversation.
  *
- * ⚠️ Aucun client web ne rejoint `conversation:{id}` aujourd'hui : le fil se
- * rafraîchit par interrogation périodique. La diffusion part donc dans une
- * salle vide. Elle est maintenue pour qu'un client mobile — ou une évolution du
- * web — n'ait rien à ajouter côté serveur.
+ * Le client web rejoint la salle après vérification d'appartenance (voir
+ * `join_conversation`) et affiche les messages reçus sans attendre le sondage.
+ * Le sondage subsiste en filet, pour les cas où la socket est tombée.
  */
 export function emitNewMessage(io: Server, conversationId: string, message: unknown) {
   io.to(`conversation:${conversationId}`).emit('new_message', message);

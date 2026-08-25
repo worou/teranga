@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useConversationSocket } from '../hooks/useConversationSocket'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import MessageComposer from '../components/MessageComposer'
@@ -17,15 +18,30 @@ import {
 import styles from './Messagerie.module.css'
 
 /** Intervalle de rafraîchissement du fil, en millisecondes. */
-const POLL_MS = 8_000
+/**
+ * Filet de sécurité, pas mécanisme principal.
+ *
+ * Les messages arrivent par socket. Le sondage ne sert qu'au cas où elle est
+ * tombée sans le dire — d'où un rythme lent, et une lecture incrémentale qui
+ * ne redemande que ce qui a suivi le dernier message détenu.
+ */
+const POLL_MS = 45_000
+
+/** Socket absente ou coupée : le sondage redevient le seul canal, on l'accélère. */
+const POLL_MS_OFFLINE = 8_000
 
 /**
  * Fil d'une conversation.
  *
- * Le rafraîchissement se fait par interrogation périodique, pas par socket.
- * Le serveur *expose* bien un canal Socket.IO, mais aucune route n'y publie
- * de message aujourd'hui : brancher un client dessus donnerait un fil muet.
- * L'interrogation reprend l'habitude déjà en place dans `AppHeader`.
+ * Temps réel par Socket.IO : le serveur diffusait déjà chaque message dans
+ * `conversation:<id>`, mais aucun client ne rejoignait ces salles. Le fil se
+ * rafraîchissait donc toutes les huit secondes en retransmettant cinquante
+ * messages — pour, la plupart du temps, ne rien afficher de nouveau.
+ *
+ * Trois sources alimentent désormais le fil : la lecture initiale, la socket,
+ * et l'écho de son propre envoi. Toutes convergent vers `appendMessages`, qui
+ * dédoublonne par identifiant — sans quoi un message envoyé apparaîtrait deux
+ * fois, une fois en optimiste et une fois par diffusion.
  */
 export default function Conversation() {
   const { conversationId = '' } = useParams()
@@ -37,6 +53,30 @@ export default function Conversation() {
   const [loading, setLoading] = useState(true)
   /** Panne de chargement : le fil n'est pas lisible, on cesse d'interroger. */
   const [error, setError] = useState('')
+
+  /** Horodatage du dernier message détenu : borne des lectures incrémentales. */
+  const lastAt = useRef<string | null>(null)
+
+  /**
+   * Fusionne des messages dans le fil, sans doublon et en ordre chronologique.
+   *
+   * Le dédoublonnage par identifiant est ce qui rend inoffensifs à la fois le
+   * recouvrement de borne du sondage (`gte`) et la course entre l'ajout
+   * optimiste d'un envoi et sa diffusion par socket.
+   */
+  const appendMessages = useCallback((incoming: Message[]) => {
+    if (incoming.length === 0) return
+    setMessages(prev => {
+      const seen = new Set(prev.map(m => m.id))
+      const fresh = incoming.filter(m => !seen.has(m.id))
+      if (fresh.length === 0) return prev
+      const merged = [...prev, ...fresh].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      )
+      lastAt.current = merged[merged.length - 1].createdAt
+      return merged
+    })
+  }, [])
 
   const scroller = useRef<HTMLDivElement>(null)
   /** Vrai tant que l'utilisateur n'a pas remonté le fil : on suit alors le bas. */
@@ -67,8 +107,16 @@ export default function Conversation() {
   const load = useCallback(
     async (silent: boolean) => {
       try {
-        const res = await messagesApi.thread(conversationId)
-        setMessages(res.data)
+        // Première lecture : le fil entier. Sondages suivants : seulement la
+        // suite, ce qui rend une conversation au repos quasiment gratuite.
+        const since = silent ? lastAt.current ?? undefined : undefined
+        const res = await messagesApi.thread(conversationId, 50, since)
+        if (since) {
+          appendMessages(res.data)
+        } else {
+          setMessages(res.data)
+          lastAt.current = res.data.length ? res.data[res.data.length - 1].createdAt : null
+        }
         setError('')
       } catch (err) {
         if (err instanceof ApiError && err.code === 'PHOTOS_REQUIRED') {
@@ -89,8 +137,15 @@ export default function Conversation() {
         if (!silent) setLoading(false)
       }
     },
-    [conversationId, navigate],
+    [conversationId, navigate, appendMessages],
   )
+
+  // --- Temps réel ----------------------------------------------------------
+  // Un message reçu par socket entre par le même chemin que les autres : il est
+  // dédoublonné, replacé dans l'ordre, et suit le bas du fil si l'on y était.
+  const { connected } = useConversationSocket(conversationId, message => {
+    appendMessages([message])
+  })
 
   useEffect(() => {
     setLoading(true)
@@ -99,12 +154,14 @@ export default function Conversation() {
 
   useEffect(() => {
     if (error) return // fil illisible (conversation introuvable) : inutile d'insister
+    // Le rythme suit l'état de la socket : lent quand elle délivre, resserré
+    // quand elle est tombée — le sondage redevient alors le seul canal.
     const id = setInterval(() => {
       // Onglet en arrière-plan : personne ne lit, on n'interroge pas.
       if (document.visibilityState === 'visible') load(true)
-    }, POLL_MS)
+    }, connected ? POLL_MS : POLL_MS_OFFLINE)
     return () => clearInterval(id)
-  }, [load, error])
+  }, [load, error, connected])
 
   // --- Défilement ----------------------------------------------------------
   useEffect(() => {
@@ -118,9 +175,14 @@ export default function Conversation() {
     stickToBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80
   }
 
-  /** Message accepté par le serveur : on l'ajoute au fil et on suit le bas. */
+  /**
+   * Message accepté par le serveur : on l'affiche sans attendre sa diffusion.
+   *
+   * La socket le renverra sans doute juste après ; `appendMessages` l'ignorera,
+   * son identifiant étant déjà connu.
+   */
   function onSent(message: Message) {
-    setMessages(prev => [...prev, message])
+    appendMessages([message])
     stickToBottom.current = true
   }
 

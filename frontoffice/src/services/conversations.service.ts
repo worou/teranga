@@ -276,6 +276,24 @@ export class ConversationsService {
    * puis abandonnée, ou dont le premier message a été arrêté par l'IA
    * anti-brouteur, n'a rien à faire dans la liste de personne.
    */
+  /**
+   * Colonnes du correspondant réellement affichées dans la liste.
+   *
+   * `select` et non `include` : `include` ramenait toute la ligne User —
+   * `phone`, `passwordHash`, `birthDate` — pour n'en garder ensuite qu'une
+   * poignée. La projection manuelle qui suit empêchait la fuite, mais rien ne
+   * l'imposait ; ici la base ne renvoie que le nécessaire.
+   */
+  private static readonly CORRESPONDENT_SELECT = {
+    id: true,
+    firstName: true,
+    birthDate: true,
+    city: true,
+    profession: true,
+    isVerified: true,
+    photos: { orderBy: { order: 'asc' as const }, take: 1 },
+  };
+
   async getConversations(userId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 
@@ -287,54 +305,93 @@ export class ConversationsService {
       ],
     };
 
-    const conversations = await prisma.match.findMany({
-      where,
-      include: {
-        userA: { include: { photos: { orderBy: { order: 'asc' }, take: 1 } } },
-        userB: { include: { photos: { orderBy: { order: 'asc' }, take: 1 } } },
-        // `blockedByAi: false` — même filtre que `getMessages`. Sans lui, un
-        // message arrêté par l'IA anti-brouteur reste invisible dans le fil
-        // mais s'affiche en aperçu dans la liste : la demande d'argent
-        // atteindrait sa cible par la porte de derrière.
-        messages: { where: { blockedByAi: false }, orderBy: { createdAt: 'desc' }, take: 1 },
-      },
-      orderBy: { matchedAt: 'desc' },
-      skip,
-      take: limit,
-    });
-
-    const total = await prisma.match.count({ where });
-
-    const formatted = await Promise.all(
-      conversations.map(async (c: any) => {
-        const other = c.userAId === userId ? c.userB : c.userA;
-        // Idem : compter un message bloqué gonflerait une pastille que rien ne
-        // permet de faire retomber, puisque le fil ne le montre jamais.
-        const unread = await prisma.message.count({
-          where: { matchId: c.id, senderId: { not: userId }, readAt: null, blockedByAi: false },
-        });
-        return {
-          id: c.id,
-          otherUser: {
-            id: other.id,
-            firstName: other.firstName,
-            age: calculateAge(other.birthDate),
-            city: other.city,
-            profession: other.profession,
-            isVerified: other.isVerified,
-            photos: other.photos,
-          },
-          startedAt: c.matchedAt,
-          lastMessage: c.messages[0] ? toMessage(c.messages[0]) : null,
-          unreadCount: unread,
-        };
+    const [conversations, total] = await Promise.all([
+      prisma.match.findMany({
+        where,
+        select: {
+          id: true,
+          userAId: true,
+          matchedAt: true,
+          userA: { select: ConversationsService.CORRESPONDENT_SELECT },
+          userB: { select: ConversationsService.CORRESPONDENT_SELECT },
+          // `blockedByAi: false` — même filtre que `getMessages`. Sans lui, un
+          // message arrêté par l'IA anti-brouteur reste invisible dans le fil
+          // mais s'affiche en aperçu dans la liste : la demande d'argent
+          // atteindrait sa cible par la porte de derrière.
+          messages: { where: { blockedByAi: false }, orderBy: { createdAt: 'desc' }, take: 1 },
+        },
+        orderBy: { matchedAt: 'desc' },
+        skip,
+        take: limit,
       }),
-    );
+      prisma.match.count({ where }),
+    ]);
+
+    // Compteurs de non-lus : un seul groupBy pour toute la page.
+    //
+    // Auparavant, un `count()` était émis par conversation à l'intérieur d'un
+    // `Promise.all` — vingt conversations affichées, vingt allers-retours
+    // supplémentaires. Le coût croissait avec la taille de la page, alors que
+    // la question posée est la même pour toutes.
+    //
+    // Idem que ci-dessus : compter un message bloqué gonflerait une pastille
+    // que rien ne permet de faire retomber, puisque le fil ne le montre jamais.
+    const unreadByConversation = new Map<string, number>();
+    if (conversations.length > 0) {
+      const grouped = await prisma.message.groupBy({
+        by: ['matchId'],
+        where: {
+          matchId: { in: conversations.map((c: any) => c.id) },
+          senderId: { not: userId },
+          readAt: null,
+          blockedByAi: false,
+        },
+        _count: { _all: true },
+      });
+      for (const row of grouped as any[]) {
+        unreadByConversation.set(row.matchId, row._count._all);
+      }
+    }
+
+    const formatted = conversations.map((c: any) => {
+      const other = c.userAId === userId ? c.userB : c.userA;
+      return {
+        id: c.id,
+        otherUser: {
+          id: other.id,
+          firstName: other.firstName,
+          age: calculateAge(other.birthDate),
+          city: other.city,
+          profession: other.profession,
+          isVerified: other.isVerified,
+          photos: other.photos,
+        },
+        startedAt: c.matchedAt,
+        lastMessage: c.messages[0] ? toMessage(c.messages[0]) : null,
+        unreadCount: unreadByConversation.get(c.id) ?? 0,
+      };
+    });
 
     return {
       data: formatted,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     };
+  }
+
+  /**
+   * Vrai si `userId` participe à cette conversation.
+   *
+   * Variante sans exception d'`assertParticipant`, pour les appelants qui ne
+   * répondent pas en HTTP — la couche socket, notamment, qui doit refuser une
+   * inscription à une salle sans faire tomber la connexion.
+   */
+  async isParticipant(userId: string, conversationId: string): Promise<boolean> {
+    const conversation = await prisma.match.findUnique({
+      where: { id: conversationId },
+      select: { userAId: true, userBId: true, status: true },
+    });
+    if (!conversation || conversation.status !== 'MATCHED') return false;
+    return conversation.userAId === userId || conversation.userBId === userId;
   }
 
   /** Participant de cette conversation, ou 403. */
@@ -362,30 +419,63 @@ export class ConversationsService {
    *
    * ⚠️ Effet de bord assumé : marque les messages reçus comme lus.
    */
-  async getMessages(userId: string, conversationId: string, page = 1, limit = 50) {
+  async getMessages(
+    userId: string,
+    conversationId: string,
+    page = 1,
+    limit = 50,
+    since?: Date,
+  ) {
     await this.assertParticipant(userId, conversationId);
 
-    const skip = (page - 1) * limit;
+    // Lecture incrémentale : le client redemande seulement ce qui a suivi le
+    // dernier message qu'il détient. Sans elle, chaque sondage — toutes les
+    // huit secondes, pour chaque fil ouvert — relisait cinquante messages et
+    // les retransmettait intégralement.
+    //
+    // `gte` et non `gt` : deux messages peuvent partager la milliseconde, et un
+    // `gt` en perdrait un. Le recouvrement d'une borne est assumé, le client
+    // dédoublonne par identifiant.
+    const incremental = since !== undefined;
+
+    const where = {
+      matchId: conversationId,
+      blockedByAi: false,
+      ...(incremental ? { createdAt: { gte: since } } : {}),
+    };
 
     const messages = await prisma.message.findMany({
-      where: { matchId: conversationId, blockedByAi: false },
+      where,
       orderBy: { createdAt: 'desc' },
-      skip,
+      ...(incremental ? {} : { skip: (page - 1) * limit }),
       take: limit,
     });
 
-    const total = await prisma.message.count({
-      where: { matchId: conversationId, blockedByAi: false },
-    });
+    // Le total ne sert qu'à la pagination du premier chargement. Une lecture
+    // incrémentale ne pagine rien : on économise le COUNT et on annonce
+    // `total: null` plutôt que de faire passer la taille du fragment pour la
+    // taille du fil.
+    const total = incremental
+      ? null
+      : await prisma.message.count({ where: { matchId: conversationId, blockedByAi: false } });
 
-    await prisma.message.updateMany({
-      where: { matchId: conversationId, senderId: { not: userId }, readAt: null },
-      data: { readAt: new Date() },
-    });
+    // Rien de neuf à marquer comme lu : c'est le cas qui se présente à chaque
+    // sondage d'un fil au repos, autant ne pas écrire pour rien.
+    if (!incremental || messages.length > 0) {
+      await prisma.message.updateMany({
+        where: { matchId: conversationId, senderId: { not: userId }, readAt: null },
+        data: { readAt: new Date() },
+      });
+    }
 
     return {
       data: messages.reverse().map(toMessage), // du plus ancien au plus récent
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: total === null ? null : Math.ceil(total / limit),
+      },
     };
   }
 
