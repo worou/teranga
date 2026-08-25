@@ -1,7 +1,16 @@
 import { z } from 'zod';
 import { isXofCountry, dialingCodeForCountry, OPERATORS } from '../config/mobileMoney';
+import { calculateAge } from '../utils/helpers';
 
 const phoneRegex = /^\+\d{8,15}$/;
+
+/**
+ * Âge minimum légal pour s'inscrire. Contrôlé côté serveur : la validation du
+ * navigateur est une commodité d'affichage, elle se contourne en une requête.
+ */
+export const MIN_AGE = 18;
+/** Borne haute : au-delà, la date est presque sûrement une saisie erronée. */
+export const MAX_AGE = 100;
 
 // ==================== AUTH ====================
 
@@ -14,13 +23,26 @@ export const registerSchema = z
     password: z.string().min(8).optional(),
     firstName: z.string().min(1).max(60),
     lastName: z.string().max(60).optional(),
-    birthDate: z.coerce.date().refine(
-      (d) => {
-        const age = (Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000);
-        return age >= 18 && age <= 100;
-      },
-      { message: 'Vous devez avoir au moins 18 ans' },
-    ),
+    // Âge : calcul CALENDAIRE, le même que `calculateAge` utilisé à l'affichage.
+    //
+    // L'approximation précédente (365,25 jours) pouvait diverger d'un jour du
+    // calcul calendaire selon les années bissextiles traversées : un profil
+    // accepté comme majeur pouvait s'afficher à 17 ans. Sur un seuil légal,
+    // les deux doivent dire la même chose.
+    //
+    // Deux contrôles distincts plutôt qu'un seul : un refus pour âge trop
+    // élevé ne doit pas annoncer « vous devez avoir au moins 18 ans ».
+    birthDate: z.coerce
+      .date()
+      .refine((d) => d.getTime() <= Date.now(), {
+        message: 'La date de naissance ne peut pas être dans le futur',
+      })
+      .refine((d) => calculateAge(d) >= MIN_AGE, {
+        message: `Vous devez avoir au moins ${MIN_AGE} ans pour vous inscrire`,
+      })
+      .refine((d) => calculateAge(d) <= MAX_AGE, {
+        message: 'Date de naissance invalide',
+      }),
     gender: z.enum(['FEMALE', 'MALE', 'NON_BINARY', 'UNDISCLOSED']),
     intent: z.enum(['SERIOUS_RELATIONSHIP', 'MARRIAGE', 'FAMILY']),
     religion: z.enum(['CHRISTIAN', 'MUSLIM', 'OTHER', 'UNDISCLOSED']).optional(),

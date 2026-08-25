@@ -124,12 +124,24 @@ function getStrength(pw: string): { width: string; color: string; label: string 
   return levels[Math.min(score - 1, 3)] || levels[0]
 }
 
+/** Âge minimum légal. Le serveur applique la même règle : ici, c'est un
+ *  confort de saisie, pas une garantie. */
+const MIN_AGE = 18
+
 // ——— Âge calculé à partir d'une date ISO (null si invalide/hors bornes) ———
+//
+// Calcul CALENDAIRE, identique à celui du serveur. Une approximation en jours
+// (365,25 par an) diverge d'un jour selon les années bissextiles traversées :
+// le formulaire refuserait alors une date que l'API accepte, sans que la
+// personne comprenne pourquoi.
 function calcAge(iso: string): number | null {
   if (!iso) return null
-  const d = new Date(iso)
-  if (isNaN(d.getTime())) return null
-  const age = Math.floor((Date.now() - d.getTime()) / (365.25 * 24 * 3600 * 1000))
+  const naissance = new Date(iso)
+  if (isNaN(naissance.getTime())) return null
+  const maintenant = new Date()
+  let age = maintenant.getFullYear() - naissance.getFullYear()
+  const moisEcart = maintenant.getMonth() - naissance.getMonth()
+  if (moisEcart < 0 || (moisEcart === 0 && maintenant.getDate() < naissance.getDate())) age -= 1
   return age >= 0 && age < 130 ? age : null
 }
 
@@ -210,8 +222,9 @@ export default function Inscription() {
     if (!s1.gender) e.gender = 'Requis'
     if (!s1.birthDate) { e.birthDate = 'Requis' }
     else {
-      const age = (Date.now() - new Date(s1.birthDate).getTime()) / (365.25 * 24 * 3600 * 1000)
-      if (age < 18) e.birthDate = 'Vous devez avoir au moins 18 ans.'
+      const age = calcAge(s1.birthDate)
+      if (age === null) e.birthDate = 'Date invalide'
+      else if (age < MIN_AGE) e.birthDate = `Vous devez avoir au moins ${MIN_AGE} ans.`
     }
     if (!s1.intent) e.intent = 'Requis'
     if (!s1.city.trim()) e.city = 'Requis'
@@ -455,7 +468,7 @@ export default function Inscription() {
                     onChange={e => setS1(p => ({ ...p, birthDate: e.target.value }))} />
                   {birthAge !== null && (
                     <span className={styles.ageHint}>
-                      {birthAge} ans{birthAge < 18 ? ' — minimum 18 ans requis' : ''}
+                      {birthAge} ans{birthAge < MIN_AGE ? ` — ${MIN_AGE} ans minimum requis` : ''}
                     </span>
                   )}
                 </Field>

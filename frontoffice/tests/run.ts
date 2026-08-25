@@ -17,6 +17,7 @@ import './otpDelivery.test';
 import './paypal.test';
 import './paypalIpn.test';
 import './registerValidation.test';
+import './ageMinimum.test';
 import './profilePhotos.test';
 import './subscriptionsFlag.test';
 import './discoveryFilters.test';
