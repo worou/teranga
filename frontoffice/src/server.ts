@@ -148,8 +148,22 @@ app.use('/api/v1', conversationsRoutes); // /conversations/*
 app.use('/api/v1', requireSubscriptionsEnabled, paymentsRoutes);
 app.use('/api/v1', featuresRoutes);    // /events, /moderation, /trusted-circle, /notifications
 
-// SPA fallback — React Router gère le routing côté client
-app.get('*', (_req: Request, res: Response) => {
+// SPA fallback — React Router gère le routing côté client.
+//
+// ⚠️ `/.well-known/` en est exclu. Ce chemin est réservé aux vérifications
+// automatisées : Let's Encrypt y dépose un jeton et le relit par HTTP pour
+// prouver que le domaine nous appartient. Servir la page d'accueil à sa place
+// fait échouer l'émission du certificat — sans message compréhensible, puisque
+// la réponse est un honnête 200.
+//
+// Le serveur web est censé servir ce dossier avant même d'atteindre Node (voir
+// public_html/.well-known/.htaccess). Ce garde-fou couvre le cas où il ne le
+// ferait pas : mieux vaut un 404 franc qu'une page qui ment.
+app.get('*', (req: Request, res: Response) => {
+  if (req.path.startsWith('/.well-known/')) {
+    res.status(404).type('text/plain').send('Not found');
+    return;
+  }
   res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
