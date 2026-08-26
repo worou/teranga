@@ -1,0 +1,145 @@
+/* Diaporama de la bannière — voir HeroSlideshow.tsx pour la règle éditoriale. */
+
+.cadre {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  justify-content: center;
+}
+
+.scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 5;
+  max-height: 560px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: var(--sand);
+  /* Même profondeur que les cartes de la page : le diaporama doit sembler
+     appartenir à la maquette, pas y avoir été posé. */
+  box-shadow:
+    0 30px 70px rgba(43, 22, 5, 0.25),
+    0 10px 25px rgba(43, 22, 5, 0.12),
+    inset 0 0 0 1px rgba(184, 105, 26, 0.12);
+}
+
+.diapo {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  /* Léger zoom arrière pendant le fondu : l'image semble se poser plutôt que
+     d'apparaître d'un coup. */
+  transform: scale(1.04);
+  transition: opacity 900ms ease, transform 1400ms ease;
+  pointer-events: none;
+}
+.active {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+.diapo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  user-select: none;
+}
+
+/* Dégradé sombre en pied d'image : sans lui, une légende claire devient
+   illisible dès qu'une photo est lumineuse à cet endroit. */
+.voile {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 55%;
+  background: linear-gradient(to top, rgba(43, 22, 5, 0.82) 0%, rgba(43, 22, 5, 0.35) 45%, transparent 100%);
+  pointer-events: none;
+}
+
+.legende {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 26px;
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-size: 22px;
+  line-height: 1.35;
+  color: #FDF8F0;
+  text-shadow: 0 2px 12px rgba(43, 22, 5, 0.45);
+  animation: monte 700ms ease both;
+}
+@keyframes monte {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.fleche {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  color: var(--terra-deep);
+  background: rgba(253, 248, 240, 0.86);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 4px 14px rgba(43, 22, 5, 0.22);
+  /* Discrètes au repos, franches au survol : elles ne doivent pas concurrencer
+     les boutons d'appel à l'action de la bannière. */
+  opacity: 0;
+  transition: opacity 240ms ease, background 240ms ease;
+}
+.scene:hover .fleche { opacity: 1; }
+/* Toujours visibles au clavier, sinon elles sont inatteignables sans souris. */
+.fleche:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--ocre-deep);
+  outline-offset: 2px;
+}
+.fleche:hover { background: var(--cream); }
+.gauche { left: 14px; }
+.droite { right: 14px; }
+
+.pastilles {
+  display: flex;
+  gap: 9px;
+  justify-content: center;
+}
+.pastille {
+  width: 28px;
+  height: 5px;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  background: rgba(184, 105, 26, 0.28);
+  transition: background 260ms ease, width 260ms ease;
+}
+.pastille:hover { background: rgba(184, 105, 26, 0.5); }
+.pastilleActive { width: 44px; background: var(--ocre-deep); }
+.pastille:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: 3px; }
+
+/* Sur mobile la bannière passe en une colonne : l'image ne doit plus occuper
+   toute la hauteur, sinon le texte et les boutons sortent de l'écran. */
+@media (max-width: 900px) {
+  .scene { aspect-ratio: 3 / 2; max-height: 320px; border-radius: 18px; }
+  .legende { font-size: 18px; left: 20px; right: 20px; bottom: 20px; }
+  .fleche { opacity: 1; width: 36px; height: 36px; }
+}
+
+/* Le défilement automatique est déjà coupé côté JavaScript ; on neutralise
+   aussi les transitions, qui resteraient sinon perceptibles à chaque
+   changement manuel. */
+@media (prefers-reduced-motion: reduce) {
+  .diapo { transition: opacity 1ms linear; transform: none; }
+  .active { transform: none; }
+  .legende { animation: none; }
+}

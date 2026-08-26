@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { TerangaSymbol } from '../components/Logo'
 import { SUBSCRIPTIONS_ENABLED } from '../config'
 import styles from './Landing.module.css'
+import { HeroSlideshow } from '../components/HeroSlideshow'
 
 // ——— NAV ———
 function Nav() {
@@ -152,38 +153,12 @@ export default function Landing() {
             </p>
           </div>
 
+          {/* Les deux cartes de profil qui occupaient cette place portaient des
+              noms, des métiers et un badge « Vérifié » sur des photographies
+              d'inconnus : elles se lisaient comme deux membres réels. Un
+              diaporama d'illustration ne prétend rien de tel. */}
           <div className={styles.heroVisual}>
-            {/* Card Her */}
-            <div className={`${styles.meetingCard} ${styles.cardHer}`}>
-              <div className={styles.mcPhoto}>
-                <span className={styles.mcVerified}>Vérifié</span>
-                <img src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=600&q=80&auto=format&fit=crop" alt="Aminata" loading="lazy" />
-              </div>
-              <div className={styles.mcInfo}>
-                <span className={styles.mcTag}>Mariage</span>
-                <div className={styles.mcName}>Aminata, 29</div>
-                <div className={styles.mcMeta}>Dakar · Enseignante</div>
-              </div>
-            </div>
-
-            {/* Heart connector */}
-            <div className={styles.heartConnector}>
-              <TerangaSymbol size={60} />
-            </div>
-            <div className={styles.meetingLabel}>la rencontre</div>
-
-            {/* Card Him */}
-            <div className={`${styles.meetingCard} ${styles.cardHim}`}>
-              <div className={styles.mcPhoto}>
-                <span className={styles.mcVerified}>Vérifié</span>
-                <img src="https://images.unsplash.com/photo-1507152832244-10d45c7eda57?w=600&q=80&auto=format&fit=crop" alt="Ibrahim" loading="lazy" />
-              </div>
-              <div className={styles.mcInfo}>
-                <span className={styles.mcTag}>Mariage</span>
-                <div className={styles.mcName}>Ibrahim, 33</div>
-                <div className={styles.mcMeta}>Dakar · Ingénieur</div>
-              </div>
-            </div>
+            <HeroSlideshow />
           </div>
         </div>
       </section>
