@@ -7,15 +7,24 @@
 #      bash ~/teranga/deploy/o2switch-domaine.sh teranga.re
 #
 #  Le script est idempotent : le relancer ne casse rien et reprend là où il en
-#  est. Il ne fait qu'une chose, mais entièrement — déclarer le domaine sur le
-#  compte, l'autoriser côté API, redémarrer, puis demander le certificat.
+#  est. Il vérifie d'abord, agit ensuite, et s'arrête net dès qu'une étape
+#  hors de sa portée n'a pas été faite.
 #
-#  PRÉALABLE — le domaine doit DÉJÀ ÊTRE ENREGISTRÉ et délégué à ce serveur.
-#  L'enregistrement est un acte contractuel (identité du titulaire, adresse
-#  dans l'UE/EEE pour un .re) : il se fait depuis https://clients.o2switch.fr,
-#  pas ici. Le script refuse de s'exécuter tant que ce n'est pas le cas —
-#  configurer un domaine qui ne résout pas produit un site à moitié câblé et
-#  un certificat en échec, deux pannes silencieuses.
+#  CE QU'IL FAIT      : nettoie le .htaccess, met à jour les origines CORS,
+#                       redémarre les applications et vérifie que le site
+#                       répond sur le nouveau nom.
+#  CE QU'IL NE FAIT PAS, et ce n'est pas un oubli :
+#    - enregistrer le domaine — acte contractuel (identité du titulaire,
+#      adresse dans l'UE/EEE pour un .re), à faire sur clients.o2switch.fr ;
+#    - le déclarer sur le compte — les modules UAPI `Park` et `AddonDomain`
+#      ne sont pas installés sur ce cPanel, la création passe par l'interface ;
+#    - émettre le certificat — la fonctionnalité `autossl` est désactivée sur
+#      ce compte, o2switch fournit son propre outil « Let's Encrypt™ SSL »,
+#      sans ligne de commande.
+#  Pour chacune, le script s'arrête en indiquant précisément la marche à
+#  suivre, puis reprend le reste au lancement suivant. Continuer sans elles
+#  laisserait une configuration désignant un domaine que le serveur ne sert
+#  pas : un site qui s'affiche et ne fonctionne pas, sans message d'erreur.
 # =============================================================================
 set -euo pipefail
 
@@ -39,11 +48,20 @@ esac
 # ICI (sinon on configure un site que personne n'atteindra).
 log "Vérification du domaine « $DOMAINE »"
 
+# Domaine principal du compte : sert de référence pour savoir où le site est
+# réellement servi. `hostname -f` ne convient pas — il résout en IPv6
+# lien-local (fe80::…), qui ne correspondra jamais à l'IPv4 d'un domaine.
+DOMAINES_JSON=$(uapi --output=json DomainInfo list_domains 2>/dev/null || echo '{}')
+PRINCIPAL=$(printf '%s' "$DOMAINES_JSON" | python3 -c "import sys,json;print(json.load(sys.stdin)['result']['data']['main_domain'])" 2>/dev/null || echo '')
+[ -n "$PRINCIPAL" ] || fail "Impossible de lire les domaines du compte (uapi indisponible ?)."
+
 # `|| true` indispensable : getent sort en code 2 quand le nom est inconnu, et
 # `set -e` tuerait le script AVANT le message qui explique quoi faire — un
 # échec silencieux là où l'utilisateur a précisément besoin d'être guidé.
-IP_DOMAINE=$(getent hosts "$DOMAINE" 2>/dev/null | awk '{print $1}' | head -1 || true)
+# `ahostsv4` plutôt que `hosts` : on compare des IPv4 entre elles.
+ip4() { getent ahostsv4 "$1" 2>/dev/null | awk '{print $1}' | head -1 || true; }
 
+IP_DOMAINE=$(ip4 "$DOMAINE")
 if [ -z "$IP_DOMAINE" ]; then
   fail "$DOMAINE ne résout pas : pas encore enregistré, ou délégation non propagée.
      → Réclamez-le sur https://clients.o2switch.fr
@@ -52,26 +70,37 @@ if [ -z "$IP_DOMAINE" ]; then
 fi
 ok "$DOMAINE résout vers $IP_DOMAINE"
 
-# IP publique du compte, telle que cPanel la connaît.
-IP_SERVEUR=$(getent hosts "$(hostname -f)" 2>/dev/null | awk '{print $1}' | head -1 || true)
+IP_SERVEUR=$(ip4 "$PRINCIPAL")
 if [ -n "$IP_SERVEUR" ] && [ "$IP_DOMAINE" != "$IP_SERVEUR" ]; then
-  info "Ce serveur répond en $IP_SERVEUR, le domaine pointe vers $IP_DOMAINE."
+  info "Le site est servi en $IP_SERVEUR ($PRINCIPAL), ce domaine pointe vers $IP_DOMAINE."
   info "Si le domaine vient d'être créé, la propagation n'est peut-être pas finie."
-  read -r -p "  Continuer quand même ? [o/N] " reponse
-  case "$reponse" in
-    o|O) ;;
-    *)   fail "Interrompu." ;;
-  esac
+  # Sans terminal (exécution par ssh non interactive), `read` reçoit EOF : le
+  # script s'arrêterait sur une simple mise en garde. On avertit et on
+  # poursuit — les vérifications finales montreront le résultat réel.
+  if [ -t 0 ]; then
+    read -r -p "  Continuer quand même ? [o/N] " reponse
+    case "$reponse" in
+      o|O) ;;
+      *)   fail "Interrompu." ;;
+    esac
+  else
+    info "Pas de terminal : on poursuit malgré l'écart."
+  fi
+else
+  ok "le domaine pointe bien vers le serveur du site"
 fi
 
-# --- 1. Déclarer le domaine sur le compte ------------------------------------
-# En ALIAS et non en « domaine additionnel » : un alias sert exactement le même
-# docroot, donc la même application Passenger, sans dupliquer la configuration.
+# --- 1. Le domaine est-il déclaré sur le compte ? ----------------------------
+# Ce script NE CRÉE PAS le domaine, et ce n'est pas un oubli : sur ce compte,
+# aucune API ne le permet. Les modules UAPI `Park` et `AddonDomain` ne sont
+# pas installés (« Can't locate Cpanel/API/Park.pm »), et `SubDomain` ne sait
+# créer que des sous-domaines d'un domaine existant. La création passe
+# obligatoirement par l'interface cPanel.
+#
+# Le script s'arrête donc ici avec la marche à suivre, plutôt que de continuer
+# et de laisser une configuration qui désigne un domaine que le serveur ne
+# sert pas.
 log "Déclaration du domaine sur le compte cPanel"
-
-DOMAINES_JSON=$(uapi --output=json DomainInfo list_domains 2>/dev/null || echo '{}')
-PRINCIPAL=$(printf '%s' "$DOMAINES_JSON" | python3 -c "import sys,json;print(json.load(sys.stdin)['result']['data']['main_domain'])" 2>/dev/null || echo '')
-[ -n "$PRINCIPAL" ] || fail "Impossible de lire les domaines du compte (uapi indisponible ?)."
 
 DEJA=$(printf '%s' "$DOMAINES_JSON" | python3 -c "
 import sys, json
@@ -83,14 +112,16 @@ print('\n'.join(tous))
 if [ -n "$DEJA" ]; then
   ok "$DOMAINE est déjà déclaré sur le compte"
 else
-  REPONSE=$(uapi --output=json Park park domain="$DOMAINE" 2>&1 || true)
-  STATUT=$(printf '%s' "$REPONSE" | python3 -c "import sys,json;print(json.load(sys.stdin)['result']['status'])" 2>/dev/null || echo 0)
-  if [ "$STATUT" = "1" ]; then
-    ok "$DOMAINE ajouté en alias de $PRINCIPAL"
-  else
-    printf '%s\n' "$REPONSE" | head -20
-    fail "Ajout refusé par cPanel. À faire à la main : cPanel → Domaines → Créer un domaine."
-  fi
+  fail "$DOMAINE n'est pas encore déclaré sur le compte.
+
+     Dans cPanel (https://cassis.o2switch.net:2083) → Domaines → Créer un domaine :
+       Domaine          : $DOMAINE
+       Racine du document : décocher « créer un nouveau répertoire »
+                            et indiquer  public_html
+     Le même répertoire que $PRINCIPAL : les deux noms servent alors la même
+     application, sans dupliquer la configuration Passenger.
+
+     Puis relancez ce script — il enchaînera tout le reste."
 fi
 
 # --- 2. Nettoyer la redirection morte vers l'IP nue --------------------------
@@ -158,22 +189,43 @@ done
 # --- 4. Redémarrer les applications ------------------------------------------
 # Passenger ne relit .env qu'au démarrage : sans redémarrage, le nouveau
 # CORS_ORIGIN reste lettre morte.
+#
+# Deux subtilités, l'une et l'autre vérifiées sur ce serveur :
+#   - Passenger ne consulte restart.txt qu'À LA REQUÊTE SUIVANTE. Toucher le
+#     fichier puis attendre ne déclenche rien ; il faut réveiller l'application.
+#   - Il ne supprime pas restart.txt. Sa présence ne prouve donc rien : seul
+#     le changement de PID atteste du redémarrage.
 log "Redémarrage des applications"
 for svc in frontoffice backoffice; do
+  AVANT=$(pgrep -f "teranga/$svc" | head -1 || true)
   mkdir -p "$ROOT/$svc/tmp"
   touch "$ROOT/$svc/tmp/restart.txt"
-  ok "$svc marqué pour redémarrage"
+  curl -s -o /dev/null --max-time 25 "http://$PRINCIPAL/health" || true
+  sleep 5
+  APRES=$(pgrep -f "teranga/$svc" | head -1 || true)
+  if [ -n "$AVANT" ] && [ "$AVANT" != "$APRES" ]; then
+    ok "$svc redémarré (PID $AVANT → ${APRES:-?})"
+  elif [ -z "$AVANT" ]; then
+    ok "$svc n'était pas démarré — il le sera à la première requête"
+  else
+    info "$svc : PID inchangé ($AVANT). Redémarrez-le depuis cPanel → Node.js"
+    info "  si les requêtes API restent refusées par CORS."
+  fi
 done
-sleep 8
 
 # --- 5. Certificat SSL --------------------------------------------------------
+# Là encore, pas d'automatisation possible : la fonctionnalité `autossl` est
+# désactivée sur ce compte (« You do not have the feature autossl ») et
+# o2switch fournit à la place son propre outil « Let's Encrypt™ SSL », qui
+# n'expose aucune ligne de commande. L'émission se demande depuis cPanel.
 log "Certificat SSL"
-if uapi --output=json SSL start_autossl_check >/dev/null 2>&1; then
-  ok "AutoSSL déclenché — l'émission prend quelques minutes"
-else
-  info "AutoSSL non déclenchable en ligne de commande sur ce compte."
-  info "cPanel → SSL/TLS Status → cocher $DOMAINE → « Run AutoSSL »"
-fi
+CERT=$(echo | openssl s_client -connect "$DOMAINE:443" -servername "$DOMAINE" 2>/dev/null \
+       | openssl x509 -noout -issuer 2>/dev/null || true)
+case "$CERT" in
+  *"Let's Encrypt"*|*"E5"*|*"R10"*|*"R11"*) ok "certificat reconnu déjà en place : $CERT" ;;
+  *) info "Pas encore de certificat reconnu (actuel : ${CERT:-aucun})"
+     info "cPanel → Let's Encrypt™ SSL → « Issue » sur $DOMAINE (+ www)" ;;
+esac
 
 # --- 6. Vérifications ---------------------------------------------------------
 log "Vérifications"
@@ -186,8 +238,9 @@ cat <<FIN
 
   Attendu : /health et /api/v1/discovery/feed en 200, /admin en 200 ou 302.
 
-  Le HTTPS suit dès qu'AutoSSL a émis le certificat (quelques minutes à 1 h).
-  Contrôle : curl -sI https://$DOMAINE/health
+  Dernière étape, dans cPanel → Let's Encrypt™ SSL :
+    « Issue » sur $DOMAINE en cochant aussi www.$DOMAINE
+  Contrôle ensuite : curl -sI https://$DOMAINE/health
 
   Pourquoi l'émission aboutira ici alors qu'elle échouait sur $PRINCIPAL :
   Let's Encrypt lit les enregistrements CAA en remontant l'arbre du domaine.
