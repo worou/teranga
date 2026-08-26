@@ -22,6 +22,11 @@ import adminsRouter from './routes/admins.routes';
 
 const app = express();
 
+// Derrière un reverse proxy, `req.ip` vaut l'adresse du proxy tant qu'on ne le
+// déclare pas : la limitation de débit compterait alors tous les
+// administrateurs dans un seul seau. Voir `config.trustProxy`.
+if (config.trustProxy > 0) app.set('trust proxy', config.trustProxy);
+
 // ── Middlewares de sécurité ──────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false })); // CSP désactivé pour servir le dashboard HTML
 app.use(cors({
@@ -32,17 +37,23 @@ app.use(morgan(config.env === 'production' ? 'combined' : 'dev'));
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting global
-app.use(rateLimit({
+// ── Tableau de bord admin (HTML statique) ───────────────
+// Servi AVANT la limitation de débit, et non après : la page charge React,
+// Babel et ses feuilles de style depuis cette même origine. Comptées dans le
+// quota, ces ressources l'épuisaient en quelques rechargements, alors qu'elles
+// ne sollicitent ni la base ni l'authentification.
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Limitation de débit, restreinte à l'API : c'est elle qu'il s'agit de
+// protéger. Le quota est par adresse IP — ce qui suppose `trust proxy`
+// correctement réglé, sans quoi il est partagé par tout le monde.
+app.use('/api/admin', rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 200,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Trop de requêtes, réessayez dans 15 minutes.' },
 }));
-
-// ── Tableau de bord admin (HTML statique) ───────────────
-app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // ── API Admin ────────────────────────────────────────────
 app.use('/api/admin/auth',  authRouter);

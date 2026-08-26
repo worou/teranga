@@ -18,6 +18,23 @@ export const config = {
   cors: {
     origin: process.env.CORS_ORIGIN || 'http://localhost:3000,http://localhost:5173',
   },
+  /**
+   * Nombre de proxys de confiance devant l'application
+   * (`app.set('trust proxy', n)`). 0 = aucun.
+   *
+   * Indispensable en production derrière LiteSpeed/Passenger, nginx ou un
+   * répartiteur de charge : sans cela `req.ip` vaut l'adresse du proxy, et
+   * express-rate-limit compte TOUS les administrateurs dans un seul seau. La
+   * console devient alors inutilisable après quelques écrans consultés, sur
+   * un « Erreur » sans explication — le 429 n'étant pas lu par la page.
+   *
+   * Le défaut est 0, et non 1, parce que se tromper dans l'autre sens est
+   * pire : faire confiance à `X-Forwarded-For` sans proxy devant permet à
+   * n'importe qui de forger son adresse et d'échapper à la limitation.
+   *
+   * Même variable et même valeur que le frontoffice.
+   */
+  trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
   // Frontoffice : cible des actions admin internes (validation de virement).
   // Le backoffice relaie l'action au frontoffice, qui détient la logique
   // canonique d'activation d'abonnement, via un secret partagé.

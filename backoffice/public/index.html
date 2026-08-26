@@ -30,9 +30,24 @@
     const fcfa = (n) => (n ?? 0).toLocaleString('fr-FR') + ' F';
 
     // ── Couche API ────────────────────────────────────────
+    //
+    // La racine est DÉDUITE de l'URL de la page, jamais écrite en dur.
+    // L'application est montée sous BASE_URI — « /admin » en production, la
+    // racine en développement. Un chemin absolu « /api/admin » vise la racine
+    // du site : en production il atteint le frontoffice, qui répond 404 en
+    // HTML. La page n'y lit aucun message et affiche « Erreur » tout court,
+    // ce qui donne l'impression d'identifiants refusés alors que la requête
+    // n'est jamais parvenue au backoffice.
+    //
+    // Le retrait couvre les quatre formes d'URL rencontrées :
+    //   /admin/  et  /admin/index.html  → racine « /admin »
+    //   /        et  /index.html        → racine « »
+    const ROOT = location.pathname.replace(/\/(index\.html)?$/, '');
+    const API_BASE = ROOT + '/api/admin';
+
     function getToken() { return localStorage.getItem(TOKEN_KEY); }
     async function api(path, opts = {}) {
-      const res = await fetch('/api/admin' + path, {
+      const res = await fetch(API_BASE + path, {
         ...opts,
         headers: {
           ...(opts.body ? { 'Content-Type': 'application/json' } : {}),
@@ -48,7 +63,15 @@
         location.reload();
         throw new Error('Session expirée');
       }
-      if (!res.ok) throw new Error(data.message || data.error || 'Erreur');
+      // Toutes les réponses d'erreur ne sont pas du JSON de l'API : un 404 du
+      // serveur web, ou un 429 du pare-feu Tiger Protect d'o2switch, arrivent
+      // en HTML. `data` est alors vide et un simple « Erreur » n'apprend rien
+      // — au point de faire chercher une panne d'authentification là où
+      // l'adresse était bloquée. Le code HTTP, lui, oriente tout de suite.
+      if (!res.ok) {
+        const detail = data.message || data.error;
+        throw new Error(detail || `Erreur ${res.status} (${res.statusText || 'réponse non JSON'})`);
+      }
       return data;
     }
 
