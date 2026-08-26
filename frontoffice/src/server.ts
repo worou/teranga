@@ -46,7 +46,26 @@ const server = createServer(app);
 // dans un seul seau. Voir `config.trustProxy` pour le choix du défaut.
 if (config.trustProxy > 0) app.set('trust proxy', config.trustProxy);
 
-app.use(helmet({ contentSecurityPolicy: false }));
+// HSTS n'est envoyé QUE si un certificat valide est en place (HSTS_ENABLED).
+//
+// Cet en-tête ordonne au navigateur de n'utiliser que HTTPS pendant six mois.
+// Tant que le site n'a qu'un certificat auto-signé, il ne peut qu'enfermer les
+// visiteurs sur une adresse qui échoue avec ERR_CERT_AUTHORITY_INVALID, sans
+// possibilité de revenir en HTTP.
+//
+// Le risque est différé plutôt qu'immédiat : un navigateur ignore HSTS reçu
+// sur une connexion au certificat invalide. Mais il suffit d'un certificat
+// valide, puis d'une expiration ou d'un renouvellement manqué, pour que le
+// blocage devienne total et dure jusqu'à l'expiration du max-age.
+//
+// À remettre à `true` une fois le certificat Let's Encrypt émis — c'est alors
+// une protection utile contre l'interception.
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    hsts: config.hstsEnabled ? undefined : false,
+  }),
+);
 
 // Static pages
 // Photos de membres : servies depuis `uploads/`, en dehors de `public/` que

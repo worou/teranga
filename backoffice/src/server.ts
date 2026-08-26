@@ -28,7 +28,12 @@ const app = express();
 if (config.trustProxy > 0) app.set('trust proxy', config.trustProxy);
 
 // ── Middlewares de sécurité ──────────────────────────────
-app.use(helmet({ contentSecurityPolicy: false })); // CSP désactivé pour servir le dashboard HTML
+// CSP désactivé pour servir le dashboard HTML.
+// HSTS muet tant qu'aucun certificat valide n'est en place — voir frontoffice.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  hsts: config.hstsEnabled ? undefined : false,
+}));
 app.use(cors({
   origin: config.cors.origin.split(','),
   credentials: true,

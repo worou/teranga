@@ -140,6 +140,13 @@ export const config = {
    */
   trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
 
+  /**
+   * N'envoyer l'en-tête HSTS qu'une fois un certificat valide en place.
+   * Le défaut est `false` : émis sans certificat valide, HSTS enferme les
+   * visiteurs sur une adresse HTTPS qui échoue. Voir server.ts.
+   */
+  hstsEnabled: process.env.HSTS_ENABLED === 'true',
+
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
     /**

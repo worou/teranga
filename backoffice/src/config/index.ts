@@ -35,6 +35,9 @@ export const config = {
    * Même variable et même valeur que le frontoffice.
    */
   trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
+
+  /** Voir frontoffice : HSTS reste muet tant qu'aucun certificat n'est valide. */
+  hstsEnabled: process.env.HSTS_ENABLED === 'true',
   // Frontoffice : cible des actions admin internes (validation de virement).
   // Le backoffice relaie l'action au frontoffice, qui détient la logique
   // canonique d'activation d'abonnement, via un secret partagé.
