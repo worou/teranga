@@ -15,11 +15,6 @@ export interface RegisterPayload {
   profession?: string
 }
 
-export interface LoginPayload {
-  phone: string
-  password: string
-}
-
 /**
  * Identifiant du compte pour les codes de vérification : e-mail OU téléphone.
  *
@@ -30,6 +25,10 @@ export interface LoginPayload {
 export interface OtpIdentifiant {
   phone?: string
   email?: string
+}
+
+export interface LoginPayload extends OtpIdentifiant {
+  password: string
 }
 
 export interface OtpVerifyPayload extends OtpIdentifiant {

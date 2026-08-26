@@ -65,11 +65,6 @@ export const registerSchema = z
     },
   );
 
-export const loginSchema = z.object({
-  phone: z.string().regex(phoneRegex),
-  password: z.string().min(1),
-});
-
 /**
  * Identifiant d'un compte pour les codes de vérification : une adresse
  * e-mail OU un numéro de téléphone, l'un ou l'autre mais pas les deux.
@@ -98,6 +93,19 @@ const erreurIdentifiant = {
   message: 'Indiquez une adresse e-mail ou un numéro de téléphone.',
   path: ['email'] as (string | number)[],
 };
+
+/**
+ * Connexion par mot de passe : même identifiant que pour les codes.
+ *
+ * Le compte est retrouvé par téléphone en base (`phone` est la clé unique
+ * historique) ; l'adresse est traduite avant la recherche, comme pour l'OTP.
+ */
+export const loginSchema = z
+  .object({
+    ...identifiantCompte,
+    password: z.string().min(1),
+  })
+  .refine(unSeulIdentifiant, erreurIdentifiant);
 
 export const otpRequestSchema = z
   .object({

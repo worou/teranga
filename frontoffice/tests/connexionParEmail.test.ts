@@ -4,15 +4,15 @@ import assert from 'node:assert/strict';
 import bcrypt from 'bcryptjs';
 import { resetDb, seedUser, fakePrisma } from './helpers/fakePrisma';
 import { assertAppError } from './helpers/factories';
-import { otpRequestSchema, otpVerifySchema } from '../src/validators';
+import { otpRequestSchema, otpVerifySchema, loginSchema } from '../src/validators';
 import { authService } from '../src/services/auth.service';
 
 /**
- * Connexion par code envoyé à l'ADRESSE E-MAIL.
+ * Connexion par ADRESSE E-MAIL — par code comme par mot de passe.
  *
- * La page de connexion demandait un numéro de téléphone alors que le code
- * partait par e-mail : il fallait connaître un numéro pour recevoir un
- * message électronique. L'identifiant est désormais l'adresse.
+ * La page demandait un numéro de téléphone alors que le code partait par
+ * e-mail : il fallait connaître un numéro pour recevoir un message
+ * électronique. Les deux onglets identifient désormais par l'adresse.
  *
  * Le point délicat : les codes restent stockés PAR TÉLÉPHONE — `OtpCode.phone`,
  * index `[phone, code]`, et `verifyOtp` qui cherche par numéro. L'e-mail est
@@ -174,3 +174,43 @@ describe('Vérification du code par e-mail', () => {
     await assertAppError(() => authService.verifyOtpFor({ email: MAIL }, '000000'), 400);
   });
 });
+
+describe('Connexion par mot de passe avec l’adresse', () => {
+  const MOT_DE_PASSE = 'Secret!2026';
+
+  beforeEach(async () => {
+    resetDb();
+    seedUser({
+      id: 'u-1',
+      phone: TEL,
+      email: MAIL,
+      firstName: 'Awa',
+      status: 'ACTIVE',
+      passwordHash: await bcrypt.hash(MOT_DE_PASSE, 10),
+    });
+  });
+
+  test('l’adresse identifie le compte', async () => {
+    const user = await authService.loginFor({ email: MAIL }, MOT_DE_PASSE);
+    assert.equal(user.id, 'u-1');
+  });
+
+  test('le téléphone reste accepté', async () => {
+    const user = await authService.loginFor({ phone: TEL }, MOT_DE_PASSE);
+    assert.equal(user.id, 'u-1');
+  });
+
+  test('une adresse inconnue échoue comme un mot de passe faux', async () => {
+    // Les deux refus doivent être indiscernables : sinon une simple tentative
+    // de connexion révèle si une adresse a un compte sur le site.
+    await assertAppError(() => authService.loginFor({ email: 'inconnu@example.com' }, MOT_DE_PASSE), 401);
+    await assertAppError(() => authService.loginFor({ email: MAIL }, 'mauvais'), 401);
+  });
+
+  test('le schéma exige un identifiant et un seul', () => {
+    assert.equal(loginSchema.safeParse({ email: MAIL, password: 'x' }).success, true);
+    assert.equal(loginSchema.safeParse({ phone: TEL, password: 'x' }).success, true);
+    assert.equal(loginSchema.safeParse({ password: 'x' }).success, false);
+    assert.equal(loginSchema.safeParse({ email: MAIL, phone: TEL, password: 'x' }).success, false);
+  });
+})

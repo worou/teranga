@@ -249,6 +249,19 @@ export class AuthService {
     return user;
   }
 
+  /**
+   * Connexion par mot de passe, à partir d'un e-mail ou d'un téléphone.
+   *
+   * Une adresse inconnue produit le MÊME refus qu'un mot de passe faux —
+   * « Identifiants invalides ». Distinguer les deux permettrait de savoir
+   * quelles adresses ont un compte, en une simple tentative de connexion.
+   */
+  async loginFor(id: { phone?: string; email?: string }, password: string) {
+    const phone = await this.resolvePhone(id);
+    if (!phone) throw AppError.unauthorized('Identifiants invalides');
+    return this.login(phone, password);
+  }
+
   async login(phone: string, password: string) {
     const user = await prisma.user.findUnique({
       where: { phone },

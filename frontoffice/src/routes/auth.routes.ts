@@ -84,7 +84,10 @@ router.post(
   '/login',
   validate(loginSchema),
   asyncHandler(async (req, res) => {
-    const user = await authService.login(req.body.phone, req.body.password);
+    const user = await authService.loginFor(
+      { phone: req.body.phone, email: req.body.email },
+      req.body.password,
+    );
     const { accessToken, refreshToken } = authService.issueTokens(user as any);
     await authService.saveRefreshToken(user.id, refreshToken);
     res.json({

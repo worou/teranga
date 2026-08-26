@@ -122,43 +122,6 @@ function PasswordInput({
   )
 }
 
-// ——— Dial code + phone row ———
-const DIAL_CODES: [string, string][] = [
-  ['+221', '+221'], ['+225', '+225'], ['+223', '+223'],
-  ['+226', '+226'], ['+224', '+224'], ['+228', '+228'],
-  ['+229', '+229'], ['+227', '+227'], ['+237', '+237'],
-  ['+241', '+241'], ['+243', '+243'], ['+242', '+242'],
-  ['+222', '+222'], ['+33', '+33'], ['+32', '+32'], ['+1', '+1'],
-]
-
-function PhoneRow({
-  dial, setDial, local, setLocal, error,
-}: {
-  dial: string; setDial: (v: string) => void
-  local: string; setLocal: (v: string) => void
-  error?: string
-}) {
-  return (
-    <div className={styles.formGroup}>
-      <label>
-        Numéro de téléphone
-        {error && <span className={styles.fieldErr}> — {error}</span>}
-      </label>
-      <div className={styles.phoneRow}>
-        <select className={styles.dialSelect} value={dial} onChange={e => setDial(e.target.value)}>
-          {DIAL_CODES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <input
-          type="tel" inputMode="numeric" placeholder="77 123 45 67"
-          autoComplete="tel" value={local}
-          className={error ? styles.inputError : ''}
-          onChange={e => setLocal(e.target.value)}
-        />
-      </div>
-    </div>
-  )
-}
-
 // ================================================================
 // MAIN COMPONENT
 // ================================================================
@@ -173,11 +136,13 @@ export default function Connexion() {
   const [error, setError] = useState('')
   const [info, setInfo] = useState('')
 
-  // Password tab state
-  const [pwDial, setPwDial] = useState('+221')
-  const [pwLocal, setPwLocal] = useState('')
+  // État de l'onglet « mot de passe ».
+  // Identifié par l'adresse, comme l'onglet code : demander un numéro ici et
+  // une adresse à côté obligeait à se souvenir de deux identifiants pour un
+  // même compte.
+  const [pwEmail, setPwEmail] = useState('')
   const [pwPassword, setPwPassword] = useState('')
-  const [pwErrors, setPwErrors] = useState<{ phone?: string; password?: string }>({})
+  const [pwErrors, setPwErrors] = useState<{ email?: string; password?: string }>({})
 
   // État de l'onglet « code par e-mail ».
   //
@@ -213,17 +178,15 @@ export default function Connexion() {
   async function loginPassword() {
     clearMessages()
     const e: typeof pwErrors = {}
-    if (!pwLocal || !/^\d{7,12}$/.test(pwLocal.replace(/\s/g, ''))) e.phone = 'Numéro invalide'
+    const adressePw = pwEmail.trim().toLowerCase()
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adressePw)) e.email = 'Adresse e-mail invalide'
     if (!pwPassword) e.password = 'Requis'
     setPwErrors(e)
     if (Object.keys(e).length) return
 
     setLoading(true)
     try {
-      const data = await authApi.login({
-        phone: pwDial + pwLocal.replace(/\s/g, ''),
-        password: pwPassword,
-      })
+      const data = await authApi.login({ email: adressePw, password: pwPassword })
       handleSuccess(data)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Identifiants incorrects. Réessayez.')
@@ -360,11 +323,20 @@ export default function Connexion() {
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
               {info && <div className={styles.alertSuccess}><span>✓</span> {info}</div>}
 
-              <PhoneRow
-                dial={pwDial} setDial={setPwDial}
-                local={pwLocal} setLocal={setPwLocal}
-                error={pwErrors.phone}
-              />
+              <div className={styles.formGroup}>
+                <label>
+                  Adresse e-mail
+                  {pwErrors.email && <span className={styles.fieldErr}> — {pwErrors.email}</span>}
+                </label>
+                <input
+                  type="email"
+                  inputMode="email"
+                  autoComplete="email"
+                  placeholder="vous@exemple.com"
+                  value={pwEmail}
+                  onChange={(ev) => setPwEmail(ev.target.value)}
+                />
+              </div>
 
               <div className={styles.formGroup}>
                 <label>
