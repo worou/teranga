@@ -17,8 +17,11 @@ import styles from './HeroSlideshow.module.css'
  * sentimentale est une inquiétude réelle. Le texte affiché parle du service,
  * jamais des gens photographiés.
  *
- * Pour remplacer par vos propres photographies : modifier `DIAPOSITIVES`
- * ci-dessous, rien d'autre. Chaque entrée a besoin d'une URL, d'un texte
+ * Pour remplacer par vos propres photographies : les déposer dans
+ * `client/public/images/` puis modifier `DIAPOSITIVES` ci-dessous — le chemin
+ * devient alors `/images/mon-fichier.jpg`, servi depuis le même domaine, sans
+ * dépendre d'un hébergeur tiers. Voir `client/IMAGES.md` pour les
+ * licences et les formats. Chaque entrée a besoin d'une URL, d'un texte
  * alternatif décrivant la scène (pas les personnes) et d'une légende parlant
  * du service.
  *
@@ -29,18 +32,30 @@ import styles from './HeroSlideshow.module.css'
  * dont trois démentent la phrase qui les accompagne. En ajouter demande
  * simplement d'en regarder une avant de l'inscrire ici.
  */
-type Diapositive = { src: string; alt: string; legende: string }
+type Diapositive = {
+  src: string
+  alt: string
+  legende: string
+  /**
+   * Mention exigée par certaines licences — « Image : Freepik » pour l'offre
+   * gratuite de Freepik, par exemple. L'omettre quand la licence la réclame
+   * place le site en infraction. Voir client/IMAGES.md.
+   */
+  credit?: string
+}
 
 const DIAPOSITIVES: Diapositive[] = [
   {
     src: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=1000&q=80&auto=format&fit=crop',
     alt: 'Des mariés au bord d’un lac, le jour de leur union',
     legende: 'Des rencontres qui mènent au mariage',
+    credit: 'Image d’illustration · Unsplash',
   },
   {
     src: 'https://images.unsplash.com/photo-1529636798458-92182e662485?w=1000&q=80&auto=format&fit=crop',
     alt: 'Une arche de cérémonie ornée de fleurs',
     legende: 'Du premier message au grand jour',
+    credit: 'Image d’illustration · Unsplash',
   },
 ]
 
@@ -112,6 +127,9 @@ export function HeroSlideshow() {
         <p className={styles.legende} key={index}>
           {DIAPOSITIVES[index].legende}
         </p>
+        {DIAPOSITIVES[index].credit && (
+          <span className={styles.credit}>{DIAPOSITIVES[index].credit}</span>
+        )}
 
         <button
           type="button"

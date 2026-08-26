@@ -143,3 +143,23 @@
   .active { transform: none; }
   .legende { animation: none; }
 }
+
+/* Mention de licence : lisible sans discussion possible, mais assez discrète
+   pour ne pas concurrencer la légende. Sa place est en haut à droite — en bas
+   elle entrerait en collision avec la phrase et les pastilles. */
+.credit {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  color: rgba(253, 248, 240, 0.9);
+  background: rgba(43, 22, 5, 0.42);
+  backdrop-filter: blur(4px);
+  padding: 4px 10px;
+  border-radius: 999px;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .credit { top: 10px; right: 12px; font-size: 10px; }
+}
