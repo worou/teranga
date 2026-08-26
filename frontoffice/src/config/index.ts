@@ -62,8 +62,18 @@ export const config = {
    * d'aucun compte tiers. Sur un hébergement mutualisé, le SMTP local écoute
    * sur 127.0.0.1:25 sans authentification.
    *
-   * `from` doit appartenir à un domaine réellement hébergé : un domaine sans
-   * DNS n'a ni SPF ni DKIM, et le message est traité comme falsifié.
+   * `from` doit appartenir au DOMAINE PUBLIC DU SITE — celui que les gens
+   * voient dans leur navigateur — et non au sous-domaine technique de
+   * l'hébergeur. Deux raisons, l'une mécanique et l'autre humaine :
+   *
+   *  - l'alignement DMARC exige que le domaine du `From`, celui de
+   *    l'enveloppe et celui de la signature DKIM concordent ; un domaine sans
+   *    zone propre n'a ni SPF ni DKIM, et le message passe pour falsifié ;
+   *  - un message signé « Téranga » mais expédié depuis `rise9482.odns.fr`
+   *    n'inspire aucune confiance, ni au filtre ni au destinataire.
+   *
+   * Vérifier après tout changement, dans cPanel → Authentification e-mail,
+   * que SPF, DKIM et DMARC ressortent VALID pour ce domaine.
    */
   email: {
     host: process.env.SMTP_HOST || '',
