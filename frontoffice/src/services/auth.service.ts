@@ -23,6 +23,22 @@ export interface RegisterInput {
   profession?: string;
 }
 
+/**
+ * Délai d'attente, en français lisible.
+ *
+ * Annoncer une durée fausse est pire que de n'en annoncer aucune : l'ancien
+ * message promettait « 1 heure » quel que soit le temps réellement restant,
+ * si bien qu'une personne bloquée trois minutes renonçait pour la journée.
+ */
+export function formatAttente(ms: number): string {
+  if (ms <= 0) return 'quelques instants';
+  if (ms <= 60_000) return 'moins d’une minute';
+  const minutes = Math.ceil(ms / 60_000);
+  if (minutes < 60) return `${minutes} minutes`;
+  const heures = Math.ceil(minutes / 60);
+  return heures === 1 ? '1 heure' : `${heures} heures`;
+}
+
 export class AuthService {
   async register(input: RegisterInput) {
     // Uniqueness check
@@ -122,7 +138,7 @@ export class AuthService {
     purpose: 'registration' | 'login' | 'password_reset',
   ) {
     const phone = await this.resolvePhone(id);
-    if (!phone) return { sent: true, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
+    if (!phone) return { sent: true, expiresAt: new Date(Date.now() + config.otp.ttlMs) };
     return this.requestOtp(phone, purpose);
   }
 
@@ -136,17 +152,27 @@ export class AuthService {
   }
 
   async requestOtp(phone: string, purpose: 'registration' | 'login' | 'password_reset') {
-    // Rate limiting: max 3 OTP per phone per hour
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-    const recentCount = await prisma.otpCode.count({
-      where: { phone, createdAt: { gte: oneHourAgo } },
+    // Quota anti-abus : au plus `quotaMax` demandes par téléphone dans une
+    // fenêtre glissante. On lit les dates plutôt que de compter, afin
+    // d'annoncer un délai EXACT : le message précédent promettait « 1 heure »
+    // quelle que soit la réalité, ce qui était faux dès la deuxième minute.
+    const debutFenetre = new Date(Date.now() - config.otp.quotaWindowMs);
+    const recentes = await prisma.otpCode.findMany({
+      where: { phone, createdAt: { gte: debutFenetre } },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
     });
-    if (recentCount >= 3) {
-      throw AppError.tooManyRequests('Trop de demandes de code. Réessayez dans 1 heure.');
+    if (recentes.length >= config.otp.quotaMax) {
+      // La place se libère quand la PLUS ANCIENNE demande sort de la fenêtre.
+      const attenteMs =
+        recentes[0].createdAt.getTime() + config.otp.quotaWindowMs - Date.now();
+      throw AppError.tooManyRequests(
+        `Trop de demandes de code. Réessayez dans ${formatAttente(attenteMs)}.`,
+      );
     }
 
     const code = generateOtpCode();
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
+    const expiresAt = new Date(Date.now() + config.otp.ttlMs);
 
     const user = await prisma.user.findUnique({ where: { phone } });
 

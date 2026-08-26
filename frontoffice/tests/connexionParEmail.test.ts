@@ -5,7 +5,8 @@ import bcrypt from 'bcryptjs';
 import { resetDb, seedUser, fakePrisma } from './helpers/fakePrisma';
 import { assertAppError } from './helpers/factories';
 import { otpRequestSchema, otpVerifySchema, loginSchema } from '../src/validators';
-import { authService } from '../src/services/auth.service';
+import { authService, formatAttente } from '../src/services/auth.service';
+import { config } from './helpers/setup';
 
 /**
  * Connexion par ADRESSE E-MAIL — par code comme par mot de passe.
@@ -212,5 +213,68 @@ describe('Connexion par mot de passe avec l’adresse', () => {
     assert.equal(loginSchema.safeParse({ phone: TEL, password: 'x' }).success, true);
     assert.equal(loginSchema.safeParse({ password: 'x' }).success, false);
     assert.equal(loginSchema.safeParse({ email: MAIL, phone: TEL, password: 'x' }).success, false);
+  });
+})
+
+describe('Quota des codes — fenêtre courte et délai honnête', () => {
+  beforeEach(() => {
+    resetDb();
+    seedCompte();
+  });
+
+  test('la fenêtre est de 10 minutes, pas d’une heure', () => {
+    // Une heure punissait l'usage normal : ne pas recevoir son code, réessayer
+    // deux fois, se tromper de boîte — et rester bloqué jusqu'au soir.
+    assert.equal(config.otp.quotaWindowMs, 10 * 60 * 1000);
+    assert.equal(config.otp.quotaMax, 3);
+  });
+
+  test('la durée de vie d’un code suit la même configuration', async () => {
+    const r = await authService.requestOtpFor({ email: MAIL }, 'login');
+    const restant = new Date(r.expiresAt).getTime() - Date.now();
+    assert.ok(restant > 0 && restant <= config.otp.ttlMs, `durée inattendue : ${restant}ms`);
+  });
+
+  test('une demande hors fenêtre ne compte plus', async () => {
+    // Trois demandes anciennes ne doivent pas bloquer : elles sont sorties de
+    // la fenêtre glissante.
+    const vieux = new Date(Date.now() - config.otp.quotaWindowMs - 60_000);
+    for (let i = 0; i < 3; i++) {
+      await fakePrisma.otpCode.create({
+        data: {
+          userId: 'u-1', phone: TEL, code: 'x', purpose: 'login', channel: 'email',
+          expiresAt: vieux, consumedAt: null, attempts: 0, createdAt: vieux,
+        },
+      });
+    }
+    await authService.requestOtpFor({ email: MAIL }, 'login');
+    assert.ok(true, 'la demande doit passer');
+  });
+
+  test('le message annonce le délai réel, pas « 1 heure »', async () => {
+    for (let i = 0; i < config.otp.quotaMax; i++) {
+      await authService.requestOtpFor({ email: MAIL }, 'login');
+    }
+    let message = '';
+    try {
+      await authService.requestOtpFor({ email: MAIL }, 'login');
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    assert.match(message, /Trop de demandes/);
+    assert.doesNotMatch(message, /1 heure/, 'le message ne doit plus promettre une heure');
+    assert.match(message, /minute/, 'il doit annoncer un délai en minutes');
+  });
+});
+
+describe('Formatage du délai d’attente', () => {
+  test('rend un texte juste à chaque échelle', () => {
+    assert.equal(formatAttente(0), 'quelques instants');
+    assert.equal(formatAttente(-5), 'quelques instants');
+    assert.equal(formatAttente(30_000), 'moins d’une minute');
+    assert.equal(formatAttente(60_000), 'moins d’une minute');
+    assert.equal(formatAttente(90_000), '2 minutes');
+    assert.equal(formatAttente(9 * 60_000), '9 minutes');
+    assert.equal(formatAttente(60 * 60_000), '1 heure');
   });
 })

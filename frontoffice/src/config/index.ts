@@ -138,6 +138,25 @@ export const config = {
    * faire confiance à `X-Forwarded-For` sans proxy devant permet à n'importe qui
    * de forger son adresse et d'échapper à la limitation de débit.
    */
+  /**
+   * Codes de vérification à usage unique.
+   *
+   * `quotaWindowMs` borne les abus sans punir l'usage normal. Une heure était
+   * trop long : quelqu'un qui ne reçoit pas son code, réessaie deux fois puis
+   * se trompe de boîte se retrouvait bloqué une heure entière, sans recours.
+   * Dix minutes suffisent à décourager l'automatisation, et correspondent à la
+   * durée de vie d'un code — passé ce délai, l'ancien est de toute façon
+   * périmé.
+   */
+  otp: {
+    /** Validité d'un code une fois envoyé. */
+    ttlMs: parseInt(process.env.OTP_TTL_MS || String(10 * 60 * 1000), 10),
+    /** Fenêtre glissante du quota. */
+    quotaWindowMs: parseInt(process.env.OTP_QUOTA_WINDOW_MS || String(10 * 60 * 1000), 10),
+    /** Demandes admises dans cette fenêtre. */
+    quotaMax: parseInt(process.env.OTP_QUOTA_MAX || '3', 10),
+  },
+
   trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
 
   /**
