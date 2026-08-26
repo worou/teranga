@@ -57,9 +57,21 @@
  * tant que `--appliquer` n'est pas donné. `--supprimer` affiche la liste
  * nominative des comptes concernés avant de les effacer.
  *
- * Note : ces comptes sont `ACTIVE` et `isVerified`, donc visibles dans la
- * découverte. Ils n'ont pas d'abonnement — un compte masculin ne pourra donc
- * pas envoyer de message, c'est le comportement normal de l'application.
+ * ─── Tester la messagerie avec ces comptes ────────────────────────────────
+ *
+ * Ils sont `ACTIVE` et `isVerified`, donc visibles dans la découverte, et ils
+ * peuvent s'écrire entre eux sans autre préparation : la messagerie n'exige
+ * ni match — la notion a été retirée, `openConversation` crée la conversation
+ * au premier message — ni abonnement, le palier payant étant désactivé dans
+ * cette version (`config.subscriptionsEnabled` est faux). Le seul frein est
+ * le quota de 30 conversations NOUVELLES par jour et par membre ; répondre
+ * dans une conversation entamée ne compte jamais.
+ *
+ * Un piège pour qui essaie le chat : le filtre anti-brouteur de
+ * `conversations.service.ts` refuse certains messages, et le refus déclenche
+ * un signalement automatique. « bitcoin », « iban », « western union », une
+ * insulte, ou un innocent « besoin de 2 minutes » — le motif est
+ * `besoin de <nombre>` — sont bloqués. Une phrase ordinaire passe.
  */
 import { spawnSync } from 'child_process';
 import fs from 'fs';
