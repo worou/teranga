@@ -17,45 +17,107 @@ import styles from './HeroSlideshow.module.css'
  * sentimentale est une inquiétude réelle. Le texte affiché parle du service,
  * jamais des gens photographiés.
  *
- * Pour remplacer par vos propres photographies : les déposer dans
- * `client/public/images/` puis modifier `DIAPOSITIVES` ci-dessous — le chemin
- * devient alors `/images/mon-fichier.jpg`, servi depuis le même domaine, sans
- * dépendre d'un hébergeur tiers. Voir `client/IMAGES.md` pour les
- * licences et les formats. Chaque entrée a besoin d'une URL, d'un texte
- * alternatif décrivant la scène (pas les personnes) et d'une légende parlant
- * du service.
- *
- * Il n'y a que DEUX diapositives, et c'est délibéré : ce sont les seules
- * images du site dont le contenu a été vérifié à l'œil. Les autres montraient
- * une foule dans une salle et deux portraits de femme seule — rien qui
- * évoque un mariage ou une famille. Mieux vaut deux images justes que cinq
- * dont trois démentent la phrase qui les accompagne. En ajouter demande
- * simplement d'en regarder une avant de l'inscrire ici.
+ * Les dix images sont servies depuis `/images/`, donc depuis notre propre
+ * domaine : elles sont déposées dans `client/public/images/` et recopiées par
+ * le build. Aucune dépendance à un hébergeur tiers qui pourrait changer une
+ * URL ou couper le service. Voir `client/IMAGES.md` pour les licences, les
+ * formats et la marche à suivre pour en ajouter — la règle n'a pas bougé :
+ * regarder l'image avant de l'inscrire ici, et vérifier que la légende ne la
+ * dément pas.
  */
 type Diapositive = {
   src: string
   alt: string
   legende: string
   /**
+   * Point de mire de l'image (`object-position`). Le cadre affiche en 4/5 sur
+   * ordinateur et en 3/2 sur mobile : une même photo est donc rognée deux
+   * fois, différemment. Quand le sujet n'est pas au centre — des mains en bas
+   * du cadre, des visages en haut — le rognage automatique le coupe, et sur
+   * mobile plus sévèrement encore. Ce champ déplace la fenêtre. À renseigner
+   * seulement quand le centrage par défaut abîme la photo.
+   */
+  cadrage?: string
+  /**
    * Mention exigée par certaines licences — « Image : Freepik » pour l'offre
    * gratuite de Freepik, par exemple. L'omettre quand la licence la réclame
    * place le site en infraction. Voir client/IMAGES.md.
+   *
+   * Unsplash ne l'exige pas ; on l'affiche quand même, parce qu'elle dit au
+   * visiteur ce qu'il regarde : une illustration, pas un membre.
    */
   credit?: string
 }
 
+const CREDIT_UNSPLASH = 'Image d’illustration · Unsplash'
+
 const DIAPOSITIVES: Diapositive[] = [
   {
-    src: 'https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=1000&q=80&auto=format&fit=crop',
-    alt: 'Des mariés au bord d’un lac, le jour de leur union',
+    src: '/images/couple-rire-portrait.webp',
+    alt: 'Un homme enlace une femme qui rit, devant un mur clair',
     legende: 'Des rencontres qui mènent au mariage',
-    credit: 'Image d’illustration · Unsplash',
+    cadrage: 'center 35%',
+    credit: CREDIT_UNSPLASH,
   },
   {
-    src: 'https://images.unsplash.com/photo-1529636798458-92182e662485?w=1000&q=80&auto=format&fit=crop',
-    alt: 'Une arche de cérémonie ornée de fleurs',
+    src: '/images/maries-voile-coucher-soleil.webp',
+    alt: 'Des mariés front contre front, un voile flottant dans la lumière du soir',
     legende: 'Du premier message au grand jour',
-    credit: 'Image d’illustration · Unsplash',
+    cadrage: 'center 28%',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/mains-jointes-alliances.webp',
+    alt: 'Deux mains jointes sur une table, alliances au doigt, près d’un verre',
+    legende: 'Des intentions dites dès le premier échange',
+    cadrage: '20% center',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/couple-complice-foret.webp',
+    alt: 'Une femme sur le dos d’un homme, tous deux riant dans un sous-bois',
+    legende: 'La complicité avant tout le reste',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/couple-canape-salon.webp',
+    alt: 'Un couple partage un plat, assis dans un canapé',
+    legende: 'Bâtir une vie à deux, jour après jour',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/maries-etreinte-coucher-soleil.webp',
+    alt: 'Des mariés enlacés au soleil couchant, un bouquet à la main',
+    legende: 'S’engager, pour de bon',
+    cadrage: 'center 30%',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/mains-tenues-arbre.webp',
+    alt: 'Deux mains qui se tiennent devant un arbre isolé',
+    legende: 'Avancer au même rythme',
+    cadrage: 'center 72%',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/couple-tendresse-soiree.webp',
+    alt: 'Un couple s’embrasse dans la pénombre d’une soirée',
+    legende: 'Chercher une union, pas une aventure',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/maries-promenade-palmier.webp',
+    alt: 'Des mariés marchent main dans la main devant un palmier',
+    legende: 'Fonder un foyer, ici ou ailleurs',
+    cadrage: 'center 55%',
+    credit: CREDIT_UNSPLASH,
+  },
+  {
+    src: '/images/alliances-dorees.webp',
+    alt: 'Deux alliances dorées posées sur une nappe claire',
+    legende: 'Une promesse, pas un passe-temps',
+    cadrage: '60% center',
+    credit: CREDIT_UNSPLASH,
   },
 ]
 
@@ -65,6 +127,23 @@ export function HeroSlideshow() {
   const [index, setIndex] = useState(0)
   const [enPause, setEnPause] = useState(false)
   const total = DIAPOSITIVES.length
+
+  // Toutes les diapositives occupent le même emplacement, en haut de page :
+  // même invisibles, elles sont DANS la fenêtre du navigateur, et
+  // `loading="lazy"` ne diffère alors plus rien. Sans cette fenêtre de
+  // montage, l'accueil téléchargerait les dix images d'un coup — plus de
+  // 700 Ko sur une connexion mobile, pour neuf images que le visiteur n'a pas
+  // encore demandées. On ne monte que celle affichée et ses deux voisines ;
+  // les autres arrivent au fil du défilement, et ce qui est monté le reste —
+  // revenir en arrière ne doit pas retélécharger.
+  const [chargees, setChargees] = useState<Set<number>>(() => new Set([0]))
+  useEffect(() => {
+    setChargees(prev => {
+      const suivant = new Set(prev)
+      for (const n of [index - 1, index, index + 1]) suivant.add((n + total) % total)
+      return suivant.size === prev.size ? prev : suivant
+    })
+  }, [index, total])
 
   // Un diaporama qui avance seul est une gêne pour qui souffre de troubles
   // vestibulaires ou de déficit d'attention. Le système le signale ; on obéit.
@@ -110,15 +189,19 @@ export function HeroSlideshow() {
             className={`${styles.diapo} ${i === index ? styles.active : ''}`}
             aria-hidden={i !== index}
           >
-            <img
-              src={d.src}
-              alt={d.alt}
-              // La première est visible d'emblée : la charger paresseusement
-              // laisserait un trou au premier rendu, sur la zone la plus vue
-              // de la page.
-              loading={i === 0 ? 'eager' : 'lazy'}
-              draggable={false}
-            />
+            {chargees.has(i) && (
+              <img
+                src={d.src}
+                alt={d.alt}
+                // La première est visible d'emblée : la charger paresseusement
+                // laisserait un trou au premier rendu, sur la zone la plus vue
+                // de la page.
+                loading={i === 0 ? 'eager' : 'lazy'}
+                decoding="async"
+                draggable={false}
+                style={d.cadrage ? { objectPosition: d.cadrage } : undefined}
+              />
+            )}
           </figure>
         ))}
 

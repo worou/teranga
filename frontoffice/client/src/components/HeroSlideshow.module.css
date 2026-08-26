@@ -108,13 +108,19 @@
 .gauche { left: 14px; }
 .droite { right: 14px; }
 
+/* Dix diapositives : la rangée de pastilles est le seul élément de la bannière
+   qui grandit avec le tableau. À 28 px la pièce et 9 px d'écart, dix pastilles
+   réclamaient 377 px — plus que la largeur utile d'un téléphone, et la rangée
+   débordait. `flex-wrap` est la ceinture de sécurité pour le jour où l'on en
+   ajoutera. */
 .pastilles {
   display: flex;
-  gap: 9px;
+  flex-wrap: wrap;
+  gap: 7px;
   justify-content: center;
 }
 .pastille {
-  width: 28px;
+  width: 18px;
   height: 5px;
   padding: 0;
   border: none;
@@ -124,7 +130,7 @@
   transition: background 260ms ease, width 260ms ease;
 }
 .pastille:hover { background: rgba(184, 105, 26, 0.5); }
-.pastilleActive { width: 44px; background: var(--ocre-deep); }
+.pastilleActive { width: 30px; background: var(--ocre-deep); }
 .pastille:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: 3px; }
 
 /* Sur mobile la bannière passe en une colonne : l'image ne doit plus occuper
@@ -133,6 +139,9 @@
   .scene { aspect-ratio: 3 / 2; max-height: 320px; border-radius: 18px; }
   .legende { font-size: 18px; left: 20px; right: 20px; bottom: 20px; }
   .fleche { opacity: 1; width: 36px; height: 36px; }
+  .pastilles { gap: 5px; }
+  .pastille { width: 14px; }
+  .pastilleActive { width: 24px; }
 }
 
 /* Le défilement automatique est déjà coupé côté JavaScript ; on neutralise
