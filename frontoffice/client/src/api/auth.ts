@@ -20,8 +20,19 @@ export interface LoginPayload {
   password: string
 }
 
-export interface OtpVerifyPayload {
-  phone: string
+/**
+ * Identifiant du compte pour les codes de vérification : e-mail OU téléphone.
+ *
+ * La connexion par code se fait par e-mail ; le téléphone reste accepté, car
+ * l'inscription s'en sert encore. Côté serveur, l'e-mail est traduit en
+ * téléphone avant toute écriture — les codes y sont stockés par numéro.
+ */
+export interface OtpIdentifiant {
+  phone?: string
+  email?: string
+}
+
+export interface OtpVerifyPayload extends OtpIdentifiant {
   code: string
 }
 
@@ -54,7 +65,7 @@ async function post<T>(path: string, body: unknown): Promise<T> {
 export interface OtpResponse {
   message?: string
   devCode?: string
-  /** Vrai si une inscription non vérifiée existait déjà pour ce numéro. */
+  /** Vrai si une inscription non vérifiée existait déjà pour ce compte. */
   resumed?: boolean
 }
 
@@ -65,8 +76,8 @@ export const authApi = {
   login: (payload: LoginPayload) =>
     post<AuthResponse>('/login', payload),
 
-  otpRequest: (phone: string) =>
-    post<OtpResponse>('/otp/request', { phone }),
+  otpRequest: (id: OtpIdentifiant) =>
+    post<OtpResponse>('/otp/request', id),
 
   otpVerify: (payload: OtpVerifyPayload) =>
     post<AuthResponse>('/otp/verify', payload),

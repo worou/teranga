@@ -88,6 +88,53 @@ export class AuthService {
     return { user, devCode: (otp as { devCode?: string }).devCode, resumed: false };
   }
 
+  /**
+   * Téléphone du compte désigné par l'identifiant fourni.
+   *
+   * Les codes sont stockés par téléphone ; une adresse e-mail doit donc être
+   * traduite avant toute écriture. Renvoie `null` si l'adresse ne correspond à
+   * aucun compte — l'appelant décide alors quoi en faire.
+   */
+  private async resolvePhone(id: { phone?: string; email?: string }): Promise<string | null> {
+    if (id.phone) return id.phone;
+    if (!id.email) return null;
+    const user = await prisma.user.findUnique({
+      where: { email: id.email.trim().toLowerCase() },
+      select: { phone: true },
+    });
+    return user?.phone ?? null;
+  }
+
+  /**
+   * Demande un code à partir d'un e-mail ou d'un téléphone.
+   *
+   * Une adresse inconnue reçoit la MÊME réponse qu'une adresse connue, sans
+   * qu'aucun code ne soit créé ni envoyé. Répondre « ce compte n'existe pas »
+   * dirait à qui le demande quelles adresses sont inscrites sur un site de
+   * rencontres — une information qu'on ne peut pas donner.
+   *
+   * La résolution précède l'appel à `requestOtp`, donc le quota de 3 codes par
+   * heure — compté par téléphone — s'applique bien aux deux points d'entrée.
+   * Résoudre après l'aurait contourné.
+   */
+  async requestOtpFor(
+    id: { phone?: string; email?: string },
+    purpose: 'registration' | 'login' | 'password_reset',
+  ) {
+    const phone = await this.resolvePhone(id);
+    if (!phone) return { sent: true, expiresAt: new Date(Date.now() + 10 * 60 * 1000) };
+    return this.requestOtp(phone, purpose);
+  }
+
+  /** Vérifie un code à partir d'un e-mail ou d'un téléphone. */
+  async verifyOtpFor(id: { phone?: string; email?: string }, code: string) {
+    const phone = await this.resolvePhone(id);
+    // Même message que pour un code faux : l'échec ne doit pas distinguer
+    // « adresse inconnue » de « code erroné ».
+    if (!phone) throw AppError.badRequest('Code expiré ou inexistant. Demandez un nouveau code.');
+    return this.verifyOtp(phone, code);
+  }
+
   async requestOtp(phone: string, purpose: 'registration' | 'login' | 'password_reset') {
     // Rate limiting: max 3 OTP per phone per hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);

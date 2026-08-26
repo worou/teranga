@@ -70,15 +70,48 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
-export const otpRequestSchema = z.object({
-  phone: z.string().regex(phoneRegex),
-  purpose: z.enum(['registration', 'login', 'password_reset']).default('registration'),
-});
+/**
+ * Identifiant d'un compte pour les codes de vérification : une adresse
+ * e-mail OU un numéro de téléphone, l'un ou l'autre mais pas les deux.
+ *
+ * La vérification se fait désormais par e-mail (l'acheminement SMS n'était
+ * jamais fiable sur la zone), mais les codes restent stockés PAR TÉLÉPHONE :
+ * `OtpCode.phone`, index `[phone, code]`, et `verifyOtp` qui cherche par
+ * téléphone. L'e-mail est résolu vers le téléphone du compte avant toute
+ * écriture — ce qui évite une migration sur une base en production et laisse
+ * intacte la logique déjà éprouvée.
+ *
+ * Le téléphone reste accepté : l'inscription s'en sert encore, et les
+ * intégrations existantes ne cassent pas.
+ */
+const identifiantCompte = {
+  phone: z.string().regex(phoneRegex, 'Numéro invalide (format E.164)').optional(),
+  email: z.string().email('Adresse e-mail invalide').optional(),
+};
 
-export const otpVerifySchema = z.object({
-  phone: z.string().regex(phoneRegex),
-  code: z.string().length(6),
-});
+/** Exactement un identifiant : ni zéro, ni les deux (qui pourraient désigner
+ *  deux comptes différents — on refuse plutôt que d'en choisir un). */
+const unSeulIdentifiant = (d: { phone?: string; email?: string }) =>
+  Boolean(d.phone) !== Boolean(d.email);
+
+const erreurIdentifiant = {
+  message: 'Indiquez une adresse e-mail ou un numéro de téléphone.',
+  path: ['email'] as (string | number)[],
+};
+
+export const otpRequestSchema = z
+  .object({
+    ...identifiantCompte,
+    purpose: z.enum(['registration', 'login', 'password_reset']).default('registration'),
+  })
+  .refine(unSeulIdentifiant, erreurIdentifiant);
+
+export const otpVerifySchema = z
+  .object({
+    ...identifiantCompte,
+    code: z.string().length(6),
+  })
+  .refine(unSeulIdentifiant, erreurIdentifiant);
 
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(10),

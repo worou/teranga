@@ -125,7 +125,10 @@ router.post(
   '/otp/request',
   validate(otpRequestSchema),
   asyncHandler(async (req, res) => {
-    const result = await authService.requestOtp(req.body.phone, req.body.purpose);
+    const result = await authService.requestOtpFor(
+      { phone: req.body.phone, email: req.body.email },
+      req.body.purpose,
+    );
     res.json(result);
   }),
 );
@@ -156,7 +159,10 @@ router.post(
   '/otp/verify',
   validate(otpVerifySchema),
   asyncHandler(async (req, res) => {
-    const user = await authService.verifyOtp(req.body.phone, req.body.code);
+    const user = await authService.verifyOtpFor(
+      { phone: req.body.phone, email: req.body.email },
+      req.body.code,
+    );
     const { accessToken, refreshToken } = authService.issueTokens(user as any);
     await authService.saveRefreshToken(user.id, refreshToken);
     res.json({

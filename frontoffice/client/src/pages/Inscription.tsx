@@ -367,7 +367,7 @@ export default function Inscription() {
   async function resendOtp() {
     setError(''); setSuccess('')
     try {
-      const res = await authApi.otpRequest(phone)
+      const res = await authApi.otpRequest({ phone })
       setDevCode(res.devCode ?? '')
       setSuccess('Nouveau code envoyé !')
       startCountdown()

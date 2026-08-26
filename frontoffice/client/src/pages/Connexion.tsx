@@ -162,7 +162,7 @@ function PhoneRow({
 // ================================================================
 // MAIN COMPONENT
 // ================================================================
-type Tab = 'password' | 'sms'
+type Tab = 'password' | 'email'
 type OtpPhase = 'form' | 'verify'
 
 export default function Connexion() {
@@ -179,16 +179,20 @@ export default function Connexion() {
   const [pwPassword, setPwPassword] = useState('')
   const [pwErrors, setPwErrors] = useState<{ phone?: string; password?: string }>({})
 
-  // SMS tab state
-  const [smsDial, setSmsDial] = useState('+221')
-  const [smsLocal, setSmsLocal] = useState('')
-  const [smsErrors, setSmsErrors] = useState<{ phone?: string }>({})
+  // État de l'onglet « code par e-mail ».
+  //
+  // La vérification passe par l'adresse et non par le numéro : l'acheminement
+  // des SMS n'a jamais été fiable, et le serveur envoyait déjà le code par
+  // e-mail en priorité. La page demandait pourtant un téléphone, ce qui
+  // obligeait à connaître un numéro pour recevoir un message électronique.
+  const [otpEmail, setOtpEmail] = useState('')
+  const [otpErrors, setOtpErrors] = useState<{ email?: string }>({})
   const [otpPhase, setOtpPhase] = useState<OtpPhase>('form')
   const [otpCode, setOtpCode] = useState('')
   const [otpReset, setOtpReset] = useState(false)
   const { seconds, start: startCountdown, canResend } = useCountdown(60)
 
-  const smsPhone = smsDial + smsLocal.replace(/\s/g, '')
+  const adresse = otpEmail.trim().toLowerCase()
 
   function clearMessages() { setError(''); setInfo('') }
 
@@ -231,13 +235,13 @@ export default function Connexion() {
   // ——— Send OTP ———
   async function sendOtp() {
     clearMessages()
-    if (!smsLocal || !/^\d{7,12}$/.test(smsLocal.replace(/\s/g, ''))) {
-      setSmsErrors({ phone: 'Numéro invalide' }); return
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adresse)) {
+      setOtpErrors({ email: 'Adresse e-mail invalide' }); return
     }
-    setSmsErrors({})
+    setOtpErrors({})
     setLoading(true)
     try {
-      await authApi.otpRequest(smsPhone)
+      await authApi.otpRequest({ email: adresse })
       setOtpPhase('verify')
       startCountdown()
     } catch (err: unknown) {
@@ -251,7 +255,7 @@ export default function Connexion() {
   async function resendOtp() {
     clearMessages()
     try {
-      await authApi.otpRequest(smsPhone)
+      await authApi.otpRequest({ email: adresse })
       setInfo('Nouveau code envoyé !')
       startCountdown()
       setOtpReset(true)
@@ -268,7 +272,7 @@ export default function Connexion() {
     clearMessages()
     setLoading(true)
     try {
-      const data = await authApi.otpVerify({ phone: smsPhone, code: otpCode })
+      const data = await authApi.otpVerify({ email: adresse, code: otpCode })
       handleSuccess(data)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Code incorrect. Réessayez.')
@@ -280,11 +284,11 @@ export default function Connexion() {
     }
   }
 
-  // ——— Forgot password: switch to SMS ———
+  // ——— Mot de passe oublié : bascule vers le code par e-mail ———
   function forgotPassword(e: React.MouseEvent) {
     e.preventDefault()
-    switchTab('sms')
-    setInfo('Connectez-vous avec un code SMS pour réinitialiser votre mot de passe.')
+    switchTab('email')
+    setInfo('Recevez un code par e-mail pour retrouver l’accès à votre compte.')
   }
 
   return (
@@ -343,10 +347,10 @@ export default function Connexion() {
               🔐 Mot de passe
             </button>
             <button
-              className={`${styles.tabBtn} ${tab === 'sms' ? styles.tabActive : ''}`}
-              onClick={() => switchTab('sms')}
+              className={`${styles.tabBtn} ${tab === 'email' ? styles.tabActive : ''}`}
+              onClick={() => switchTab('email')}
             >
-              📱 Code SMS
+              ✉️ Code e-mail
             </button>
           </div>
 
@@ -395,20 +399,31 @@ export default function Connexion() {
             </div>
           )}
 
-          {/* ——— SMS TAB ——— */}
-          {tab === 'sms' && (
+          {/* ——— ONGLET CODE PAR E-MAIL ——— */}
+          {tab === 'email' && (
             <div className={styles.formStep}>
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
               {info && <div className={styles.alertSuccess}><span>✓</span> {info}</div>}
 
-              {/* Phase 1 : saisie du numéro */}
+              {/* Phase 1 : saisie de l'adresse */}
               {otpPhase === 'form' && (
                 <>
-                  <PhoneRow
-                    dial={smsDial} setDial={setSmsDial}
-                    local={smsLocal} setLocal={setSmsLocal}
-                    error={smsErrors.phone}
-                  />
+                  <div className={styles.formGroup}>
+                    <label>
+                      Adresse e-mail
+                      {otpErrors.email && <span className={styles.fieldErr}> — {otpErrors.email}</span>}
+                    </label>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoFocus
+                      placeholder="vous@exemple.com"
+                      value={otpEmail}
+                      onChange={(e) => setOtpEmail(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') sendOtp() }}
+                    />
+                  </div>
                   <div className={styles.actions}>
                     <button
                       className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
@@ -417,9 +432,10 @@ export default function Connexion() {
                     >
                       {!loading && (
                         <>
-                          Envoyer le code SMS
+                          Recevoir mon code par e-mail
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 010 2.14 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.1V16.92z" />
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <path d="M22 6l-10 7L2 6" />
                           </svg>
                         </>
                       )}
@@ -438,13 +454,15 @@ export default function Connexion() {
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M19 12H5M12 5l-7 7 7 7" />
                     </svg>
-                    Modifier le numéro
+                    Modifier l’adresse
                   </button>
 
                   <div className={styles.otpHero}>
-                    <div className={styles.otpIcon}>📱</div>
-                    <div className={styles.otpPhone}>{smsPhone}</div>
-                    <div className={styles.otpSub}>Code envoyé par SMS</div>
+                    <div className={styles.otpIcon}>✉️</div>
+                    <div className={styles.otpPhone}>{adresse}</div>
+                    <div className={styles.otpSub}>
+                      Code envoyé par e-mail · pensez à regarder les indésirables
+                    </div>
                   </div>
 
                   <OtpBlock onComplete={setOtpCode} resetTrigger={otpReset} />
