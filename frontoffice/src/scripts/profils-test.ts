@@ -134,7 +134,7 @@ type ProfilTest = {
 };
 
 /**
- * Les âges sont volontairement étalés de 24 à 38 ans, et le genre réparti
+ * Les âges sont volontairement étalés de 24 à 40 ans, et le genre réparti
  * 5/5. Le fil de découverte filtre sur la tranche d'âge ET sur le genre
  * recherché par celui qui regarde : dix profils du même âge ou du même genre
  * disparaîtraient derrière le moindre filtre, et l'on croirait le script raté.
