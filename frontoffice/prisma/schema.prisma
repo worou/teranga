@@ -362,9 +362,24 @@ model Message {
   match           Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
   sender          User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
-  @@index([matchId])
+  // Index composites : l'ordre des colonnes est ce qui compte.
+  //
+  // Charger un fil, c'est « les messages de CE match, les plus récents
+  // d'abord ». Avec un index sur `matchId` seul et un autre sur `createdAt`
+  // seul, MySQL ne peut satisfaire les deux à la fois : il choisissait
+  // `createdAt` pour éviter le tri et BALAYAIT l'index entier — tous les
+  // messages de tous les utilisateurs — en filtrant `matchId` au passage
+  // (EXPLAIN : type=index). Le coût d'ouverture d'une conversation croissait
+  // donc avec le volume total de la messagerie, pas avec sa propre taille.
+  //
+  // `[matchId, createdAt]` répond aux deux : égalité sur le préfixe, tri déjà
+  // fait par le suffixe.
+  @@index([matchId, createdAt])
+  // Non-lus et marquage comme lu : « ce match, pas encore lus ». `senderId`
+  // n'entre pas dans l'index — la condition porte dessus par INÉGALITÉ
+  // (`senderId <> moi`), qui ne peut servir de préfixe.
+  @@index([matchId, readAt])
   @@index([senderId])
-  @@index([createdAt])
 }
 
 model Report {
