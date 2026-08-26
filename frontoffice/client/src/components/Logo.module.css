@@ -20,6 +20,10 @@
   display: flex;
   flex-direction: column;
 }
+/* Même raison qu'au pied de page : `.logoText` est une colonne flex, et un
+   texte nu y devient un élément à part entière. Sans cet emballage, « Tér »
+   et `<em>anga</em>` s'empilent sur deux lignes. */
+.wordmark { white-space: nowrap; }
 .logoText em {
   font-style: italic;
   font-weight: 400;

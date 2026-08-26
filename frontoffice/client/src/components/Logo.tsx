@@ -37,7 +37,7 @@ export default function Logo({ size = 40, light = false, showTagline = false, hr
     <Link to={href} className={styles.logo}>
       <TerangaSymbol size={size} light={light} />
       <span className={`${styles.logoText} ${light ? styles.light : ''}`}>
-        Tér<em>anga</em>
+        <span className={styles.wordmark}>Tér<em>anga</em></span>
         {showTagline && <span className={styles.tagline}>La rencontre, autrement</span>}
       </span>
     </Link>

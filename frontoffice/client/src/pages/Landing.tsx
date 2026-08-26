@@ -417,8 +417,8 @@ export default function Landing() {
             <a href="#" className={styles.footerLogo}>
               <TerangaSymbol size={48} light />
               <div className={styles.footerLogoText}>
-                Tér<em>anga</em>
-                <span>La rencontre, autrement</span>
+                <span className={styles.footerLogoWordmark}>Tér<em>anga</em></span>
+                <span className={styles.footerLogoBaseline}>La rencontre, autrement</span>
               </div>
             </a>
             <p className={styles.footerTagline}>Rencontres pour le mariage. Conçue pour l'Afrique francophone et sa diaspora.</p>
