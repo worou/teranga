@@ -32,6 +32,7 @@ interface FormState {
   educationLevel: string
   bio: string
   religion: string
+  photosVisibility: string
   intent: string
   heightCm: string
   weightKg: string
@@ -51,6 +52,7 @@ function toForm(me: MeResponse): FormState {
     educationLevel: me.educationLevel ?? '',
     bio: me.bio ?? '',
     religion: me.religion ?? '',
+    photosVisibility: me.photosVisibility ?? 'PUBLIC',
     intent: me.intent ?? '',
     heightCm: me.heightCm != null ? String(me.heightCm) : '',
     weightKg: me.weightKg != null ? String(me.weightKg) : '',
@@ -125,6 +127,7 @@ export default function MonProfil() {
     if (form.educationLevel !== initial.educationLevel) patch.educationLevel = toText(form.educationLevel)
     if (form.bio !== initial.bio) patch.bio = toText(form.bio)
     if (form.religion !== initial.religion && form.religion) patch.religion = form.religion
+    if (form.photosVisibility !== initial.photosVisibility) patch.photosVisibility = form.photosVisibility
     if (form.intent !== initial.intent && form.intent) patch.intent = form.intent
     if (form.heightCm !== initial.heightCm) patch.heightCm = toNumber(form.heightCm)
     if (form.weightKg !== initial.weightKg) patch.weightKg = toNumber(form.weightKg)
@@ -309,6 +312,37 @@ export default function MonProfil() {
             ref={fileInput} type="file" accept="image/*" multiple hidden
             onChange={e => { addPhotos(e.target.files); e.target.value = '' }}
           />
+
+          {/* Qui voit ces photos.
+              Deux choses étaient confondues : prouver qu'il y a quelqu'un
+              derrière le compte, et montrer son visage à tout le monde. La
+              première reste exigée — les photos sont demandées, et la
+              modération les voit toujours. La seconde devient un choix : on
+              peut chercher à se marier sans que ses collègues ou sa
+              belle-famille tombent sur sa fiche. */}
+          <div className={styles.visibility}>
+            <div className={styles.visibilityTitle}>Qui voit vos photos</div>
+            {([
+              ['PUBLIC', 'Tous les membres', 'Vos photos apparaissent sur votre carte et sur votre fiche.'],
+              ['PRIVATE', 'Personne pour l’instant', 'Les autres membres voient l’initiale de votre prénom à la place. Votre profil reste visible, vos photos non.'],
+            ] as [string, string, string][]).map(([val, titre, aide]) => (
+              <label key={val} className={`${styles.visibilityOption} ${form.photosVisibility === val ? styles.visibilityChecked : ''}`}>
+                <input
+                  type="radio" name="photosVisibility" value={val}
+                  checked={form.photosVisibility === val}
+                  onChange={() => set('photosVisibility', val)}
+                />
+                <span>
+                  <strong>{titre}</strong>
+                  <em>{aide}</em>
+                </span>
+              </label>
+            ))}
+            <p className={styles.visibilityNote}>
+              Dans les deux cas, l’équipe de modération voit vos photos : c’est ce qui
+              permet de vérifier qu’un compte correspond à une personne réelle.
+            </p>
+          </div>
         </section>
 
         {/* ——— Identité ——— */}

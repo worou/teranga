@@ -177,7 +177,10 @@ export class DiscoveryService {
       // est pas représentable, le filtre reste donc strict.
       ...(filters.hasChildren !== undefined && { hasChildren: filters.hasChildren }),
       ...(filters.profession && { profession: { contains: filters.profession } }),
-      ...(filters.hasPhoto && { photos: { some: {} } }),
+      // « Avec photo » désigne une photo qu'on VERRA. Un profil qui en a
+      // déposé mais ne les publie pas ne satisfait pas cette demande : il
+      // s'afficherait avec une initiale, comme un profil sans photo.
+      ...(filters.hasPhoto && { photos: { some: {} }, photosVisibility: 'PUBLIC' as const }),
       ...(activeSince && { lastActiveAt: { gte: activeSince } }),
       ...(optionalClauses.length && { AND: optionalClauses }),
       ...(q && {
@@ -227,7 +230,13 @@ export class DiscoveryService {
       intent: c.intent,
       religion: c.religion,
       isVerified: c.isVerified,
-      photos: c.photos,
+      // Asymétrie voulue, et ce n'est pas un oubli : les photos disparaissent
+      // du fil quand le membre ne les publie pas, mais le score plus bas
+      // continue de compter leur présence. Le bonus récompense d'avoir
+      // déposé une photo — la preuve qu'il y a quelqu'un derrière le compte —
+      // pas de l'avoir exposée. Choisir la discrétion ne doit pas reléguer en
+      // fin de liste.
+      photos: c.photosVisibility === 'PRIVATE' ? [] : c.photos,
       score,
       sharedTraits,
     }));

@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TerangaSymbol } from '../components/Logo'
 import {
-  authApi, saveTokens, clearTokens, uploadPhotos, fetchMe, getToken,
+  authApi, saveTokens, clearTokens, uploadPhotos, fetchMe, getToken, updateMe,
   type RegisterPayload,
 } from '../api/auth'
 import styles from './AuthForms.module.css'
@@ -326,6 +326,10 @@ export default function Inscription() {
     }
   }
 
+  // Choix de publication, posé ici plutôt que plus tard : c'est le moment où
+  // l'on confie son visage, donc le moment où la question se pose.
+  const [photosVisibility, setPhotosVisibility] = useState<'PUBLIC' | 'PRIVATE'>('PUBLIC')
+
   // ——— Photos (étape 4) ———
   // Total du profil = photos déjà en ligne (reprise) + fichiers en attente
   // d'envoi. C'est ce total que l'API compare à son minimum.
@@ -355,6 +359,9 @@ export default function Inscription() {
     try {
       // Reprise déjà complète côté serveur : rien de neuf à envoyer.
       if (photos.length > 0) await uploadPhotos(photos, token)
+      // Le choix ne part que s'il s'écarte du défaut : inutile de réécrire
+      // PUBLIC sur un compte qui l'est déjà.
+      if (photosVisibility === 'PRIVATE') await updateMe({ photosVisibility })
       navigate('/accueil')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Échec de l'envoi des photos.")
@@ -638,7 +645,12 @@ export default function Inscription() {
               <div className={styles.formHeader}>
                 <div className={styles.stepLabel}>Étape 4 sur 4</div>
                 <h1>Vos <em>photos</em></h1>
-                <p>Ajoutez au moins {minPhotos} photos pour créer votre profil. Elles seront vérifiées avant publication.</p>
+                {/* L'ancienne phrase promettait « elles seront vérifiées avant
+                    publication ». C'était faux : `moderationStatus` est posé à
+                    PENDING au téléversement et n'est relu nulle part — la photo
+                    partait en ligne aussitôt. On dit maintenant ce qui se passe
+                    vraiment, et on donne le choix qui manquait. */}
+                <p>Ajoutez au moins {minPhotos} photos pour créer votre profil. Vous décidez ci-dessous qui peut les voir.</p>
               </div>
 
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
@@ -670,6 +682,34 @@ export default function Inscription() {
 
               <div className={styles.photoHint}>
                 {totalPhotos} / {minPhotos} minimum · {maxPhotos} max · JPEG, PNG ou WebP (5 Mo max)
+              </div>
+
+              {/* Chercher à se marier n'oblige pas à s'exposer. La photo sert
+                  d'abord à prouver qu'il y a quelqu'un derrière le compte —
+                  la modération la voit toujours. Ce qu'on choisit ici, c'est
+                  ce que voient les AUTRES MEMBRES. */}
+              <div className={styles.visibility}>
+                <div className={styles.visibilityTitle}>Qui pourra voir vos photos ?</div>
+                {([
+                  ['PUBLIC', 'Tous les membres', 'Vos photos apparaissent sur votre carte et sur votre fiche.'],
+                  ['PRIVATE', 'Personne pour l’instant', 'Les membres voient l’initiale de votre prénom. Vous pourrez changer d’avis à tout moment depuis votre profil.'],
+                ] as ['PUBLIC' | 'PRIVATE', string, string][]).map(([val, titre, aide]) => (
+                  <label key={val} className={`${styles.visibilityOption} ${photosVisibility === val ? styles.visibilityChecked : ''}`}>
+                    <input
+                      type="radio" name="photosVisibility" value={val}
+                      checked={photosVisibility === val}
+                      onChange={() => setPhotosVisibility(val)}
+                    />
+                    <span>
+                      <strong>{titre}</strong>
+                      <em>{aide}</em>
+                    </span>
+                  </label>
+                ))}
+                <p className={styles.visibilityNote}>
+                  Dans les deux cas, l’équipe de modération voit vos photos : c’est ce qui
+                  permet de vérifier qu’un compte correspond à une personne réelle.
+                </p>
               </div>
 
               <div className={styles.actions}>

@@ -1,6 +1,17 @@
 import { prisma } from '../config/prisma';
 import { AppError } from '../utils/AppError';
 
+/**
+ * Un membre tel qu'un AUTRE membre a le droit de le voir : ses photos ne
+ * sortent que s'il les publie, et le drapeau lui-même ne sort jamais — il
+ * dirait à qui l'observe que ce compte cache quelque chose, ce qui est
+ * exactement ce qu'on ne veut pas annoncer.
+ */
+function filtrerPhotos<T extends { photos?: unknown[]; photosVisibility?: string }>(membre: T) {
+  const { photosVisibility, ...reste } = membre;
+  return { ...reste, photos: photosVisibility === 'PRIVATE' ? [] : (membre.photos ?? []) };
+}
+
 export class EventsService {
   async list(userId: string, country?: string, city?: string) {
     const now = new Date();
@@ -81,11 +92,26 @@ export class ModerationService {
   }
 
   async listBlocks(blockerId: string) {
-    return prisma.block.findMany({
+    // `photosVisibility` suit partout : avoir bloqué quelqu'un ne donne pas
+    // accès à un visage qu'il n'a pas publié.
+    //
+    // Ces deux listes renvoyaient l'objet Prisma tel quel. Charger le champ
+    // ne suffisait donc pas : il faut retirer les photos avant de répondre,
+    // sinon elles partent malgré le choix du membre — et le drapeau part
+    // avec, ce qui n'a rien à faire dans une réponse publique.
+    const blocages = await prisma.block.findMany({
       where: { blockerId },
-      include: { blocked: { select: { id: true, firstName: true, photos: { take: 1 } } } },
+      include: {
+        blocked: {
+          select: { id: true, firstName: true, photos: { take: 1 }, photosVisibility: true },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
+    return blocages.map((b) => ({
+      ...b,
+      blocked: filtrerPhotos(b.blocked),
+    }));
   }
 }
 
@@ -95,13 +121,17 @@ export const moderationService = new ModerationService();
 
 export class TrustedCircleService {
   async list(ownerId: string) {
-    return prisma.trustedCircle.findMany({
+    const membres = await prisma.trustedCircle.findMany({
       where: { ownerId },
       include: {
-        trustee: { select: { id: true, firstName: true, photos: { take: 1 } } },
+        trustee: { select: { id: true, firstName: true, photos: { take: 1 }, photosVisibility: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
+    return membres.map((m) => ({
+      ...m,
+      trustee: m.trustee ? filtrerPhotos(m.trustee) : m.trustee,
+    }));
   }
 
   async add(ownerId: string, data: { relation: string; trusteePhone?: string; trusteeName?: string }) {

@@ -137,6 +137,7 @@ export const updateProfileSchema = z.object({
   hasChildren: z.boolean().optional(),
   religion: z.enum(['CHRISTIAN', 'MUSLIM', 'OTHER', 'UNDISCLOSED']).optional(),
   intent: z.enum(['SERIOUS_RELATIONSHIP', 'MARRIAGE', 'FAMILY']).optional(),
+  photosVisibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
 
   // Critères de recherche facultatifs. `null` est accepté explicitement :
   // c'est ainsi qu'un membre efface une valeur déjà renseignée. Zod supprime

@@ -37,6 +37,29 @@ enum Ethnicity {
   UNDISCLOSED
 }
 
+/// Publication des photos, choisie par le membre pour TOUT son profil.
+///
+/// Une personne qui cherche à se marier n'a pas forcément envie que ses
+/// collègues, ses voisins ou sa belle-famille tombent sur son visage. Le
+/// besoin est réel sur ce marché, et il ne doit pas obliger à renoncer au
+/// service.
+///
+/// La photo reste demandée à l'inscription : elle sert d'abord à prouver
+/// qu'il y a une personne réelle derrière le compte, et la modération la voit
+/// toujours. Ce que ce champ règle, c'est autre chose — ce que les AUTRES
+/// MEMBRES voient. Les deux fonctions étaient soudées ; elles ne le sont plus.
+///
+/// Il n'y a délibérément pas de valeur « floutée ». Un flou posé en CSS n'est
+/// pas de la confidentialité : le fichier d'origine part quand même sur le
+/// réseau et s'ouvre en deux clics. Un vrai flou demanderait de fabriquer une
+/// image dérivée côté serveur, donc un processeur d'images — il n'y en a
+/// aucun dans les dépendances, et ffmpeg n'est pas installé sur l'hébergement.
+/// Mieux vaut deux états honnêtes qu'un troisième qui ment.
+enum PhotosVisibility {
+  PUBLIC
+  PRIVATE
+}
+
 enum Gender {
   FEMALE
   MALE
@@ -173,6 +196,11 @@ model User {
   emailVerified     Boolean   @default(false)
   phoneVerified     Boolean   @default(false)
   biometricVerified Boolean   @default(false)
+
+  /// Voir l'enum : ce que les autres membres voient, pas ce que la
+  /// modération voit. `PUBLIC` par défaut — la discrétion s'offre à qui la
+  /// demande, elle ne s'impose pas à ceux que ça n'intéresse pas.
+  photosVisibility  PhotosVisibility @default(PUBLIC)
 
   lastActiveAt      DateTime  @default(now())
   createdAt         DateTime  @default(now())

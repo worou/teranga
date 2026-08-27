@@ -436,3 +436,22 @@
   color: var(--ink-soft);
   line-height: 1.45;
 }
+
+/* ——— Qui voit les photos (étape 4) ———
+   Même bloc que dans « Mon profil », volontairement : c'est le même choix,
+   il doit se présenter de la même façon aux deux endroits. */
+.visibility { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(184, 105, 26, 0.15); }
+.visibilityTitle { font-size: 13px; font-weight: 600; color: var(--terra-deep); margin-bottom: 10px; }
+.visibilityOption {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px; margin-bottom: 8px;
+  border: 1.5px solid rgba(184, 105, 26, 0.22); border-radius: 12px;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.visibilityOption:hover { border-color: rgba(184, 105, 26, 0.45); }
+.visibilityChecked { border-color: var(--ocre-deep); background: rgba(212, 144, 96, 0.08); }
+.visibilityOption input { margin-top: 3px; accent-color: var(--ocre-deep); flex-shrink: 0; }
+.visibilityOption span { display: flex; flex-direction: column; gap: 2px; }
+.visibilityOption strong { font-size: 14px; font-weight: 600; color: var(--ink); }
+.visibilityOption em { font-style: normal; font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
+.visibilityNote { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 10px; }

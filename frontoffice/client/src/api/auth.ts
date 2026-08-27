@@ -118,6 +118,8 @@ export interface MeResponse {
   photos?: UploadedPhoto[]
   photosCount?: number
   profileComplete?: boolean
+  /** Publication des photos aux autres membres : 'PUBLIC' ou 'PRIVATE'. */
+  photosVisibility?: string
   minPhotos?: number
   maxPhotos?: number
   /** Modèle freemium actif côté serveur. Faux en version 1. */
@@ -149,6 +151,8 @@ export interface ProfileUpdate {
   educationLevel?: string
   religion?: string
   intent?: string
+  /** 'PUBLIC' ou 'PRIVATE' — voir l'enum PhotosVisibility côté schéma. */
+  photosVisibility?: string
   hasChildren?: boolean
   wantsChildren?: boolean | null
   heightCm?: number | null

@@ -292,6 +292,11 @@ export class ConversationsService {
     profession: true,
     isVerified: true,
     photos: { orderBy: { order: 'asc' as const }, take: 1 },
+    // Nécessaire pour honorer le choix du correspondant : la messagerie est
+    // une surface publique comme les autres. Une photo masquée dans le fil
+    // qui réapparaîtrait dans la liste des conversations ne serait pas
+    // masquée du tout.
+    photosVisibility: true,
   };
 
   async getConversations(userId: string, page = 1, limit = 20) {
@@ -364,7 +369,7 @@ export class ConversationsService {
           city: other.city,
           profession: other.profession,
           isVerified: other.isVerified,
-          photos: other.photos,
+          photos: other.photosVisibility === 'PRIVATE' ? [] : other.photos,
         },
         startedAt: c.matchedAt,
         lastMessage: c.messages[0] ? toMessage(c.messages[0]) : null,

@@ -136,7 +136,7 @@ export default function Accueil() {
                   <p>
                     Il vous manque {photosMissing} photo{photosMissing > 1 ? 's' : ''} :
                     votre profil doit en compter au moins {minPhotos} pour accéder aux
-                    profils et à la messagerie. Elles seront vérifiées avant publication.
+                    profils et à la messagerie. Vous choisirez qui peut les voir.
                   </p>
                   <Link to="/inscription" className={`btn btn-primary ${styles.btnFull}`}>
                     Ajouter mes photos

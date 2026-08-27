@@ -43,6 +43,7 @@ export class UsersService {
       'hasChildren',
       'religion',
       'intent',
+      'photosVisibility',
       // Critères de recherche facultatifs (cf. discoveryFiltersSchema).
       'wantsChildren',
       'heightCm',
@@ -211,12 +212,18 @@ export class UsersService {
       bodyType: user.bodyType,
       ethnicity: user.ethnicity,
       languages: parseLanguages(user.languages),
-      photos: user.photos.map((p: any) => ({
-        id: p.id,
-        url: p.url,
-        isMain: p.isMain,
-        order: p.order,
-      })),
+      // Le membre a choisi de ne pas publier : la fiche n'en dit rien non
+      // plus. Les écrans savent déjà se passer de photo — ils affichent
+      // l'initiale du prénom.
+      photos:
+        user.photosVisibility === 'PRIVATE'
+          ? []
+          : user.photos.map((p: any) => ({
+              id: p.id,
+              url: p.url,
+              isMain: p.isMain,
+              order: p.order,
+            })),
     };
   }
 
