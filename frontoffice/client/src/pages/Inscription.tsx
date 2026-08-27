@@ -11,16 +11,23 @@ import styles from './AuthForms.module.css'
 type Gender = 'FEMALE' | 'MALE'
 type Intent = 'SERIOUS_RELATIONSHIP' | 'MARRIAGE' | 'FAMILY'
 
+/**
+ * Ce que l'inscription demande vraiment, réparti sur les DEUX premiers écrans
+ * (identité, puis recherche). Le nom garde son « 1 » parce que c'est un seul
+ * état, pas un seul écran.
+ *
+ * Nom, religion et profession n'y sont plus. Ils étaient facultatifs et
+ * gonflaient l'étape d'ouverture à neuf champs — le mur qui décourage avant
+ * même d'avoir commencé. `MonProfil` les édite déjà tous les trois : ils se
+ * renseignent quand le membre a une raison de le faire, pas avant.
+ */
 interface Step1Data {
   firstName: string
-  lastName: string
   gender: Gender | ''
   birthDate: string
   intent: Intent | ''
   city: string
   country: string
-  religion: string
-  profession: string
 }
 
 interface Step2Data {
@@ -183,7 +190,7 @@ export default function Inscription() {
         if (me.profileComplete) { navigate('/accueil', { replace: true }); return }
         setServerPhotos(me.photosCount ?? 0)
         setToken(saved)
-        setStep(4)
+        setStep(5)
       })
       .catch(() => {
         // Token expiré ou API injoignable : on repart sur une inscription
@@ -194,8 +201,8 @@ export default function Inscription() {
   }, [navigate])
 
   const [s1, setS1] = useState<Step1Data>({
-    firstName: '', lastName: '', gender: '', birthDate: '',
-    intent: '', city: '', country: '', religion: '', profession: '',
+    firstName: '', gender: '', birthDate: '',
+    intent: '', city: '', country: '',
   })
   const [s2, setS2] = useState<Step2Data>({
     dialCode: '+221', phoneLocal: '', email: '', password: '',
@@ -216,7 +223,9 @@ export default function Inscription() {
   const phone = s2.dialCode + phoneLocalDigits
 
   // ——— Validate Step 1 ———
-  function validateStep1(): Step1Errors {
+  // Une validation par écran : signaler « Ville requise » à quelqu'un qui
+  // remplit encore sa date de naissance n'aide personne.
+  function validateIdentite(): Step1Errors {
     const e: Step1Errors = {}
     if (!s1.firstName.trim()) e.firstName = 'Requis'
     if (!s1.gender) e.gender = 'Requis'
@@ -226,6 +235,12 @@ export default function Inscription() {
       if (age === null) e.birthDate = 'Date invalide'
       else if (age < MIN_AGE) e.birthDate = `Vous devez avoir au moins ${MIN_AGE} ans.`
     }
+    setErrors1(e)
+    return e
+  }
+
+  function validateRecherche(): Step1Errors {
+    const e: Step1Errors = {}
     if (!s1.intent) e.intent = 'Requis'
     if (!s1.city.trim()) e.city = 'Requis'
     if (!s1.country) e.country = 'Requis'
@@ -233,8 +248,8 @@ export default function Inscription() {
     return e
   }
 
-  // ——— Validate Step 2 ———
-  function validateStep2() {
+  // ——— Validation de l'écran « contact » ———
+  function validateContact() {
     const e: Partial<Record<string, string>> = {}
     if (!/^\d{7,12}$/.test(phoneLocalDigits)) e.phone = 'Numéro invalide'
     // Zone F CFA : l'indicatif doit correspondre au pays (miroir du serveur).
@@ -250,30 +265,37 @@ export default function Inscription() {
   }
 
   // ——— Step 1 → 2 ———
-  const STEP1_LABELS: Record<keyof Step1Data, string> = {
-    firstName: 'Prénom', lastName: 'Nom', gender: 'Je suis', birthDate: 'Date de naissance',
-    intent: 'Je recherche', city: 'Ville', country: 'Pays', religion: 'Religion', profession: 'Profession',
+  const CHAMP_LABELS: Record<keyof Step1Data, string> = {
+    firstName: 'Prénom', gender: 'Je suis', birthDate: 'Date de naissance',
+    intent: 'Je recherche', city: 'Ville', country: 'Pays',
   }
-  function nextStep1() {
-    const e = validateStep1()
+  /** Commun aux deux premiers écrans : avancer, ou dire ce qui manque. */
+  function avancer(e: Step1Errors, versEtape: number, avantDeMonter?: () => void) {
     const keys = Object.keys(e) as (keyof Step1Data)[]
     if (keys.length === 0) {
       setError('')
-      // Aligne l'indicatif sur le pays choisi (évite un numéro incohérent).
-      const dc = COUNTRY_DIAL[s1.country]
-      if (dc) setS2(p => ({ ...p, dialCode: dc }))
-      setStep(2)
+      avantDeMonter?.()
+      setStep(versEtape)
       return
     }
     // Retour visible : bannière en haut + défilement (l'erreur peut être hors écran, ex. le Prénom).
-    const missing = keys.map(k => STEP1_LABELS[k]).join(', ')
+    const missing = keys.map(k => CHAMP_LABELS[k]).join(', ')
     setError(`Veuillez corriger : ${missing}.`)
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  // ——— Step 2 → Register → OTP ———
-  async function nextStep2() {
-    if (!validateStep2()) return
+  const nextIdentite = () => avancer(validateIdentite(), 2)
+
+  const nextRecherche = () =>
+    avancer(validateRecherche(), 3, () => {
+      // Aligne l'indicatif sur le pays choisi (évite un numéro incohérent).
+      const dc = COUNTRY_DIAL[s1.country]
+      if (dc) setS2(p => ({ ...p, dialCode: dc }))
+    })
+
+  // ——— Contact → Register → code ———
+  async function nextContact() {
+    if (!validateContact()) return
     setError(''); setLoading(true)
     const payload: RegisterPayload = {
       phone,
@@ -284,11 +306,8 @@ export default function Inscription() {
       city: s1.city.trim(),
       country: s1.country === 'OTHER' ? 'XX' : s1.country,
     }
-    if (s1.lastName.trim()) payload.lastName = s1.lastName.trim()
     if (s2.email.trim()) payload.email = s2.email.trim()
     if (s2.password) payload.password = s2.password
-    if (s1.religion) payload.religion = s1.religion
-    if (s1.profession.trim()) payload.profession = s1.profession.trim()
 
     try {
       const res = await authApi.register(payload)
@@ -296,7 +315,7 @@ export default function Inscription() {
       // Inscription déjà entamée pour ce numéro : l'API a renvoyé un code au
       // lieu d'un 409, on le signale sans bloquer.
       setSuccess(res.resumed ? (res.message ?? '') : '')
-      setStep(3)
+      setStep(4)
       startCountdown()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur inconnue')
@@ -315,7 +334,7 @@ export default function Inscription() {
       setToken(data.accessToken)
       if (data.user?.minPhotos) setMinPhotos(data.user.minPhotos)
       if (data.user?.maxPhotos) setMaxPhotos(data.user.maxPhotos)
-      setStep(4) // téléphone vérifié → étape photos (obligatoire, exigée par l'API)
+      setStep(5) // téléphone vérifié → étape photos (obligatoire, exigée par l'API)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Code incorrect')
       setOtpReset(true)
@@ -430,30 +449,31 @@ export default function Inscription() {
         <div className={styles.panelRight}>
           {/* Progress bar */}
           <div className={styles.progressBar}>
-            {[1, 2, 3, 4].map(n => <div key={n} className={`${styles.progressStep} ${progressStep(n)}`} />)}
+            {[1, 2, 3, 4, 5].map(n => <div key={n} className={`${styles.progressStep} ${progressStep(n)}`} />)}
           </div>
 
           {/* ——— STEP 1 ——— */}
+          {/* ——— ÉCRAN 1 : qui vous êtes ———
+              Trois champs, pas neuf. L'ancienne étape d'ouverture en alignait
+              neuf d'un bloc, dont trois facultatifs : c'est le mur qui
+              décourage avant même d'avoir commencé. Nom, religion et
+              profession vivent maintenant dans « Mon profil », où on les
+              renseigne quand on a une raison de le faire. */}
           {step === 1 && (
             <div className={styles.formStep} ref={topRef}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 1 sur 4</div>
-                <h1>Parlez-nous de <em>vous</em></h1>
-                <p>Ces informations nous aident à trouver les personnes les plus compatibles.</p>
+                <div className={styles.stepLabel}>Étape 1 sur 5</div>
+                <h1>Qui <em>êtes-vous</em> ?</h1>
+                <p>Trois réponses suffisent pour commencer.</p>
               </div>
 
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
 
               <div className={styles.formGrid}>
-                <Field label="Prénom" error={errors1.firstName}>
+                <Field label="Prénom" error={errors1.firstName} className={styles.fullWidth}>
                   <input type="text" placeholder="Aminata" autoComplete="given-name" value={s1.firstName}
                     className={errors1.firstName ? styles.inputError : ''}
                     onChange={e => setS1(p => ({ ...p, firstName: e.target.value }))} />
-                </Field>
-
-                <Field label="Nom" optional>
-                  <input type="text" placeholder="Diallo" autoComplete="family-name" value={s1.lastName}
-                    onChange={e => setS1(p => ({ ...p, lastName: e.target.value }))} />
                 </Field>
 
                 <div className={`${styles.field} ${styles.fullWidth}`}>
@@ -469,7 +489,7 @@ export default function Inscription() {
                   </div>
                 </div>
 
-                <Field label="Date de naissance" error={errors1.birthDate}>
+                <Field label="Date de naissance" error={errors1.birthDate} className={styles.fullWidth}>
                   <input type="date" value={s1.birthDate} autoComplete="bday"
                     className={errors1.birthDate ? styles.inputError : ''}
                     onChange={e => setS1(p => ({ ...p, birthDate: e.target.value }))} />
@@ -479,8 +499,36 @@ export default function Inscription() {
                     </span>
                   )}
                 </Field>
+              </div>
 
-                <Field label="Je recherche" error={errors1.intent}>
+              <div className={styles.actions}>
+                <button className={`btn btn-primary ${styles.btnFull}`} onClick={nextIdentite}>
+                  Continuer
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                </button>
+              </div>
+              <p className={styles.formFooter}>
+                En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
+              </p>
+            </div>
+          )}
+
+          {/* ——— ÉCRAN 2 : ce que vous cherchez ———
+              Séparé de l'identité parce que la question n'est pas la même, et
+              que l'écran annonce à quoi servent ces trois réponses : elles
+              déterminent qui apparaîtra dans le fil. */}
+          {step === 2 && (
+            <div className={styles.formStep} ref={topRef}>
+              <div className={styles.formHeader}>
+                <div className={styles.stepLabel}>Étape 2 sur 5</div>
+                <h1>Que <em>cherchez-vous</em> ?</h1>
+                <p>Ces réponses déterminent les profils qui vous seront proposés.</p>
+              </div>
+
+              {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
+
+              <div className={styles.formGrid}>
+                <Field label="Je recherche" error={errors1.intent} className={styles.fullWidth}>
                   <select value={s1.intent} className={errors1.intent ? styles.inputError : ''}
                     onChange={e => setS1(p => ({ ...p, intent: e.target.value as Intent }))}>
                     <option value="">Choisir…</option>
@@ -503,40 +551,23 @@ export default function Inscription() {
                     {COUNTRIES.map(([val, lbl]) => <option key={val} value={val}>{lbl}</option>)}
                   </select>
                 </Field>
-
-                <Field label="Religion" optional>
-                  {/* Valeurs alignées sur l'enum attendu par l'API (Religion) */}
-                  <select value={s1.religion} onChange={e => setS1(p => ({ ...p, religion: e.target.value }))}>
-                    <option value="">Préférer ne pas dire</option>
-                    <option value="MUSLIM">Islam</option>
-                    <option value="CHRISTIAN">Christianisme</option>
-                    <option value="OTHER">Autre</option>
-                  </select>
-                </Field>
-
-                <Field label="Profession" optional className={styles.fullWidth}>
-                  <input type="text" placeholder="Ingénieure, médecin…" value={s1.profession}
-                    onChange={e => setS1(p => ({ ...p, profession: e.target.value }))} />
-                </Field>
               </div>
 
               <div className={styles.actions}>
-                <button className={`btn btn-primary ${styles.btnFull}`} onClick={nextStep1}>
+                <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(1) }}>Retour</button>
+                <button className={`btn btn-primary ${styles.btnFull}`} onClick={nextRecherche}>
                   Continuer
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
                 </button>
               </div>
-              <p className={styles.formFooter}>
-                En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
-              </p>
             </div>
           )}
 
           {/* ——— STEP 2 ——— */}
-          {step === 2 && (
+          {step === 3 && (
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 2 sur 4</div>
+                <div className={styles.stepLabel}>Étape 3 sur 5</div>
                 <h1>Vos <em>coordonnées</em></h1>
                 <p>Nous vous enverrons un code par e-mail pour confirmer votre inscription.</p>
               </div>
@@ -579,9 +610,9 @@ export default function Inscription() {
               </div>
 
               <div className={styles.actions}>
-                <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(1) }}>Retour</button>
+                <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(2) }}>Retour</button>
                 <button className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
-                  disabled={loading} onClick={nextStep2}>
+                  disabled={loading} onClick={nextContact}>
                   {!loading && <>Recevoir mon code <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8 19.79 19.79 0 010 2.14 2 2 0 012 0h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 14.1V14.92z"/></svg></>}
                 </button>
               </div>
@@ -589,10 +620,10 @@ export default function Inscription() {
           )}
 
           {/* ——— STEP 3 — OTP ——— */}
-          {step === 3 && (
+          {step === 4 && (
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 3 sur 4</div>
+                <div className={styles.stepLabel}>Étape 4 sur 5</div>
                 <h1>Vérifiez votre <em>adresse</em></h1>
                 <p>Entrez le code à 6 chiffres reçu par e-mail.</p>
               </div>
@@ -628,7 +659,7 @@ export default function Inscription() {
               </div>
 
               <div className={styles.actions}>
-                <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(2) }}>Retour</button>
+                <button className={`btn btn-back ${styles.btnBack}`} onClick={() => { setError(''); setStep(3) }}>Retour</button>
                 <button
                   className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
                   disabled={loading || otpCode.length < 6}
@@ -640,10 +671,10 @@ export default function Inscription() {
           )}
 
           {/* ——— STEP 4 — PHOTOS ——— */}
-          {step === 4 && (
+          {step === 5 && (
             <div className={styles.formStep}>
               <div className={styles.formHeader}>
-                <div className={styles.stepLabel}>Étape 4 sur 4</div>
+                <div className={styles.stepLabel}>Étape 5 sur 5</div>
                 <h1>Vos <em>photos</em></h1>
                 {/* L'ancienne phrase promettait « elles seront vérifiées avant
                     publication ». C'était faux : `moderationStatus` est posé à
