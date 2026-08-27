@@ -36,7 +36,13 @@ router.get(
         select: {
           id: true, firstName: true, lastName: true,
           phone: true, email: true, gender: true,
-          status: true, phoneVerified: true,
+          // `isVerified` est la seconde porte : un compte peut être ACTIVE
+          // (il a confirmé son e-mail, il se connecte) tout en restant
+          // INVISIBLE dans la découverte, qui filtre dessus. Sans ce champ,
+          // la liste ne pouvait pas distinguer les deux, et un profil en
+          // attente de validation était indiscernable d'un profil validé.
+          // `phoneVerified` répond à une tout autre question.
+          status: true, phoneVerified: true, isVerified: true,
           createdAt: true, city: true, country: true,
           subscription: { select: { plan: true, status: true } },
         },

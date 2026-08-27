@@ -236,7 +236,16 @@
                       <td className="p-3 font-medium">{u.firstName} {u.lastName||''}</td>
                       <td className="p-3 text-stone-600">{u.phone}<br/><span className="text-xs">{u.email||''}</span></td>
                       <td className="p-3">{u.country}</td>
-                      <td className="p-3"><Badge tone={statusTone(u.status)}>{u.status}</Badge></td>
+                      <td className="p-3">
+                        <div className="flex flex-wrap gap-1">
+                          <Badge tone={statusTone(u.status)}>{u.status}</Badge>
+                          {/* Deux portes indépendantes, et les confondre coûte cher :
+                              ACTIVE dit « elle peut se connecter », isVerified dit
+                              « on la voit ». Un compte ACTIVE non vérifié se connecte
+                              et ne croise personne, sans le moindre message. */}
+                          {!u.isVerified && <Badge tone="amber">À VALIDER</Badge>}
+                        </div>
+                      </td>
                       <td className="p-3">{u.subscription ? <Badge tone={planTone(u.subscription.plan)}>{u.subscription.plan}</Badge> : '—'}</td>
                       <td className="p-3">
                         <div className="flex flex-wrap gap-1">
@@ -245,7 +254,8 @@
                             : <button onClick={() => setStatus(u.id,'ACTIVE')} className="text-xs px-2 py-1 rounded bg-green-50 text-green-700 hover:bg-green-100">Réactiver</button>}
                           {u.status !== 'SUSPENDED' && u.status !== 'BANNED' &&
                             <button onClick={() => setStatus(u.id,'SUSPENDED')} className="text-xs px-2 py-1 rounded bg-amber-50 text-amber-700 hover:bg-amber-100">Suspendre</button>}
-                          <button onClick={() => verify(u.id,'approve')} className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Vérifier</button>
+                          {!u.isVerified &&
+                            <button onClick={() => verify(u.id,'approve')} className="text-xs px-2 py-1 rounded bg-blue-50 text-blue-700 hover:bg-blue-100">Vérifier</button>}
                         </div>
                       </td>
                     </tr>
