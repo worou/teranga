@@ -34,10 +34,22 @@ router.get(
     // surtout pas `isVerified` : un profil REJETÉ reste `isVerified: false`
     // pour toujours — c'est le sens du rejet. Une file bâtie sur ce booléen
     // le remonterait à chaque chargement, sans aucun moyen de l'en sortir.
-    if (verification === 'pending') {
-      clauses.push({ verificationStatus: { in: ['PENDING', 'IN_REVIEW'] as const } });
-      // Un compte banni ou supprimé n'a plus à être jugé sur son profil.
+    if (verification) {
+      // Un compte banni ou supprimé n'a plus à être jugé sur son profil : il
+      // sort des trois vues, pas seulement de l'attente.
       clauses.push({ status: { notIn: ['BANNED', 'DELETED'] as const } });
+
+      if (verification === 'pending') {
+        clauses.push({ verificationStatus: { in: ['PENDING', 'IN_REVIEW'] as const } });
+      } else if (verification === 'verified') {
+        clauses.push({ verificationStatus: 'VERIFIED' as const });
+      } else if (verification === 'rejected') {
+        clauses.push({ verificationStatus: 'REJECTED' as const });
+      } else {
+        throw AppError.badRequest(
+          'verification doit valoir pending, verified ou rejected',
+        );
+      }
     }
 
     // Les deux filtres se composent : chercher un nom DANS la file d'attente

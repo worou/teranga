@@ -392,30 +392,56 @@
       );
     }
 
-    // ── File des profils en attente de validation ─────────
+    // ── Profils : les trois états de la vérification ──────
+    //
+    // Une file d'attente seule ne dit rien de ce qu'on a décidé. Quand elle
+    // se vide, l'écran devient muet — même s'il y a des membres, même si l'on
+    // vient d'en valider un. Les trois onglets rendent les décisions
+    // consultables, et surtout réversibles : retirer une validation par
+    // erreur ne doit pas demander la ligne de commande.
+    const ONGLETS = [
+      { cle:'pending',  label:'À valider', vide:'Aucun profil en attente — tout le monde est visible dans la découverte.' },
+      { cle:'verified', label:'Validés',   vide:'Aucun profil validé pour le moment.' },
+      { cle:'rejected', label:'Rejetés',   vide:'Aucun profil rejeté.' },
+    ];
+
     function ValidationQueue() {
-      const { loading, error, data, reload } = useAsync(() => api('/users?verification=pending&limit=50'), []);
+      const [onglet, setOnglet] = useState('pending');
+      const { loading, error, data, reload } = useAsync(() => api('/users?verification=' + onglet + '&limit=50'), [onglet]);
+      // Le nombre en attente reste affiché même quand on consulte une autre
+      // file : c'est la seule des trois qui réclame une action.
+      const attente = useAsync(() => api('/users?verification=pending&limit=1'), []);
       const [enCours, setEnCours] = useState(null);
 
       async function decider(id, action) {
         setEnCours(id);
-        try { await api('/users/' + id + '/verify', { method:'PATCH', body: JSON.stringify({ action }) }); reload(); }
-        finally { setEnCours(null); }
+        try {
+          await api('/users/' + id + '/verify', { method:'PATCH', body: JSON.stringify({ action }) });
+          reload();
+          attente.reload();
+        } finally { setEnCours(null); }
       }
 
       const age = (d) => Math.floor((Date.now() - new Date(d).getTime()) / 31557600000);
+      const courant = ONGLETS.find(o => o.cle === onglet);
 
       return (
         <div>
-          <h2 className="text-lg font-semibold mb-3">
-            Profils à valider
-            {data && data.total > 0 && <span className="ml-2 align-middle"><Badge tone="amber">{data.total}</Badge></span>}
-          </h2>
+          <h2 className="text-lg font-semibold mb-3">Profils</h2>
+          <div className="flex gap-1 mb-3">
+            {ONGLETS.map(o => (
+              <button key={o.cle} onClick={() => setOnglet(o.cle)}
+                className={'text-sm px-3 py-1.5 rounded-lg ' + (onglet === o.cle ? 'bg-stone-800 text-white' : 'bg-white text-stone-600 hover:bg-stone-100')}>
+                {o.label}
+                {o.cle === 'pending' && attente.data && attente.data.total > 0 &&
+                  <span className="ml-2 px-1.5 py-0.5 rounded-full bg-amber-200 text-amber-900 text-xs font-medium">{attente.data.total}</span>}
+              </button>
+            ))}
+          </div>
+
           {loading ? <Spinner/> : error ? <ErrorBox msg={error}/> :
             !data.users.length ? (
-              <div className="bg-white rounded-xl p-6 text-center text-stone-500 shadow-sm text-sm">
-                Aucun profil en attente — tout le monde est visible dans la découverte.
-              </div>
+              <div className="bg-white rounded-xl p-6 text-center text-stone-500 shadow-sm text-sm">{courant.vide}</div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2">
                 {data.users.map(u => (
@@ -431,17 +457,27 @@
                       <div className="text-xs text-stone-500">{u.city}{u.country ? ' (' + u.country + ')' : ''} · inscrit le {new Date(u.createdAt).toLocaleDateString('fr-FR')}</div>
                       <div className="text-xs text-stone-600 mt-1 line-clamp-3">{u.bio || <span className="italic text-stone-400">aucune biographie</span>}</div>
                       <div className="text-xs text-stone-500 mt-1">{u.email || u.phone}</div>
-                      <div className="flex gap-2 mt-3">
-                        <button disabled={enCours === u.id} onClick={() => decider(u.id,'approve')}
-                          className="text-xs px-3 py-1.5 rounded bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50">Valider</button>
-                        <button disabled={enCours === u.id} onClick={() => decider(u.id,'reject')}
-                          className="text-xs px-3 py-1.5 rounded bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-50">Rejeter</button>
+                      <div className="flex flex-wrap items-center gap-2 mt-3">
+                        {onglet !== 'pending' &&
+                          <Badge tone={u.verificationStatus === 'VERIFIED' ? 'green' : 'red'}>
+                            {u.verificationStatus === 'VERIFIED' ? 'Visible' : 'Rejeté'}
+                          </Badge>}
+                        {u.verificationStatus !== 'VERIFIED' &&
+                          <button disabled={enCours === u.id} onClick={() => decider(u.id,'approve')}
+                            className="text-xs px-3 py-1.5 rounded bg-green-50 text-green-700 hover:bg-green-100 disabled:opacity-50">Valider</button>}
+                        {u.verificationStatus !== 'REJECTED' &&
+                          <button disabled={enCours === u.id} onClick={() => decider(u.id,'reject')}
+                            className="text-xs px-3 py-1.5 rounded bg-stone-100 text-stone-700 hover:bg-stone-200 disabled:opacity-50"
+                            title={u.verificationStatus === 'VERIFIED' ? 'Le membre redeviendra invisible dans la découverte' : ''}>
+                            {u.verificationStatus === 'VERIFIED' ? 'Retirer la validation' : 'Rejeter'}
+                          </button>}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+          {data && data.total > 0 && <div className="mt-2 text-xs text-stone-500">{data.total} profil(s)</div>}
         </div>
       );
     }
