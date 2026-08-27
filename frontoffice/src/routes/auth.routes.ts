@@ -8,6 +8,7 @@ import {
   loginSchema,
   otpRequestSchema,
   otpVerifySchema,
+  passwordResetSchema,
   refreshTokenSchema,
 } from '../validators';
 import { requireAuth } from '../middleware/auth';
@@ -173,6 +174,49 @@ router.post(
       accessToken,
       refreshToken,
     });
+  }),
+);
+
+/**
+ * @openapi
+ * /auth/password/reset:
+ *   post:
+ *     tags: [Auth]
+ *     summary: Définir un nouveau mot de passe à partir d'un code
+ *     description: |
+ *       Le code doit avoir été demandé avec `purpose: "password_reset"` : un
+ *       code de connexion ne change pas la serrure.
+ *
+ *       Aucune session n'est ouverte en retour, et tous les jetons de
+ *       rafraîchissement du compte sont révoqués — si le compte était
+ *       compromis, la réinitialisation met l'intrus dehors. La personne se
+ *       reconnecte ensuite avec son nouveau mot de passe.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email: { type: string, format: email }
+ *               phone: { type: string }
+ *               code: { type: string, minLength: 6, maxLength: 6 }
+ *               password: { type: string, minLength: 8 }
+ *     responses:
+ *       200: { description: "Mot de passe remplacé" }
+ *       400: { description: "Code expiré, inexistant ou incorrect" }
+ *       429: { description: "Trop de tentatives" }
+ */
+router.post(
+  '/password/reset',
+  validate(passwordResetSchema),
+  asyncHandler(async (req, res) => {
+    const result = await authService.resetPassword(
+      { phone: req.body.phone, email: req.body.email },
+      req.body.code,
+      req.body.password,
+    );
+    res.json(result);
   }),
 );
 

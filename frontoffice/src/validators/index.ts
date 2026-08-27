@@ -121,6 +121,20 @@ export const otpVerifySchema = z
   })
   .refine(unSeulIdentifiant, erreurIdentifiant);
 
+/**
+ * Réinitialisation par code. Le plancher du mot de passe est celui de
+ * `registerSchema` — 8 caractères. Un plancher plus bas ici ferait de la
+ * réinitialisation le chemin détourné pour se donner un mot de passe que
+ * l'inscription refuse.
+ */
+export const passwordResetSchema = z
+  .object({
+    ...identifiantCompte,
+    code: z.string().length(6),
+    password: z.string().min(8),
+  })
+  .refine(unSeulIdentifiant, erreurIdentifiant);
+
 export const refreshTokenSchema = z.object({
   refreshToken: z.string().min(10),
 });

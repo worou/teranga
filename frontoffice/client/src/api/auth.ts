@@ -35,6 +35,16 @@ export interface OtpVerifyPayload extends OtpIdentifiant {
   code: string
 }
 
+/**
+ * Réinitialisation par code. Le code doit avoir été demandé avec
+ * `purpose: 'password_reset'` : le serveur refuse un code de connexion, dont
+ * la conséquence serait ici de changer la serrure, pas d'ouvrir une session.
+ */
+export interface PasswordResetPayload extends OtpIdentifiant {
+  code: string
+  password: string
+}
+
 export interface AuthResponse {
   accessToken: string
   refreshToken?: string
@@ -75,11 +85,20 @@ export const authApi = {
   login: (payload: LoginPayload) =>
     post<AuthResponse>('/login', payload),
 
-  otpRequest: (id: OtpIdentifiant) =>
-    post<OtpResponse>('/otp/request', id),
+  /**
+   * `purpose` détermine à quoi le code servira. Le défaut du serveur est
+   * `registration` ; la réinitialisation doit demander le sien explicitement,
+   * sinon le code obtenu ne sera pas accepté par `/password/reset`.
+   */
+  otpRequest: (id: OtpIdentifiant, purpose?: 'registration' | 'login' | 'password_reset') =>
+    post<OtpResponse>('/otp/request', purpose ? { ...id, purpose } : id),
 
   otpVerify: (payload: OtpVerifyPayload) =>
     post<AuthResponse>('/otp/verify', payload),
+
+  /** Aucune session en retour : le serveur révoque au contraire les jetons. */
+  passwordReset: (payload: PasswordResetPayload) =>
+    post<{ reset: boolean }>('/password/reset', payload),
 }
 
 const TOKEN_KEY = 'teranga_token'

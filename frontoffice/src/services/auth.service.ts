@@ -230,12 +230,26 @@ export class AuthService {
     };
   }
 
-  async verifyOtp(phone: string, code: string) {
+  /**
+   * Consomme un code valide, ou lève. Renvoie la ligne consommée — l'appelant
+   * a besoin de son `channel` pour savoir ce qui a été prouvé.
+   *
+   * Le compteur `attempts` monte AUSSI quand le code est faux : c'est lui qui
+   * plafonne la force brute à cinq essais par code. Le déplacer après le test
+   * de correspondance viderait la garde de son sens.
+   *
+   * `purpose` est facultatif. `verifyOtp` ne le passe pas, par une décision
+   * ancienne : un code sert à prouver qu'on relève bien cette boîte, quel que
+   * soit l'écran qui l'a demandé. La réinitialisation de mot de passe, elle,
+   * l'exige — voir `resetPassword`.
+   */
+  private async consommerCode(phone: string, code: string, purpose?: string) {
     const otp = await prisma.otpCode.findFirst({
       where: {
         phone,
         expiresAt: { gt: new Date() },
         consumedAt: null,
+        ...(purpose ? { purpose } : {}),
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -257,22 +271,88 @@ export class AuthService {
     });
 
     if (!matches) throw AppError.badRequest('Code incorrect');
+    return otp;
+  }
+
+  /**
+   * Promotion de statut admise après un code vérifié : UNIQUEMENT la sortie de
+   * `PENDING_VERIFICATION`.
+   *
+   * Le code posait `status: 'ACTIVE'` sans condition. Un compte BANNED ou
+   * SUSPENDED pouvait donc se remettre en service tout seul en demandant un
+   * code par e-mail — la sanction ne tenait qu'aussi longtemps que son
+   * destinataire l'ignorait.
+   */
+  private statutApresVerification(actuel: string) {
+    return actuel === 'PENDING_VERIFICATION' ? ('ACTIVE' as const) : undefined;
+  }
+
+  async verifyOtp(phone: string, code: string) {
+    const otp = await this.consommerCode(phone, code);
 
     // On ne certifie que ce qui a été prouvé : un code reçu par e-mail
     // n'atteste rien du téléphone, et inversement. Un code d'avant l'ajout du
     // canal e-mail n'a pas de `channel` — il venait forcément du SMS.
     const parEmail = otp.channel === 'email';
+    const avant = await prisma.user.findUnique({ where: { phone }, select: { status: true } });
 
     const user = await prisma.user.update({
       where: { phone },
       data: {
         ...(parEmail ? { emailVerified: true } : { phoneVerified: true }),
-        status: 'ACTIVE',
+        status: this.statutApresVerification(avant?.status ?? ''),
       },
       include: { subscription: true, photos: true },
     });
 
     return user;
+  }
+
+  /**
+   * Réinitialisation du mot de passe par code.
+   *
+   * Trois choix qui méritent d'être dits :
+   *
+   * 1. Le code doit avoir été demandé POUR CELA (`purpose: 'password_reset'`).
+   *    `verifyOtp` reste aveugle au motif, mais ici la conséquence n'est plus
+   *    d'ouvrir une session : c'est de changer la serrure. Un code de
+   *    connexion qui vaudrait changement de mot de passe équivaudrait à une
+   *    prise de contrôle du compte.
+   *
+   * 2. Aucune session n'est ouverte en retour. On révoque au contraire tous
+   *    les jetons de rafraîchissement : si le compte était compromis, la
+   *    réinitialisation doit mettre l'intrus dehors. Délivrer un jeton neuf
+   *    dans la même réponse contredirait exactement ce qu'on vient de faire.
+   *
+   * 3. Une adresse inconnue produit le MÊME refus qu'un code faux. Distinguer
+   *    les deux dirait quelles adresses ont un compte sur un site de
+   *    rencontres — l'information la plus sensible qu'on puisse laisser fuir
+   *    ici.
+   */
+  async resetPassword(id: { phone?: string; email?: string }, code: string, password: string) {
+    const phone = await this.resolvePhone(id);
+    if (!phone) throw AppError.badRequest('Code expiré ou inexistant. Demandez un nouveau code.');
+
+    const otp = await this.consommerCode(phone, code, 'password_reset');
+    const parEmail = otp.channel === 'email';
+    const avant = await prisma.user.findUnique({ where: { phone }, select: { status: true } });
+
+    const user = await prisma.user.update({
+      where: { phone },
+      data: {
+        passwordHash: await bcrypt.hash(password, 10),
+        ...(parEmail ? { emailVerified: true } : { phoneVerified: true }),
+        status: this.statutApresVerification(avant?.status ?? ''),
+      },
+      select: { id: true },
+    });
+
+    await prisma.refreshToken.updateMany({
+      where: { userId: user.id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+
+    return { reset: true };
   }
 
   /**

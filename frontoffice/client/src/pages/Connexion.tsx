@@ -137,7 +137,13 @@ function PasswordInput({
 // ================================================================
 // MAIN COMPONENT
 // ================================================================
-type Tab = 'password' | 'email'
+/**
+ * `reset` n'est pas un onglet : il n'apparaît pas dans la barre, on y entre
+ * par le lien « Mot de passe oublié ». C'est un parcours à part — recevoir un
+ * code, puis choisir un nouveau mot de passe — et non une troisième façon de
+ * se connecter.
+ */
+type Tab = 'password' | 'email' | 'reset'
 type OtpPhase = 'form' | 'verify'
 
 export default function Connexion() {
@@ -169,7 +175,17 @@ export default function Connexion() {
   const [otpReset, setOtpReset] = useState(false)
   const { seconds, start: startCountdown, canResend } = useCountdown(60)
 
+  // État du parcours « mot de passe oublié ».
+  const [rsEmail, setRsEmail] = useState('')
+  const [rsCode, setRsCode] = useState('')
+  const [rsPassword, setRsPassword] = useState('')
+  const [rsPhase, setRsPhase] = useState<OtpPhase>('form')
+  const [rsErrors, setRsErrors] = useState<{ email?: string; password?: string }>({})
+  const [rsReset, setRsReset] = useState(false)
+
   const adresse = otpEmail.trim().toLowerCase()
+  const rsAdresse = rsEmail.trim().toLowerCase()
+  const EMAIL_OK = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
   function clearMessages() { setError(''); setInfo('') }
 
@@ -178,6 +194,7 @@ export default function Connexion() {
     setTab(t)
     clearMessages()
     setOtpPhase('form')
+    if (t !== 'reset') setRsPhase('form')
   }
 
   // ——— Save & redirect ———
@@ -264,11 +281,73 @@ export default function Connexion() {
     }
   }
 
-  // ——— Mot de passe oublié : bascule vers le code par e-mail ———
+  // ——— Mot de passe oublié ———
+  //
+  // Menait auparavant vers l'onglet « code e-mail », ce qui ouvrait une
+  // session sans jamais remplacer le mot de passe : la personne revenait au
+  // même problème à la connexion suivante. Le parcours va maintenant au bout.
   function forgotPassword(e: React.MouseEvent) {
     e.preventDefault()
-    switchTab('email')
-    setInfo('Recevez un code par e-mail pour retrouver l’accès à votre compte.')
+    setRsEmail(pwEmail)   // reprend l'adresse déjà saisie, sans la redemander
+    setRsCode('')
+    setRsPassword('')
+    setRsPhase('form')
+    switchTab('reset')
+  }
+
+  /** Demande un code DÉDIÉ : le serveur refuse un code de connexion ici. */
+  async function sendResetCode() {
+    clearMessages()
+    if (!EMAIL_OK.test(rsAdresse)) { setRsErrors({ email: 'Adresse e-mail invalide' }); return }
+    setRsErrors({})
+    setLoading(true)
+    try {
+      await authApi.otpRequest({ email: rsAdresse }, 'password_reset')
+      setRsPhase('verify')
+      startCountdown()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Impossible d'envoyer le code.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function resendResetCode() {
+    clearMessages()
+    try {
+      await authApi.otpRequest({ email: rsAdresse }, 'password_reset')
+      setInfo('Nouveau code envoyé !')
+      startCountdown()
+      setRsReset(true)
+      setTimeout(() => setRsReset(false), 100)
+      setRsCode('')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Impossible de renvoyer le code.')
+    }
+  }
+
+  async function submitReset() {
+    clearMessages()
+    if (rsCode.length < 6) { setError('Saisissez les 6 chiffres du code reçu par e-mail.'); return }
+    if (rsPassword.length < 8) { setRsErrors({ password: '8 caractères minimum' }); return }
+    setRsErrors({})
+    setLoading(true)
+    try {
+      await authApi.passwordReset({ email: rsAdresse, code: rsCode, password: rsPassword })
+      // Le serveur n'ouvre pas de session et révoque les anciennes : on
+      // renvoie donc vers la connexion, adresse pré-remplie.
+      setPwEmail(rsAdresse)
+      setPwPassword('')
+      switchTab('password')
+      setInfo('Mot de passe modifié. Connectez-vous avec le nouveau.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Code incorrect. Réessayez.')
+      setRsReset(true)
+      setTimeout(() => setRsReset(false), 100)
+      setRsCode('')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -472,6 +551,121 @@ export default function Connexion() {
                       {!loading && 'Se connecter'}
                     </button>
                   </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ——— MOT DE PASSE OUBLIÉ ———
+              Deux temps : recevoir un code, puis choisir le nouveau mot de
+              passe. Le code est demandé avec son propre motif — le serveur
+              refuse ici un code de connexion, dont la conséquence ne serait
+              plus d'ouvrir une session mais de changer la serrure. */}
+          {tab === 'reset' && (
+            <div className={styles.formStep}>
+              {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
+              {info && <div className={styles.alertSuccess}><span>✓</span> {info}</div>}
+
+              {rsPhase === 'form' && (
+                <>
+                  <button className={styles.backBtn} onClick={() => switchTab('password')}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 12H5M12 5l-7 7 7 7" />
+                    </svg>
+                    Retour à la connexion
+                  </button>
+
+                  <div className={styles.formGroup}>
+                    <label>
+                      Adresse e-mail
+                      {rsErrors.email && <span className={styles.fieldErr}> — {rsErrors.email}</span>}
+                    </label>
+                    <input
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoFocus
+                      placeholder="vous@exemple.com"
+                      value={rsEmail}
+                      onChange={(e) => setRsEmail(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') sendResetCode() }}
+                    />
+                  </div>
+
+                  <div className={styles.actions}>
+                    <button
+                      className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
+                      disabled={loading}
+                      onClick={sendResetCode}
+                    >
+                      {!loading && (
+                        <>
+                          Recevoir un code
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="2" y="4" width="20" height="16" rx="2" />
+                            <path d="M22 6l-10 7L2 6" />
+                          </svg>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {rsPhase === 'verify' && (
+                <>
+                  <button className={styles.backBtn} onClick={() => { setRsPhase('form'); clearMessages() }}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M19 12H5M12 5l-7 7 7 7" />
+                    </svg>
+                    Modifier l’adresse
+                  </button>
+
+                  <div className={styles.otpHero}>
+                    <div className={styles.otpIcon}>🔑</div>
+                    <div className={styles.otpPhone}>{rsAdresse}</div>
+                    <div className={styles.otpSub}>
+                      Code envoyé par e-mail · pensez à regarder les indésirables
+                    </div>
+                  </div>
+
+                  <OtpBlock onComplete={setRsCode} resetTrigger={rsReset} />
+
+                  <div className={styles.resendWrap}>
+                    <button className={styles.resendBtn} disabled={!canResend} onClick={resendResetCode}>
+                      Renvoyer le code
+                    </button>
+                    {seconds > 0 && <span className={styles.countdown}>({seconds}s)</span>}
+                  </div>
+
+                  <div className={styles.formGroup}>
+                    <label>
+                      Nouveau mot de passe
+                      {rsErrors.password && <span className={styles.fieldErr}> — {rsErrors.password}</span>}
+                    </label>
+                    {/* `new-password` et non `current-password` : sans cela le
+                        navigateur propose l'ancien, celui qu'on remplace. */}
+                    <PasswordInput
+                      value={rsPassword}
+                      onChange={setRsPassword}
+                      placeholder="8 caractères minimum"
+                      autoComplete="new-password"
+                    />
+                  </div>
+
+                  <div className={styles.actions}>
+                    <button
+                      className={`btn btn-primary ${styles.btnFull} ${loading ? 'btn-loading' : ''}`}
+                      disabled={loading || rsCode.length < 6 || rsPassword.length < 8}
+                      onClick={submitReset}
+                    >
+                      {!loading && 'Changer mon mot de passe'}
+                    </button>
+                  </div>
+
+                  <p className={styles.formFooter}>
+                    Vos autres sessions seront fermées : il faudra vous reconnecter partout.
+                  </p>
                 </>
               )}
             </div>
