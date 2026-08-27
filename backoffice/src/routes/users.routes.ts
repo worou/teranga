@@ -15,17 +15,34 @@ router.get(
     const limit = Math.min(100, parseInt(req.query.limit as string) || 20);
     const skip  = (page - 1) * limit;
     const search = (req.query.search as string) || '';
+    const verification = (req.query.verification as string) || '';
 
-    const where = search
-      ? {
-          OR: [
-            { firstName: { contains: search, mode: 'insensitive' as const } },
-            { lastName:  { contains: search, mode: 'insensitive' as const } },
-            { phone:     { contains: search } },
-            { email:     { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const clauses: any[] = [];
+
+    if (search) {
+      clauses.push({
+        OR: [
+          { firstName: { contains: search, mode: 'insensitive' as const } },
+          { lastName:  { contains: search, mode: 'insensitive' as const } },
+          { phone:     { contains: search } },
+          { email:     { contains: search, mode: 'insensitive' as const } },
+        ],
+      });
+    }
+
+    // File d'attente de la modération. Le critère est `verificationStatus`,
+    // surtout pas `isVerified` : un profil REJETÉ reste `isVerified: false`
+    // pour toujours — c'est le sens du rejet. Une file bâtie sur ce booléen
+    // le remonterait à chaque chargement, sans aucun moyen de l'en sortir.
+    if (verification === 'pending') {
+      clauses.push({ verificationStatus: { in: ['PENDING', 'IN_REVIEW'] as const } });
+      // Un compte banni ou supprimé n'a plus à être jugé sur son profil.
+      clauses.push({ status: { notIn: ['BANNED', 'DELETED'] as const } });
+    }
+
+    // Les deux filtres se composent : chercher un nom DANS la file d'attente
+    // doit rester possible.
+    const where = clauses.length ? { AND: clauses } : {};
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -43,7 +60,16 @@ router.get(
           // attente de validation était indiscernable d'un profil validé.
           // `phoneVerified` répond à une tout autre question.
           status: true, phoneVerified: true, isVerified: true,
-          createdAt: true, city: true, country: true,
+          // Sans lui, l'écran ne peut pas distinguer « en attente » de
+          // « rejeté » : les deux valent `isVerified: false`, et la liste
+          // afficherait « à valider » sur un profil déjà tranché.
+          verificationStatus: true,
+          createdAt: true, city: true, country: true, birthDate: true,
+          // De quoi juger un profil sans ouvrir une seconde page. Le coût est
+          // borné : la pagination plafonne à 100 lignes, et la photo
+          // principale ne ramène qu'une URL.
+          bio: true,
+          photos: { where: { isMain: true }, take: 1, select: { url: true } },
           subscription: { select: { plan: true, status: true } },
         },
       }),
