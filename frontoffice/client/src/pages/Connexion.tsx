@@ -29,7 +29,19 @@ function OtpBlock({
     setValues(next)
     if (digit && idx < 5) refs.current[idx + 1]?.focus()
     const code = next.join('')
-    if (code.length === 6 && !code.includes('')) onComplete(code)
+    // `code` est une CHAÎNE, et `'495806'.includes('')` vaut toujours true —
+    // toute chaîne contient la chaîne vide. La garde `!code.includes('')`
+    // était donc toujours fausse : `onComplete` n'était jamais appelé, le
+    // parent gardait un code vide, et le bouton « Se connecter » ne
+    // déclenchait rien. Aucune requête, aucun message : de l'extérieur, le
+    // bouton semblait mort.
+    //
+    // Le test visait sans doute le TABLEAU (`next.includes('')`, une case
+    // encore vide). Il est de toute façon superflu : chaque case contient au
+    // plus un chiffre, donc une jointure de longueur 6 prouve déjà qu'aucune
+    // n'est vide. C'est exactement ce que fait l'inscription, dont l'écran de
+    // code a toujours fonctionné.
+    if (code.length === 6) onComplete(code)
   }
 
   const handleKey = (idx: number, e: React.KeyboardEvent) => {
@@ -231,7 +243,12 @@ export default function Connexion() {
 
   // ——— Verify OTP ———
   async function verifyOtp() {
-    if (otpCode.length < 6) return
+    // Un retour muet ici est ce qui a rendu le défaut ci-dessus invisible
+    // pendant des jours : le bouton ne faisait rien, sans rien dire.
+    if (otpCode.length < 6) {
+      setError('Saisissez les 6 chiffres du code reçu par e-mail.')
+      return
+    }
     clearMessages()
     setLoading(true)
     try {
