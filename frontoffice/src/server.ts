@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import helmet from 'helmet';
+import { maintenance } from './middleware/maintenance';
 import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
@@ -82,6 +83,13 @@ app.use(
 );
 
 // Sortie de `vite build` (SPA + assets).
+// Maintenance — AVANT le statique, qui sert `index.html` pour `/` tout seul :
+// monté après, ce garde ne verrait jamais la page d'accueil, c'est-à-dire
+// justement ce qu'il doit remplacer. `/health` et `/.well-known/` restent
+// ouverts (voir le module). Le backoffice, application Passenger distincte,
+// n'est pas concerné : c'est par lui qu'on rouvre le site.
+app.use(maintenance);
+
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use(cors({ origin: config.corsOrigin, credentials: true }));

@@ -19,6 +19,7 @@ import subscriptionsRouter from './routes/subscriptions.routes';
 import paymentsRouter from './routes/payments.routes';
 import reportsRouter from './routes/reports.routes';
 import adminsRouter from './routes/admins.routes';
+import settingsRouter from './routes/settings.routes';
 
 const app = express();
 
@@ -68,6 +69,7 @@ app.use('/api/admin/subscriptions', subscriptionsRouter);
 app.use('/api/admin/payments', paymentsRouter);
 app.use('/api/admin/reports', reportsRouter);
 app.use('/api/admin/admins', adminsRouter);
+app.use('/api/admin/settings', settingsRouter);
 
 // ── Health check ─────────────────────────────────────────
 app.get('/health', (_req, res) => {

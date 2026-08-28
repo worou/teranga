@@ -620,6 +620,94 @@
       );
     }
 
+    // ── Maintenance ───────────────────────────────────────
+    //
+    // L'interrupteur vit ICI, dans le backoffice, et c'est essentiel : le mode
+    // maintenance ferme le frontoffice, jamais cette application. S'il
+    // habitait le site public, l'activer couperait la branche sur laquelle il
+    // est assis — le seul retour serait le SSH.
+    function Maintenance() {
+      const { loading, error, data, reload } = useAsync(() => api('/settings/maintenance'), []);
+      const [message, setMessage] = useState(null);
+      const [busy, setBusy] = useState(false);
+      const [info, setInfo] = useState('');
+      const [err, setErr] = useState('');
+
+      // `message` non initialisé tant que la lecture n'a pas abouti, sinon on
+      // écraserait le texte enregistré par une chaîne vide au premier envoi.
+      const texte = message === null ? (data?.message ?? '') : message;
+
+      async function appliquer(actif) {
+        setBusy(true); setErr(''); setInfo('');
+        try {
+          const r = await api('/settings/maintenance', {
+            method: 'PUT',
+            body: JSON.stringify({ actif, message: texte }),
+          });
+          setInfo(actif
+            ? 'Site fermé. Effet visible sous ~' + r.delaiSecondes + ' secondes.'
+            : 'Site rouvert. Effet visible sous ~' + r.delaiSecondes + ' secondes.');
+          reload();
+        } catch (e) { setErr(e.message); }
+        finally { setBusy(false); }
+      }
+
+      if (loading) return <Spinner/>;
+      if (error) return <ErrorBox msg={error}/>;
+
+      return (
+        <div className="max-w-2xl">
+          <div className={'rounded-xl p-5 mb-5 ' + (data.actif ? 'bg-red-50 border border-red-200' : 'bg-white shadow-sm')}>
+            <div className="flex items-center gap-3 mb-2">
+              <Badge tone={data.actif ? 'red' : 'green'}>{data.actif ? 'SITE FERMÉ' : 'SITE OUVERT'}</Badge>
+              <span className="text-sm text-stone-600">
+                {data.actif
+                  ? 'Les visiteurs voient la page de maintenance.'
+                  : 'Le site fonctionne normalement.'}
+              </span>
+            </div>
+            <p className="text-xs text-stone-500">
+              Le backoffice reste accessible dans tous les cas : c’est par lui qu’on rouvre.
+              La bascule prend effet sous une quinzaine de secondes — le site relit le
+              réglage à intervalle, il ne le reçoit pas instantanément.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-5">
+            <label className="block text-sm font-medium text-stone-700 mb-1">
+              Message affiché aux visiteurs <span className="font-normal text-stone-400">(facultatif)</span>
+            </label>
+            <textarea
+              rows={2} maxLength={500} value={texte}
+              onChange={e => setMessage(e.target.value)}
+              placeholder="Mise à jour en cours, retour vers 18 h."
+              className="w-full text-sm px-3 py-2 border rounded-lg"
+            />
+            <p className="text-xs text-stone-500 mt-1">
+              Laissé vide, un texte par défaut s’affiche.
+            </p>
+
+            {err && <div className="mt-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">⚠ {err}</div>}
+            {info && <div className="mt-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg p-2">✓ {info}</div>}
+
+            <div className="mt-4 flex gap-2 justify-end">
+              {data.actif ? (
+                <button onClick={() => appliquer(false)} disabled={busy}
+                  className="text-sm px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+                  {busy ? 'En cours…' : 'Rouvrir le site'}
+                </button>
+              ) : (
+                <button onClick={() => appliquer(true)} disabled={busy}
+                  className="text-sm px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                  {busy ? 'En cours…' : 'Fermer le site'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ── Admins (super admin uniquement) ───────────────────
     function Admins() {
       const { loading, error, data, reload } = useAsync(() => api('/admins'), []);
@@ -697,6 +785,7 @@
       { key:'subs', label:'Abonnements', icon:'⭐', comp: Subscriptions, subsOnly: true },
       { key:'payments', label:'Paiements', icon:'💳', comp: Payments, subsOnly: true },
       { key:'reports', label:'Modération', icon:'🛡️', comp: Moderation },
+      { key:'maintenance', label:'Maintenance', icon:'🚧', comp: Maintenance },
       { key:'admins', label:'Admins', icon:'🔑', comp: Admins, superOnly: true },
     ];
 

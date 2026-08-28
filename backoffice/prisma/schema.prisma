@@ -533,6 +533,19 @@ model Notification {
 // Comptes du back-office (distincts des utilisateurs). Le frontoffice reste
 // l'unique propriétaire des migrations : ce modèle vit ici pour qu'un
 // `prisma db push` ne supprime jamais la table admin.
+/// Réglages d'exploitation, partagés par les deux applications via la base.
+///
+/// Le backoffice écrit, le frontoffice lit : c'est le seul canal qu'ils ont
+/// en commun. Un fichier sur disque ne conviendrait pas — ce sont deux
+/// applications Passenger distinctes, avec chacune sa racine — et une variable
+/// d'environnement exigerait un redémarrage, ce qui ôte tout intérêt à un
+/// interrupteur.
+model Setting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}
+
 model Admin {
   id           String    @id @default(uuid())
   email        String    @unique
