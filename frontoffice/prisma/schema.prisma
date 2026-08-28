@@ -83,6 +83,13 @@ enum Religion {
 enum UserStatus {
   PENDING_VERIFICATION
   ACTIVE
+  /// Mise en pause décidée par le MEMBRE lui-même, et réversible par lui.
+  ///
+  /// Distinct de `SUSPENDED`, qui est une sanction d'administrateur. Les
+  /// confondre laisserait un membre sanctionné lever sa propre sanction en
+  /// cliquant « réactiver » — le même défaut que la promotion de statut sans
+  /// condition, corrigée dans `verifyOtp`.
+  DEACTIVATED
   SUSPENDED
   BANNED
   DELETED

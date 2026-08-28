@@ -81,6 +81,48 @@ router.patch(
 
 /**
  * @openapi
+ * /users/me/deactivate:
+ *   post:
+ *     tags: [Users]
+ *     summary: Mettre mon compte en pause
+ *     description: |
+ *       Le membre disparaît de la découverte et n'est plus joignable, mais
+ *       rien n'est effacé. Réversible par lui seul, via `/users/me/reactivate`.
+ *       N'accepte qu'un compte `ACTIVE` : une sanction ne se lève pas ainsi.
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: "Compte en pause" }
+ *       400: { description: "Le compte n'est pas actif" }
+ */
+router.post(
+  '/me/deactivate',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json(await usersService.deactivate(req.auth!.userId));
+  }),
+);
+
+/**
+ * @openapi
+ * /users/me/reactivate:
+ *   post:
+ *     tags: [Users]
+ *     summary: Remettre mon compte en service
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: "Compte réactivé" }
+ *       400: { description: "Le compte n'est pas en pause" }
+ */
+router.post(
+  '/me/reactivate',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    res.json(await usersService.reactivate(req.auth!.userId));
+  }),
+);
+
+/**
+ * @openapi
  * /users/me:
  *   delete:
  *     tags: [Users]

@@ -159,6 +159,48 @@ export class UsersService {
     return { status: 'IN_REVIEW' };
   }
 
+  /**
+   * Mise en pause décidée par le membre : il disparaît de la découverte et
+   * n'est plus joignable, mais rien n'est effacé et il revient quand il veut.
+   *
+   * Le passage n'est admis que DEPUIS `ACTIVE`. Sans cette condition, un
+   * compte sanctionné (`SUSPENDED`, `BANNED`) pourrait se « désactiver » puis
+   * se « réactiver » pour effacer sa sanction — le même défaut que la
+   * promotion de statut sans condition, corrigée dans `verifyOtp`.
+   */
+  async deactivate(userId: string) {
+    const avant = await prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    if (avant?.status !== 'ACTIVE') {
+      throw AppError.badRequest('Seul un compte actif peut être mis en pause.');
+    }
+    await prisma.user.update({ where: { id: userId }, data: { status: 'DEACTIVATED' } });
+    // La session est conservée volontairement : c'est par elle que le membre
+    // revient. Le déconnecter l'obligerait à se reconnecter pour réactiver.
+    return { status: 'DEACTIVATED' as const };
+  }
+
+  /** Retour en service. N'accepte QUE `DEACTIVATED`, jamais une sanction. */
+  async reactivate(userId: string) {
+    const avant = await prisma.user.findUnique({ where: { id: userId }, select: { status: true } });
+    if (avant?.status !== 'DEACTIVATED') {
+      throw AppError.badRequest("Ce compte n'est pas en pause.");
+    }
+    await prisma.user.update({ where: { id: userId }, data: { status: 'ACTIVE' } });
+    return { status: 'ACTIVE' as const };
+  }
+
+  /**
+   * Suppression du compte — effacement logique.
+   *
+   * `status: DELETED` et `deletedAt` suffisent à le faire disparaître de
+   * toutes les surfaces publiques, qui filtrent déjà dessus. Les données
+   * restent en base : messages reçus par d'autres, signalements, paiements —
+   * les effacer réellement casserait les conversations de tiers et les
+   * obligations comptables. C'est un choix, il mérite d'être su.
+   *
+   * Les jetons sont révoqués : un compte supprimé dont la session survit
+   * continuerait d'appeler l'API pendant des jours.
+   */
   async deleteAccount(userId: string) {
     await prisma.user.update({
       where: { id: userId },
@@ -166,6 +208,10 @@ export class UsersService {
         status: 'DELETED',
         deletedAt: new Date(),
       },
+    });
+    await prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
     });
     return { deleted: true };
   }

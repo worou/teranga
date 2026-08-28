@@ -722,8 +722,8 @@ export default function Inscription() {
               <div className={styles.visibility}>
                 <div className={styles.visibilityTitle}>Qui pourra voir vos photos ?</div>
                 {([
-                  ['PUBLIC', 'Tous les membres', 'Vos photos apparaissent sur votre carte et sur votre fiche.'],
-                  ['PRIVATE', 'Personne pour l’instant', 'Les membres voient l’initiale de votre prénom. Vous pourrez changer d’avis à tout moment depuis votre profil.'],
+                  ['PUBLIC', 'Public', 'Tous les membres voient vos photos.'],
+                  ['PRIVATE', 'Privé', 'Personne ne les voit. Vous pourrez changer d’avis à tout moment.'],
                 ] as ['PUBLIC' | 'PRIVATE', string, string][]).map(([val, titre, aide]) => (
                   <label key={val} className={`${styles.visibilityOption} ${photosVisibility === val ? styles.visibilityChecked : ''}`}>
                     <input
@@ -738,8 +738,7 @@ export default function Inscription() {
                   </label>
                 ))}
                 <p className={styles.visibilityNote}>
-                  Dans les deux cas, l’équipe de modération voit vos photos : c’est ce qui
-                  permet de vérifier qu’un compte correspond à une personne réelle.
+                  Dans les deux cas, la modération voit vos photos.
                 </p>
               </div>
 

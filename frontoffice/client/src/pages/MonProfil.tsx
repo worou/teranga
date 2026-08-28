@@ -11,6 +11,7 @@ import {
 } from '../api/discovery'
 import styles from './MonProfil.module.css'
 import { moderationApi, type Blocage } from '../api/moderation'
+import { deactivateAccount, reactivateAccount, deleteAccount, clearTokens } from '../api/auth'
 
 /**
  * Mon profil : édition des informations et gestion des photos.
@@ -92,6 +93,47 @@ export default function MonProfil() {
   // que depuis la base.
   const [blocages, setBlocages] = useState<Blocage[] | null>(null)
   const [blocageBusy, setBlocageBusy] = useState<string | null>(null)
+
+  // Gestion du compte : repliée, et sans effet tant qu'on n'a pas confirmé.
+  // Ces deux gestes ne doivent pas se déclencher d'un doigt qui glisse.
+  const [compteOuvert, setCompteOuvert] = useState(false)
+  const [confirme, setConfirme] = useState<'pause' | 'suppression' | null>(null)
+  const [compteBusy, setCompteBusy] = useState(false)
+
+  async function mettreEnPause() {
+    setCompteBusy(true)
+    try {
+      await deactivateAccount()
+      const frais = await fetchMe()
+      setMe(frais); setConfirme(null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'La mise en pause a échoué.')
+    } finally { setCompteBusy(false) }
+  }
+
+  async function remettreEnService() {
+    setCompteBusy(true)
+    try {
+      await reactivateAccount()
+      setMe(await fetchMe())
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'La réactivation a échoué.')
+    } finally { setCompteBusy(false) }
+  }
+
+  async function supprimer() {
+    setCompteBusy(true)
+    try {
+      await deleteAccount()
+      // Le serveur a révoqué les jetons ; garder les nôtres n'afficherait que
+      // des erreurs. On repart de l'accueil public.
+      clearTokens()
+      navigate('/', { replace: true })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'La suppression a échoué.')
+      setCompteBusy(false)
+    }
+  }
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -345,9 +387,16 @@ export default function MonProfil() {
               belle-famille tombent sur sa fiche. */}
           <div className={styles.visibility}>
             <div className={styles.visibilityTitle}>Qui voit vos photos</div>
+            {/* « Public » / « Privé » plutôt qu'une phrase : ces deux mots-là,
+                tout le monde les comprend d'un coup d'œil. Le détail tient en
+                une ligne sous chacun.
+
+                Attention à ce qu'on écrit ici : ce réglage ne gouverne QUE les
+                photos. La messagerie reste ouverte à tous — promettre
+                « seulement mes contacts » serait faux. */}
             {([
-              ['PUBLIC', 'Tous les membres', 'Vos photos apparaissent sur votre carte et sur votre fiche.'],
-              ['PRIVATE', 'Personne pour l’instant', 'Les autres membres voient l’initiale de votre prénom à la place. Votre profil reste visible, vos photos non.'],
+              ['PUBLIC', 'Public', 'Tous les membres voient vos photos.'],
+              ['PRIVATE', 'Privé', 'Personne ne les voit. Les autres membres voient l’initiale de votre prénom.'],
             ] as [string, string, string][]).map(([val, titre, aide]) => (
               <label key={val} className={`${styles.visibilityOption} ${form.photosVisibility === val ? styles.visibilityChecked : ''}`}>
                 <input
@@ -362,8 +411,7 @@ export default function MonProfil() {
               </label>
             ))}
             <p className={styles.visibilityNote}>
-              Dans les deux cas, l’équipe de modération voit vos photos : c’est ce qui
-              permet de vérifier qu’un compte correspond à une personne réelle.
+              Dans les deux cas, la modération voit vos photos.
             </p>
           </div>
         </section>
@@ -548,6 +596,74 @@ export default function MonProfil() {
             </ul>
           )}
         </section>
+
+        {/* ——— Gestion du compte ———
+            Repliée derrière un lien, en tout petit, tout en bas : ce sont des
+            gestes qu'on vient chercher, jamais qu'on rencontre. Chacun exige
+            une confirmation — un doigt qui glisse ne doit pas effacer un
+            compte. */}
+        <div className={styles.compte}>
+          {me?.status === 'DEACTIVATED' ? (
+            <div className={styles.pauseActive}>
+              <strong>Votre compte est en pause.</strong>
+              <span>Vous n’apparaissez plus dans la découverte et personne ne peut vous écrire.</span>
+              <button type="button" onClick={remettreEnService} disabled={compteBusy}>
+                {compteBusy ? 'En cours…' : 'Remettre mon compte en service'}
+              </button>
+            </div>
+          ) : !compteOuvert ? (
+            <button type="button" className={styles.compteLien} onClick={() => setCompteOuvert(true)}>
+              Gérer mon compte
+            </button>
+          ) : (
+            <div className={styles.comptePanneau}>
+              <div className={styles.compteEntree}>
+                <div>
+                  <strong>Mettre mon compte en pause</strong>
+                  <p>
+                    Vous disparaissez de la découverte et personne ne peut vous écrire.
+                    Rien n’est effacé, vous revenez quand vous voulez.
+                  </p>
+                </div>
+                {confirme === 'pause' ? (
+                  <div className={styles.compteConfirme}>
+                    <button type="button" onClick={() => setConfirme(null)} disabled={compteBusy}>Annuler</button>
+                    <button type="button" className={styles.compteDanger} onClick={mettreEnPause} disabled={compteBusy}>
+                      {compteBusy ? 'En cours…' : 'Confirmer la pause'}
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setConfirme('pause')}>Mettre en pause</button>
+                )}
+              </div>
+
+              <div className={styles.compteEntree}>
+                <div>
+                  <strong>Supprimer mon compte</strong>
+                  <p>
+                    Votre profil, vos photos et vos favoris disparaissent définitivement.
+                    Les messages que vous avez envoyés restent chez leurs destinataires —
+                    nous ne réécrivons pas leurs conversations. C’est sans retour.
+                  </p>
+                </div>
+                {confirme === 'suppression' ? (
+                  <div className={styles.compteConfirme}>
+                    <button type="button" onClick={() => setConfirme(null)} disabled={compteBusy}>Annuler</button>
+                    <button type="button" className={styles.compteDanger} onClick={supprimer} disabled={compteBusy}>
+                      {compteBusy ? 'Suppression…' : 'Supprimer définitivement'}
+                    </button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => setConfirme('suppression')}>Supprimer</button>
+                )}
+              </div>
+
+              <button type="button" className={styles.compteLien} onClick={() => { setCompteOuvert(false); setConfirme(null) }}>
+                Replier
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className={styles.saveBar}>
           <span className={styles.saveState}>

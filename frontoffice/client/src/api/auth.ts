@@ -253,6 +253,39 @@ export async function deletePhoto(photoId: string): Promise<void> {
   }
 }
 
+/**
+ * Met le compte en pause : invisible et injoignable, mais rien n'est effacé.
+ * Le serveur ne l'accepte que depuis un compte actif — une sanction ne se lève
+ * pas par ce chemin.
+ */
+export async function deactivateAccount(): Promise<{ status: string }> {
+  const res = await fetch('/api/v1/users/me/deactivate', { method: 'POST', headers: authHeaders() })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.message || 'La mise en pause a échoué.')
+  return data
+}
+
+/** Remet le compte en service. N'accepte qu'un compte en pause. */
+export async function reactivateAccount(): Promise<{ status: string }> {
+  const res = await fetch('/api/v1/users/me/reactivate', { method: 'POST', headers: authHeaders() })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data?.message || 'La réactivation a échoué.')
+  return data
+}
+
+/**
+ * Supprime le compte. Effacement logique : le profil disparaît de toutes les
+ * surfaces publiques, les jetons sont révoqués. Les messages déjà reçus par
+ * d'autres membres subsistent chez eux — on ne réécrit pas leurs conversations.
+ */
+export async function deleteAccount(): Promise<void> {
+  const res = await fetch('/api/v1/users/me', { method: 'DELETE', headers: authHeaders() })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(data?.message || 'La suppression a échoué.')
+  }
+}
+
 /** Définit la photo principale (celle affichée sur les cartes). Route en PUT. */
 export async function setMainPhoto(photoId: string): Promise<void> {
   const res = await fetch(`/api/v1/users/me/photos/${photoId}/main`, {
