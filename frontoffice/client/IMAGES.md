@@ -54,6 +54,10 @@ Pour une image Freepik gratuite, renseignez `credit: 'Image : Freepik'` :
 la mention s'affiche discrètement sur la diapositive. L'omettre place le site
 en infraction avec la licence.
 
+Aucune des dix diapositives actuelles n'en porte : elles viennent toutes
+d'Unsplash, qui n'exige pas d'attribution. Ce n'est donc pas un oubli si rien
+ne s'affiche en haut à droite.
+
 **Attention aux aperçus filigranés.** Unsplash+ est une offre payante : sans
 abonnement, on n'obtient qu'un aperçu couvert d'un « Unsplash+ » répété — y
 compris en faisant une capture d'écran de la page. Ce fichier-là n'est pas

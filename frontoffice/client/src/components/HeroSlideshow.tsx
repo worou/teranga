@@ -43,13 +43,13 @@ type Diapositive = {
    * gratuite de Freepik, par exemple. L'omettre quand la licence la réclame
    * place le site en infraction. Voir client/IMAGES.md.
    *
-   * Unsplash ne l'exige pas ; on l'affiche quand même, parce qu'elle dit au
-   * visiteur ce qu'il regarde : une illustration, pas un membre.
+   * Aucune diapositive n'en porte aujourd'hui : les dix viennent d'Unsplash,
+   * qui n'exige pas d'attribution. Le champ reste pour le jour où l'on
+   * ajoutera une image dont la licence, elle, la réclame — la retirer
+   * obligerait à la réinventer sous la pression.
    */
   credit?: string
 }
-
-const CREDIT_UNSPLASH = 'Image d’illustration · Unsplash'
 
 const DIAPOSITIVES: Diapositive[] = [
   {
@@ -57,67 +57,57 @@ const DIAPOSITIVES: Diapositive[] = [
     alt: 'Un homme enlace une femme qui rit, devant un mur clair',
     legende: 'Des rencontres qui mènent au mariage',
     cadrage: 'center 35%',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/maries-voile-coucher-soleil.webp',
     alt: 'Des mariés front contre front, un voile flottant dans la lumière du soir',
     legende: 'Du premier message au grand jour',
     cadrage: 'center 28%',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/mains-jointes-alliances.webp',
     alt: 'Deux mains jointes sur une table, alliances au doigt, près d’un verre',
     legende: 'Des intentions dites dès le premier échange',
     cadrage: '20% center',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/couple-complice-foret.webp',
     alt: 'Une femme sur le dos d’un homme, tous deux riant dans un sous-bois',
     legende: 'La complicité avant tout le reste',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/couple-canape-salon.webp',
     alt: 'Un couple partage un plat, assis dans un canapé',
     legende: 'Bâtir une vie à deux, jour après jour',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/maries-etreinte-coucher-soleil.webp',
     alt: 'Des mariés enlacés au soleil couchant, un bouquet à la main',
     legende: 'S’engager, pour de bon',
     cadrage: 'center 30%',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/mains-tenues-arbre.webp',
     alt: 'Deux mains qui se tiennent devant un arbre isolé',
     legende: 'Avancer au même rythme',
     cadrage: 'center 72%',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/couple-tendresse-soiree.webp',
     alt: 'Un couple s’embrasse dans la pénombre d’une soirée',
     legende: 'Chercher une union, pas une aventure',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/maries-promenade-palmier.webp',
     alt: 'Des mariés marchent main dans la main devant un palmier',
     legende: 'Fonder un foyer, ici ou ailleurs',
     cadrage: 'center 55%',
-    credit: CREDIT_UNSPLASH,
   },
   {
     src: '/images/alliances-dorees.webp',
     alt: 'Deux alliances dorées posées sur une nappe claire',
     legende: 'Une promesse, pas un passe-temps',
     cadrage: '60% center',
-    credit: CREDIT_UNSPLASH,
   },
 ]
 
