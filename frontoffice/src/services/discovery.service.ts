@@ -102,13 +102,17 @@ export class DiscoveryService {
     const excludeIds = new Set<string>();
     const likedIds = new Set<string>();
     if (userId) {
-      const [alreadyLiked, blockedByMe, blockedMe] = await Promise.all([
+      const [alreadyLiked, passed, blockedByMe, blockedMe] = await Promise.all([
         prisma.like.findMany({ where: { senderId: userId }, select: { receiverId: true } }),
+        prisma.pass.findMany({ where: { senderId: userId }, select: { receiverId: true } }),
         prisma.block.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
         prisma.block.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
       ]);
       excludeIds.add(userId);
       alreadyLiked.forEach((l: { receiverId: string }) => likedIds.add(l.receiverId));
+      // « Passer » écarte, « aimer » non : c'est le refus qui retire quelqu'un
+      // du fil, pas l'intérêt. Les deux gestes faisaient l'inverse.
+      passed.forEach((p: { receiverId: string }) => excludeIds.add(p.receiverId));
       blockedByMe.forEach((b: { blockedId: string }) => excludeIds.add(b.blockedId));
       blockedMe.forEach((b: { blockerId: string }) => excludeIds.add(b.blockerId));
     }
@@ -354,9 +358,31 @@ export class DiscoveryService {
     return { liked: true, reciprocal: !!reciprocal };
   }
 
+  /**
+   * Écarte un profil du fil de celui qui passe.
+   *
+   * Ne faisait rien du tout auparavant : le bouton était décoratif, le profil
+   * revenait au rechargement suivant. C'est le like qui masquait — l'inverse
+   * exact de ce que les deux boutons annoncent.
+   *
+   * Le refus est privé : la personne écartée n'en sait rien, ne reçoit aucune
+   * notification, et continue de voir celui qui l'a passée. Un refus qui se
+   * verrait serait une humiliation, pas un filtre.
+   */
   async pass(senderId: string, receiverId: string) {
-    // Pass is tracked as a "like=false" row via non-creation (we just do nothing)
-    // Alternative: track "Pass" in a separate table if we want to let users redo passed profiles
+    if (senderId === receiverId) {
+      throw AppError.badRequest('Vous ne pouvez pas vous passer vous-même');
+    }
+    const receiver = await prisma.user.findUnique({ where: { id: receiverId } });
+    if (!receiver) throw AppError.notFound('Profil introuvable');
+
+    // Idempotent : repasser la même personne ne doit pas échouer sur la
+    // contrainte d'unicité, un double-clic suffirait à la déclencher.
+    await prisma.pass.upsert({
+      where: { senderId_receiverId: { senderId, receiverId } },
+      create: { senderId, receiverId },
+      update: {},
+    });
     return { passed: true };
   }
 

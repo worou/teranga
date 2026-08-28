@@ -217,6 +217,8 @@ model User {
   subscription      Subscription?
   sentLikes         Like[]              @relation("LikesSent")
   receivedLikes     Like[]              @relation("LikesReceived")
+  sentPasses        Pass[]              @relation("PassesSent")
+  receivedPasses    Pass[]              @relation("PassesReceived")
   matchesAsUserA    Match[]             @relation("MatchUserA")
   matchesAsUserB    Match[]             @relation("MatchUserB")
   sentMessages      Message[]
@@ -348,6 +350,28 @@ model Like {
 
   @@unique([senderId, receiverId])
   @@index([receiverId])
+  @@index([senderId])
+}
+
+/// Profil écarté du fil par un membre — le « Passer » de la découverte.
+///
+/// Table à part, et pas un drapeau sur `Like` : ce sont deux gestes de nature
+/// opposée. Un like est un signal positif, que son auteur revoit sur la carte ;
+/// un pass est un refus privé, que personne n'affiche et qui ne sert qu'à ne
+/// plus proposer la personne. Les mêler obligerait chaque lecture de `Like` à
+/// se demander de quel geste elle parle.
+model Pass {
+  id         String   @id @default(uuid())
+  senderId   String
+  receiverId String
+  createdAt  DateTime @default(now())
+
+  sender     User     @relation("PassesSent", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("PassesReceived", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  /// Passer deux fois la même personne ne crée pas deux lignes : le geste est
+  /// idempotent, comme le like.
+  @@unique([senderId, receiverId])
   @@index([senderId])
 }
 
