@@ -9,6 +9,7 @@ import {
   type DiscoveryFilters, type Profile,
 } from '../api/discovery'
 import styles from './Decouverte.module.css'
+import { Lightbox } from '../components/Lightbox'
 
 /** Filtres vides. `lastActive: 'all'` et `includeUnspecified: true` sont les
  *  défauts de l'API : les poser ici évite de les compter comme « actifs ». */
@@ -421,6 +422,7 @@ function Tri({ value, onChange, yes, no }: {
 /** Carte de profil, avec carrousel si le membre a plusieurs photos. */
 function ProfileCard({ profile }: { profile: Profile }) {
   const [idx, setIdx] = useState(0)
+  const [agrandi, setAgrandi] = useState(false)
   const photos = profile.photos ?? []
   const shared = sharedLabels(profile.sharedTraits)
 
@@ -433,6 +435,11 @@ function ProfileCard({ profile }: { profile: Profile }) {
     .filter(Boolean).join(' · ')
 
   return (
+    // La visionneuse est rendue HORS du lien, et ce n'est pas cosmétique :
+    // à l'intérieur, chacun de ses clics — y compris sur le fond noir —
+    // remonterait jusqu'au `Link` et déclencherait la navigation vers la
+    // fiche. On sortirait de la photo en l'ouvrant.
+    <>
     <Link to={`/profil/${profile.id}`} className={styles.card}>
       <div className={styles.photoWrap}>
         {photos.length > 0 ? (
@@ -460,6 +467,23 @@ function ProfileCard({ profile }: { profile: Profile }) {
             </svg>
             Vérifié
           </span>
+        )}
+
+        {/* Agrandir sans quitter le fil. Un bouton dédié plutôt que la photo
+            elle-même : la carte entière mène à la fiche, et détourner son plus
+            grand aplat changerait ce qu'elle promet. Même patron que les
+            flèches — on annule la navigation du lien parent. */}
+        {photos.length > 0 && (
+          <button
+            className={styles.loupe}
+            onClick={e => { e.preventDefault(); e.stopPropagation(); setAgrandi(true) }}
+            aria-label={`Agrandir la photo de ${profile.firstName}`}
+            title="Agrandir"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /><path d="M11 8v6M8 11h6" />
+            </svg>
+          </button>
         )}
 
         {photos.length > 1 && (
@@ -494,5 +518,16 @@ function ProfileCard({ profile }: { profile: Profile }) {
         </div>
       </div>
     </Link>
+
+    {agrandi && (
+      <Lightbox
+        photos={photos}
+        index={idx}
+        onIndex={setIdx}
+        onClose={() => setAgrandi(false)}
+        legende={`${profile.firstName} — photo ${idx + 1} sur ${photos.length}`}
+      />
+    )}
+    </>
   )
 }

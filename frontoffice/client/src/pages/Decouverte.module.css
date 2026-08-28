@@ -270,3 +270,23 @@
   font-size: 14px; line-height: 1.55; color: var(--ink);
 }
 .guestBanner strong { color: var(--terra-deep); }
+
+/* Loupe de la carte : en bas à droite de la photo, au-dessus du bandeau
+   d'information et à l'écart des pastilles (`.dots`, centrées à 96 px du bas)
+   comme des flèches, centrées verticalement. Trois contrôles sur une même
+   image ne doivent pas se disputer la place. */
+.loupe {
+  position: absolute; right: 10px; bottom: 92px;
+  width: 30px; height: 30px; border: none; border-radius: 50%;
+  display: grid; place-items: center; cursor: zoom-in;
+  background: rgba(43, 22, 5, 0.5); color: #FDF8F0;
+  backdrop-filter: blur(4px);
+  opacity: 0; transition: opacity 200ms ease, background 200ms ease;
+}
+/* Discrète : elle n'apparaît qu'au survol de la carte, pour ne pas encombrer
+   une grille qu'on parcourt d'abord des yeux. Toujours visible au doigt et au
+   clavier, où le survol n'existe pas. */
+.card:hover .loupe { opacity: 1; }
+.loupe:hover { background: rgba(43, 22, 5, 0.75); }
+.loupe:focus-visible { opacity: 1; outline: 2px solid var(--cream); outline-offset: 2px; }
+@media (hover: none) { .loupe { opacity: 0.85; } }
