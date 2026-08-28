@@ -152,6 +152,59 @@ router.post(
  *     responses:
  *       200: { description: "Profil passé" }
  */
+/**
+ * @openapi
+ * /discovery/favorites:
+ *   get:
+ *     tags: [Discovery]
+ *     summary: Mes favoris — les profils que j'ai aimés
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200: { description: "Liste paginée, du plus récent au plus ancien" }
+ */
+router.get(
+  '/discovery/favorites',
+  ...canAct,
+  asyncHandler(async (req, res) => {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit as string) || 20));
+    res.json(await discoveryService.getFavorites(req.auth!.userId, page, limit));
+  }),
+);
+
+/**
+ * @openapi
+ * /discovery/like/{receiverId}:
+ *   delete:
+ *     tags: [Discovery]
+ *     summary: Retirer un profil de mes favoris
+ *     description: |
+ *       Idempotent : retirer ce qui n'y est pas renvoie 200, pas 404. Un
+ *       double-clic ne doit pas produire une erreur.
+ *     security: [{ bearerAuth: [] }]
+ *     parameters:
+ *       - in: path
+ *         name: receiverId
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200: { description: "Retiré" }
+ */
+router.delete(
+  '/discovery/like/:receiverId',
+  ...canAct,
+  asyncHandler(async (req, res) => {
+    res.json(await discoveryService.unlike(req.auth!.userId, req.params.receiverId));
+  }),
+);
+
 router.post(
   '/discovery/pass',
   ...canAct,

@@ -445,11 +445,11 @@ function ProfileCard({ profile }: { profile: Profile }) {
             donc qu'on les reconnaisse. Sans elle, le ♥ n'aurait plus aucun
             effet perceptible. */}
         {profile.liked && (
-          <span className={styles.dejaAime} title="Vous avez aimé ce profil">
+          <span className={styles.dejaAime} title="Dans vos favoris">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
               <path d="M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 10-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 000-7.1z" />
             </svg>
-            Aimé
+            Favori
           </span>
         )}
 

@@ -154,6 +154,16 @@ export const discoveryApi = {
       body: JSON.stringify({ receiverId, isSuperLike }),
     }),
 
+  /** Mes favoris : les profils aimés, du plus récent au plus ancien. */
+  favorites: (page = 1, limit = 20) =>
+    request<{ data: Profile[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(
+      `/discovery/favorites?page=${page}&limit=${limit}`,
+    ),
+
+  /** Retire un favori. Idempotent côté serveur : retirer deux fois ne lève pas. */
+  unlike: (receiverId: string) =>
+    request<LikeResult>(`/discovery/like/${receiverId}`, { method: 'DELETE' }),
+
   pass: (receiverId: string) =>
     request<unknown>('/discovery/pass', {
       method: 'POST',

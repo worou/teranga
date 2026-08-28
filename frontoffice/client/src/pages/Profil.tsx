@@ -91,9 +91,25 @@ export default function Profil() {
     return () => { alive = false }
   }, [id, navigate])
 
+  /**
+   * Bascule, et non ajout définitif. Le bouton était désactivé une fois aimé :
+   * on pouvait mettre en favori, jamais retirer — et la liste des favoris ne
+   * pouvait que grossir.
+   */
   async function like() {
     if (!profile || acting) return
     setActing(true); setNotice('')
+
+    if (liked) {
+      try {
+        await discoveryApi.unlike(profile.id)
+        setLiked(false); setReciprocal(false)
+      } catch (err) {
+        setNotice(err instanceof Error ? err.message : 'Le retrait a échoué.')
+      } finally { setActing(false) }
+      return
+    }
+
     try {
       const res = await discoveryApi.like(profile.id)
       setLiked(true)
@@ -220,9 +236,9 @@ export default function Profil() {
             <div className={styles.actions}>
               <button
                 className={`${styles.iconBtn} ${liked ? styles.liked : ''}`}
-                onClick={like} disabled={acting || liked}
-                aria-label="J'aime ce profil"
-                title={liked ? 'Profil déjà aimé' : "J'aime"}
+                onClick={like} disabled={acting}
+                aria-label={liked ? 'Retirer de mes favoris' : 'Ajouter à mes favoris'}
+                title={liked ? 'Retirer de mes favoris' : 'Ajouter à mes favoris'}
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8">
                   <path d="M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 10-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 000-7.1z" strokeLinejoin="round" />

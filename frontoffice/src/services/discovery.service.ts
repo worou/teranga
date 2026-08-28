@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import { config } from '../config';
 import { AppError } from '../utils/AppError';
 import { calculateAge } from '../utils/helpers';
+import { photosVisibles } from '../utils/photos';
 
 export interface DiscoveryFilters {
   /** Pseudo / recherche plein-texte : prénom, profession, bio, ville. */
@@ -255,7 +256,7 @@ export class DiscoveryService {
       // déposé une photo — la preuve qu'il y a quelqu'un derrière le compte —
       // pas de l'avoir exposée. Choisir la discrétion ne doit pas reléguer en
       // fin de liste.
-      photos: c.photosVisibility === 'PRIVATE' ? [] : c.photos,
+      photos: photosVisibles(c),
       score,
       sharedTraits,
     }));
@@ -369,6 +370,78 @@ export class DiscoveryService {
    * notification, et continue de voir celui qui l'a passée. Un refus qui se
    * verrait serait une humiliation, pas un filtre.
    */
+  /**
+   * Mes favoris : les profils que j'ai aimés, du plus récent au plus ancien.
+   *
+   * Le ♥ n'avait aucune destination — il enregistrait une ligne que personne
+   * ne pouvait relire. C'est cette page-là qui lui donne un sens.
+   *
+   * Les mêmes règles de visibilité que le fil s'appliquent, et il ne faut en
+   * oublier aucune : un compte bloqué (dans un sens comme dans l'autre), non
+   * vérifié, suspendu ou supprimé n'a pas à réapparaître ici par la bande.
+   * Elles sont posées dans le `where`, pas après la lecture : filtrer ensuite
+   * fausserait la pagination et le total.
+   */
+  async getFavorites(userId: string, page = 1, limit = 20) {
+    const [blockedByMe, blockedMe] = await Promise.all([
+      prisma.block.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
+      prisma.block.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
+    ]);
+    const exclus = [
+      ...blockedByMe.map((b: { blockedId: string }) => b.blockedId),
+      ...blockedMe.map((b: { blockerId: string }) => b.blockerId),
+    ];
+
+    const where = {
+      senderId: userId,
+      ...(exclus.length ? { receiverId: { notIn: exclus } } : {}),
+      receiver: { status: 'ACTIVE' as const, isVerified: true, deletedAt: null },
+    };
+
+    const [lignes, total] = await Promise.all([
+      prisma.like.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+        include: { receiver: { include: { photos: { orderBy: { order: 'asc' } } } } },
+      }),
+      prisma.like.count({ where }),
+    ]);
+
+    const data = lignes.map((l: any) => ({
+      id: l.receiver.id,
+      firstName: l.receiver.firstName,
+      age: calculateAge(l.receiver.birthDate),
+      city: l.receiver.city,
+      country: l.receiver.country,
+      profession: l.receiver.profession,
+      bio: l.receiver.bio,
+      intent: l.receiver.intent,
+      religion: l.receiver.religion,
+      isVerified: l.receiver.isVerified,
+      photos: photosVisibles(l.receiver),
+      // Toujours vrai ici, mais la carte partage son composant avec le fil :
+      // sans ce drapeau, la pastille « Favori » disparaîtrait sur cette page.
+      liked: true,
+      favoriteAt: l.createdAt,
+    }));
+
+    return { data, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
+  }
+
+  /**
+   * Retire un favori. Idempotent : retirer ce qui n'y est pas n'est pas une
+   * erreur, et un double-clic ne doit pas produire un 404.
+   *
+   * Sans cette route, les favoris ne feraient que grossir — la liste qu'on ne
+   * peut pas vider est le même piège que le like qui masquait pour toujours.
+   */
+  async unlike(senderId: string, receiverId: string) {
+    await prisma.like.deleteMany({ where: { senderId, receiverId } });
+    return { liked: false };
+  }
+
   async pass(senderId: string, receiverId: string) {
     if (senderId === receiverId) {
       throw AppError.badRequest('Vous ne pouvez pas vous passer vous-même');

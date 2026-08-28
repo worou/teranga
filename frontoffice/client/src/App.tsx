@@ -11,6 +11,7 @@ import Messages from './pages/Messages'
 import Conversation from './pages/Conversation'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
+import Favoris from './pages/Favoris'
 
 export default function App() {
   return (
@@ -40,6 +41,15 @@ export default function App() {
           }
         />
         <Route path="/profil/:id" element={<Profil />} />
+        {/* Mes favoris : réservé aux membres — la liste est celle de MES likes. */}
+        <Route
+          path="/favoris"
+          element={
+            <RequireAuth>
+              <Favoris />
+            </RequireAuth>
+          }
+        />
         {/* Messagerie : réservée aux membres au profil complet. Écrire ne
             suppose aucun accord préalable — le système de match a été retiré. */}
         <Route

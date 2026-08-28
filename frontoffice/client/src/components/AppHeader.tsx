@@ -81,6 +81,19 @@ export default function AppHeader({ initial }: { initial?: string }) {
               )}
             </Link>
 
+            {/* Marque-page et non cœur : le cœur sert déjà aux conversations
+                dans cette barre, deux glyphes identiques s'y confondraient. */}
+            <Link
+              to="/favoris"
+              className={`${styles.counter} ${pathname === '/favoris' ? styles.active : ''}`}
+              aria-label="Mes favoris"
+              title="Mes favoris"
+            >
+              <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M19 21l-7-4.5L5 21V5a2 2 0 012-2h10a2 2 0 012 2z" strokeLinejoin="round" />
+              </svg>
+            </Link>
+
             <Link to="/accueil" className={styles.counter} aria-label="Mes notifications" title="Notifications">
               <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <path d="M18 8a6 6 0 10-12 0c0 7-3 8-3 8h18s-3-1-3-8" strokeLinejoin="round" />

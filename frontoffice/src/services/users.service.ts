@@ -2,6 +2,7 @@ import { prisma } from '../config/prisma';
 import { config } from '../config';
 import { AppError } from '../utils/AppError';
 import { calculateAge } from '../utils/helpers';
+import { photosVisibles } from '../utils/photos';
 
 /**
  * Les langues sont persistées encadrées de virgules (",FR,WO,") pour que la
@@ -228,15 +229,12 @@ export class UsersService {
       // Le membre a choisi de ne pas publier : la fiche n'en dit rien non
       // plus. Les écrans savent déjà se passer de photo — ils affichent
       // l'initiale du prénom.
-      photos:
-        user.photosVisibility === 'PRIVATE'
-          ? []
-          : user.photos.map((p: any) => ({
-              id: p.id,
-              url: p.url,
-              isMain: p.isMain,
-              order: p.order,
-            })),
+      photos: photosVisibles(user).map((p: any) => ({
+        id: p.id,
+        url: p.url,
+        isMain: p.isMain,
+        order: p.order,
+      })),
     };
   }
 
