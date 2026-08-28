@@ -253,3 +253,16 @@
   font-size: 13px; font-weight: 600; cursor: pointer;
   background: var(--terra-deep); color: var(--sand); border: none;
 }
+
+/* ——— Je suis ——— (deux choix, comme à l'inscription) */
+.genreGroupe { display: flex; gap: 8px; }
+.genreOption {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 12px; border-radius: 10px; cursor: pointer;
+  border: 1.5px solid rgba(184, 105, 26, 0.25);
+  font-size: 14px; color: var(--ink);
+  transition: border-color 0.2s, background 0.2s;
+}
+.genreOption:hover { border-color: rgba(184, 105, 26, 0.5); }
+.genreCoche { border-color: var(--ocre-deep); background: rgba(212, 144, 96, 0.1); font-weight: 600; }
+.genreOption input { accent-color: var(--ocre-deep); }

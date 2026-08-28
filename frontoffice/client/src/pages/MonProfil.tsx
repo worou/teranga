@@ -34,6 +34,7 @@ interface FormState {
   educationLevel: string
   bio: string
   religion: string
+  gender: string
   photosVisibility: string
   intent: string
   heightCm: string
@@ -54,6 +55,7 @@ function toForm(me: MeResponse): FormState {
     educationLevel: me.educationLevel ?? '',
     bio: me.bio ?? '',
     religion: me.religion ?? '',
+    gender: me.gender ?? '',
     photosVisibility: me.photosVisibility ?? 'PUBLIC',
     intent: me.intent ?? '',
     heightCm: me.heightCm != null ? String(me.heightCm) : '',
@@ -193,6 +195,7 @@ export default function MonProfil() {
     if (form.bio !== initial.bio) patch.bio = toText(form.bio)
     if (form.religion !== initial.religion && form.religion) patch.religion = form.religion
     if (form.photosVisibility !== initial.photosVisibility) patch.photosVisibility = form.photosVisibility
+    if (form.gender !== initial.gender && form.gender) patch.gender = form.gender
     if (form.intent !== initial.intent && form.intent) patch.intent = form.intent
     if (form.heightCm !== initial.heightCm) patch.heightCm = toNumber(form.heightCm)
     if (form.weightKg !== initial.weightKg) patch.weightKg = toNumber(form.weightKg)
@@ -424,6 +427,27 @@ export default function MonProfil() {
           <div className={styles.grid}>
             <Field label="Prénom">
               <input type="text" value={form.firstName} onChange={e => set('firstName', e.target.value)} />
+            </Field>
+            {/* Modifiable, et il faut qu'il le soit : ce champ décide de qui
+                vous voyez et de qui vous voit. Une erreur d'un clic à
+                l'inscription — l'écran « Je suis ♀ / ♂ » — rendait le compte
+                inutilisable, sans aucun recours depuis l'application. */}
+            <Field label="Je suis">
+              <div className={styles.genreGroupe}>
+                {([['FEMALE', 'Une femme'], ['MALE', 'Un homme']] as [string, string][]).map(([val, libelle]) => (
+                  <label key={val} className={`${styles.genreOption} ${form.gender === val ? styles.genreCoche : ''}`}>
+                    <input
+                      type="radio" name="gender" value={val}
+                      checked={form.gender === val}
+                      onChange={() => set('gender', val)}
+                    />
+                    {libelle}
+                  </label>
+                ))}
+              </div>
+              <p className={styles.hint}>
+                Détermine les profils qui vous sont proposés, et ceux à qui vous apparaissez.
+              </p>
             </Field>
             <Field label="Nom">
               <input type="text" value={form.lastName} onChange={e => set('lastName', e.target.value)} />

@@ -44,6 +44,7 @@ export class UsersService {
       'hasChildren',
       'religion',
       'intent',
+      'gender',
       'photosVisibility',
       // Critères de recherche facultatifs (cf. discoveryFiltersSchema).
       'wantsChildren',

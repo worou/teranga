@@ -170,6 +170,11 @@ export interface ProfileUpdate {
   educationLevel?: string
   religion?: string
   intent?: string
+  /**
+   * Modifiable depuis « Mon profil ». Se tromper à l'inscription rendait le
+   * compte inutilisable : ce champ décide de qui vous voyez et de qui vous voit.
+   */
+  gender?: string
   /** 'PUBLIC' ou 'PRIVATE' — voir l'enum PhotosVisibility côté schéma. */
   photosVisibility?: string
   hasChildren?: boolean

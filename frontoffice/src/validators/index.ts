@@ -151,6 +151,11 @@ export const updateProfileSchema = z.object({
   hasChildren: z.boolean().optional(),
   religion: z.enum(['CHRISTIAN', 'MUSLIM', 'OTHER', 'UNDISCLOSED']).optional(),
   intent: z.enum(['SERIOUS_RELATIONSHIP', 'MARRIAGE', 'FAMILY']).optional(),
+  // Modifiable, et il faut qu'il le soit : une erreur d'un clic à
+  // l'inscription rendait le compte inutilisable sans recours. Le genre
+  // décide de qui vous voyez et de qui vous voit — se tromper, c'est ne
+  // croiser personne et n'être croisé par personne.
+  gender: z.enum(['FEMALE', 'MALE', 'NON_BINARY', 'UNDISCLOSED']).optional(),
   photosVisibility: z.enum(['PUBLIC', 'PRIVATE']).optional(),
 
   // Critères de recherche facultatifs. `null` est accepté explicitement :
