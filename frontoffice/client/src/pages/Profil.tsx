@@ -32,6 +32,8 @@ export default function Profil() {
   const [photoIdx, setPhotoIdx] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  // Initialisé par la réponse du serveur : sans cela, un profil déjà aimé
+  // revenait avec un cœur vide à chaque visite, et le geste semblait perdu.
   const [liked, setLiked] = useState(false)
   const [reciprocal, setReciprocal] = useState(false)
   const [notice, setNotice] = useState('')
@@ -74,7 +76,7 @@ export default function Profil() {
     let alive = true
     setLoading(true); setError(''); setPhotoIdx(0)
     discoveryApi.profile(id)
-      .then(p => { if (alive) { setProfile(p); setLoading(false) } })
+      .then(p => { if (alive) { setProfile(p); setLiked(!!p.liked); setLoading(false) } })
       .catch(err => {
         if (!alive) return
         if (err instanceof ApiError && err.code === 'PHOTOS_REQUIRED') {

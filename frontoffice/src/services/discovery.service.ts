@@ -87,16 +87,28 @@ export class DiscoveryService {
     else if (user?.gender === 'FEMALE') targetGender = 'MALE';
     // NON_BINARY / UNDISCLOSED sans filtre : tout le monde.
 
-    // Un visiteur anonyme n'a ni likes passés ni blocages : rien à exclure.
+    // AIMER NE FAIT PLUS DISPARAÎTRE.
+    //
+    // Les profils aimés étaient exclus du fil, règle héritée du modèle
+    // « swipe » où liker était une décision définitive. Ce modèle n'existe
+    // plus : le like n'ouvre plus de conversation, n'avertit personne, ne
+    // débloque rien — c'est un signal, son propre commentaire le dit. Le
+    // masquage en faisait pourtant une sanction : on perdait de vue la
+    // personne qui intéressait le plus, sans aucun moyen de la retrouver,
+    // aucune page ne listant ses likes.
+    //
+    // Les likes sont donc toujours lus, mais pour MARQUER les cartes, plus
+    // pour les retirer. Seuls les blocages excluent — eux le doivent.
     const excludeIds = new Set<string>();
+    const likedIds = new Set<string>();
     if (userId) {
-      const [alreadyInteracted, blockedByMe, blockedMe] = await Promise.all([
+      const [alreadyLiked, blockedByMe, blockedMe] = await Promise.all([
         prisma.like.findMany({ where: { senderId: userId }, select: { receiverId: true } }),
         prisma.block.findMany({ where: { blockerId: userId }, select: { blockedId: true } }),
         prisma.block.findMany({ where: { blockedId: userId }, select: { blockerId: true } }),
       ]);
       excludeIds.add(userId);
-      alreadyInteracted.forEach((l: { receiverId: string }) => excludeIds.add(l.receiverId));
+      alreadyLiked.forEach((l: { receiverId: string }) => likedIds.add(l.receiverId));
       blockedByMe.forEach((b: { blockedId: string }) => excludeIds.add(b.blockedId));
       blockedMe.forEach((b: { blockerId: string }) => excludeIds.add(b.blockerId));
     }
@@ -230,6 +242,9 @@ export class DiscoveryService {
       intent: c.intent,
       religion: c.religion,
       isVerified: c.isVerified,
+      // Le geste doit se voir : sans ce drapeau, un profil aimé serait
+      // indiscernable des autres, et le ♥ n'aurait plus aucun effet perceptible.
+      liked: likedIds.has(c.id),
       // Asymétrie voulue, et ce n'est pas un oubli : les photos disparaissent
       // du fil quand le membre ne les publie pas, mais le score plus bas
       // continue de compter leur présence. Le bonus récompense d'avoir

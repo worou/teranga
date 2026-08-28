@@ -79,6 +79,7 @@ import path from 'path';
 import bcrypt from 'bcryptjs';
 import { prisma } from '../config/prisma';
 import { uploadDir } from '../config/upload';
+import { config } from '../config';
 
 // ——— Présentation ———
 const c = {
@@ -246,7 +247,16 @@ const identite = (p: ProfilTest, i: number) => {
     // Plage 77 9900 0xx, distincte de celle de `prisma/seed.ts` (77 1000 0xx).
     // La marque reste l'e-mail : ce numéro n'est qu'une commodité de connexion.
     phone: `+221779900${String(i + 1).padStart(3, '0')}`,
-    photos: [`profil-test-${cle}-1.webp`, `profil-test-${cle}-2.webp`],
+    // Autant de photos que l'application en EXIGE, pas un nombre choisi au
+    // hasard. Le script en créait deux quand le minimum était de trois : les
+    // comptes existaient, se connectaient, apparaissaient dans la découverte —
+    // et `requireCompleteProfile` refusait tout le reste avec
+    // « PHOTOS_REQUIRED ». Des profils de test incapables d'aimer ou d'écrire
+    // ne testent pas grand-chose.
+    photos: Array.from(
+      { length: Math.max(2, config.profile.minPhotos) },
+      (_, n) => `profil-test-${cle}-${n + 1}.webp`,
+    ),
   };
 };
 
@@ -442,8 +452,8 @@ async function creer() {
       const initiales = `${p.prenom[0]}${p.nom[0]}`.toUpperCase();
       id.photos.forEach((nom, n) => {
         const destination = path.join(uploadDir, nom);
-        const texte = n === 0 ? initiales : p.prenom;
-        if (fs.existsSync(destination) || genererPhoto(destination, p.teinte, texte, n === 1, police)) {
+        const texte = n === 0 ? initiales : `${p.prenom}${n > 1 ? ' ' + (n + 1) : ''}`;
+        if (fs.existsSync(destination) || genererPhoto(destination, p.teinte, texte, n % 2 === 1, police)) {
           urls.push(`/uploads/${nom}`);
         }
       });

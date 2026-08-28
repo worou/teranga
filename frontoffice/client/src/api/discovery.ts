@@ -30,6 +30,8 @@ export interface Profile {
   intent?: string | null
   religion?: string | null
   isVerified?: boolean
+  /** Ce visiteur a déjà aimé ce profil. Le fil ne les cache plus, il les marque. */
+  liked?: boolean
   photos: Photo[]
   score?: number
   sharedTraits?: SharedTraits

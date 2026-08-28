@@ -180,7 +180,12 @@ export class UsersService {
    *
    * Seul l'âge est exposé, jamais `birthDate`.
    */
-  async getPublicProfile(userId: string) {
+  /**
+   * `viewerId` est facultatif : la fiche reste consultable sans compte. Il ne
+   * sert qu'à dire si CE visiteur a déjà aimé ce profil — sans quoi le cœur
+   * revient vide à chaque visite et le like paraît sans effet.
+   */
+  async getPublicProfile(userId: string, viewerId?: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       include: { photos: { orderBy: { order: 'asc' } } },
@@ -193,8 +198,16 @@ export class UsersService {
       throw AppError.notFound('Profil introuvable');
     }
 
+    const liked = viewerId
+      ? !!(await prisma.like.findUnique({
+          where: { senderId_receiverId: { senderId: viewerId, receiverId: userId } },
+          select: { senderId: true },
+        }))
+      : false;
+
     return {
       id: user.id,
+      liked,
       firstName: user.firstName,
       age: calculateAge(user.birthDate),
       city: user.city,

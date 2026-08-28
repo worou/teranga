@@ -115,6 +115,17 @@
   font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
 }
 
+/* « Aimé » : à GAUCHE, pour ne pas se disputer le coin avec « Vérifié ».
+   Les deux pastilles peuvent coexister sur une même carte, et se superposer
+   les rendrait illisibles toutes les deux. */
+.dejaAime {
+  position: absolute; top: 10px; left: 10px;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 999px;
+  background: rgba(184, 105, 26, 0.94); color: #fff;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.02em;
+}
+
 /* Bandeau d'information en bas de carte. */
 .info {
   position: absolute; left: 0; right: 0; bottom: 0;

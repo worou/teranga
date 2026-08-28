@@ -130,7 +130,7 @@ router.get(
   // avec, et tout champ ajouté plus tard au modèle fuirait en silence.
   optionalAuth,
   asyncHandler(async (req, res) => {
-    res.json(await usersService.getPublicProfile(req.params.id));
+    res.json(await usersService.getPublicProfile(req.params.id, req.auth?.userId));
   }),
 );
 

@@ -441,6 +441,18 @@ function ProfileCard({ profile }: { profile: Profile }) {
           <div className={styles.photoEmpty}>{profile.firstName.slice(0, 1)}</div>
         )}
 
+        {/* Marque du geste : le fil ne masque plus les profils aimés, il faut
+            donc qu'on les reconnaisse. Sans elle, le ♥ n'aurait plus aucun
+            effet perceptible. */}
+        {profile.liked && (
+          <span className={styles.dejaAime} title="Vous avez aimé ce profil">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M20.8 5.6a5 5 0 00-7.1 0L12 7.3l-1.7-1.7a5 5 0 10-7.1 7.1l8.8 8.8 8.8-8.8a5 5 0 000-7.1z" />
+            </svg>
+            Aimé
+          </span>
+        )}
+
         {profile.isVerified && (
           <span className={styles.verified}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
