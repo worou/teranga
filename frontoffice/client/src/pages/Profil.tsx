@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import MessageComposer from '../components/MessageComposer'
 import { ModerationActions } from '../components/ModerationActions'
+import { Lightbox } from '../components/Lightbox'
 import { SUBSCRIPTIONS_ENABLED } from '../config'
 import { fetchMe, isAuthenticated, type MeResponse } from '../api/auth'
 import {
@@ -30,6 +31,7 @@ export default function Profil() {
   const [me, setMe] = useState<MeResponse | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [photoIdx, setPhotoIdx] = useState(0)
+  const [agrandi, setAgrandi] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   // Initialisé par la réponse du serveur : sans cela, un profil déjà aimé
@@ -322,8 +324,28 @@ export default function Profil() {
 
           <div className={styles.gallery}>
             <div className={styles.hero}>
+              {/* Cliquable, parce que le cadrage coupe : la carte affiche en
+                  4/5, la fiche en portrait fixe, et l'on ne voit jamais la
+                  photo entière sans l'ouvrir. Un bouton et non une image nue —
+                  au clavier, une image ne se déclenche pas. */}
               {photos.length > 0
-                ? <img src={photos[photoIdx].url} alt={`${profile.firstName} — photo ${photoIdx + 1}`} />
+                ? (
+                  <button
+                    type="button"
+                    className={styles.heroBtn}
+                    onClick={() => setAgrandi(true)}
+                    aria-label="Agrandir la photo"
+                    title="Agrandir"
+                  >
+                    <img src={photos[photoIdx].url} alt={`${profile.firstName} — photo ${photoIdx + 1}`} />
+                    <span className={styles.loupe} aria-hidden="true">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                        <circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" />
+                        <path d="M11 8v6M8 11h6" />
+                      </svg>
+                    </span>
+                  </button>
+                )
                 : <div className={styles.heroEmpty}>{profile.firstName.slice(0, 1)}</div>}
             </div>
 
@@ -340,6 +362,16 @@ export default function Profil() {
                   </button>
                 ))}
               </div>
+            )}
+
+            {agrandi && (
+              <Lightbox
+                photos={photos}
+                index={photoIdx}
+                onIndex={setPhotoIdx}
+                onClose={() => setAgrandi(false)}
+                legende={`${profile.firstName} — photo ${photoIdx + 1} sur ${photos.length}`}
+              />
             )}
           </div>
         </div>

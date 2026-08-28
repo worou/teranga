@@ -162,3 +162,43 @@
 }
 .chatSent { border-color: rgba(93, 114, 70, 0.45); }
 .chatSent span { color: var(--green); }
+
+/* Photo principale cliquable : un bouton qui n'a l'air de rien, pour rester
+   une image aux yeux du visiteur tout en étant atteignable au clavier. */
+.heroBtn {
+  display: block; width: 100%; height: 100%; padding: 0;
+  border: none; background: none; cursor: zoom-in; position: relative;
+}
+.heroBtn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.heroBtn:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: -2px; }
+
+/* La loupe dit que c'est cliquable. Discrète au repos — la photo reste le
+   sujet — franche au survol. */
+.loupe {
+  position: absolute; right: 12px; bottom: 12px;
+  display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 50%; color: #FDF8F0;
+  background: rgba(43, 22, 5, 0.45); backdrop-filter: blur(4px);
+  opacity: 0.75; transition: opacity 200ms ease, background 200ms ease;
+}
+.heroBtn:hover .loupe { opacity: 1; background: rgba(43, 22, 5, 0.7); }
+
+/* Photo principale cliquable : un bouton qui n'a l'air de rien, pour rester
+   une image aux yeux du visiteur tout en étant atteignable au clavier. */
+.heroBtn {
+  display: block; width: 100%; height: 100%; padding: 0;
+  border: none; background: none; cursor: zoom-in; position: relative;
+}
+.heroBtn img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.heroBtn:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: -2px; }
+
+/* La loupe dit que c'est cliquable. Discrète au repos — la photo reste le
+   sujet — franche au survol. */
+.loupe {
+  position: absolute; right: 12px; bottom: 12px;
+  display: grid; place-items: center; width: 34px; height: 34px;
+  border-radius: 50%; color: #FDF8F0;
+  background: rgba(43, 22, 5, 0.45); backdrop-filter: blur(4px);
+  opacity: 0.75; transition: opacity 200ms ease, background 200ms ease;
+}
+.heroBtn:hover .loupe { opacity: 1; background: rgba(43, 22, 5, 0.7); }
