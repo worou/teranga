@@ -1,0 +1,60 @@
+/* Bloquer / Signaler — voir ModerationActions.tsx pour la règle éditoriale. */
+
+.zone { margin-top: 18px; }
+
+/* Discrets par défaut : ce sont des recours, pas des appels à l'action. Les
+   mettre en avant ferait planer un soupçon sur chaque fiche. */
+.liens { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.lien {
+  background: none; border: none; padding: 4px 2px;
+  font-size: 12px; color: var(--ink-soft); opacity: 0.75;
+  cursor: pointer; text-decoration: underline; text-underline-offset: 3px;
+}
+.lien:hover { opacity: 1; color: var(--terra-deep); }
+.lien:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: 2px; border-radius: 3px; }
+.sep { color: var(--ink-soft); opacity: 0.5; font-size: 12px; }
+
+.panneau {
+  margin-top: 12px; padding: 16px;
+  background: var(--cream);
+  border: 1.5px solid rgba(184, 105, 26, 0.25);
+  border-radius: 14px;
+}
+.titre { margin: 0 0 6px; font-size: 15px; font-weight: 600; color: var(--ink); }
+.aide { margin: 0 0 12px; font-size: 13px; line-height: 1.5; color: var(--ink-soft); }
+
+.champ { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+.champ > span { font-size: 12px; font-weight: 600; color: var(--terra-deep); }
+.champ em { font-style: normal; font-weight: 400; opacity: 0.7; }
+.champ select,
+.champ textarea {
+  width: 100%; padding: 9px 11px;
+  border: 1.5px solid rgba(184, 105, 26, 0.25); border-radius: 9px;
+  font-family: inherit; font-size: 14px; color: var(--ink); background: #fff;
+}
+.champ textarea { resize: vertical; line-height: 1.45; }
+
+.case { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink); margin-bottom: 12px; }
+.case input { accent-color: var(--ocre-deep); }
+
+.erreur { margin: 0 0 10px; font-size: 13px; color: #C0392B; }
+
+.boutons { display: flex; gap: 8px; justify-content: flex-end; }
+.annuler,
+.confirmer {
+  padding: 9px 16px; border-radius: 9px; font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 1.5px solid transparent;
+}
+.annuler { background: transparent; border-color: rgba(184, 105, 26, 0.3); color: var(--ink-soft); }
+.annuler:hover { color: var(--terra-deep); border-color: var(--ocre-deep); }
+.confirmer { background: var(--terra-deep); color: var(--sand); }
+.confirmer:hover { background: var(--ink); }
+.annuler:disabled, .confirmer:disabled { opacity: 0.55; cursor: default; }
+
+.fait {
+  margin-top: 18px; padding: 12px 14px;
+  background: rgba(39, 174, 96, 0.1);
+  border: 1.5px solid rgba(39, 174, 96, 0.3);
+  border-radius: 12px;
+  font-size: 13px; color: #1E7A45; text-align: center;
+}

@@ -211,3 +211,8 @@
   .thread { padding: 0 14px; }
   .bubble { max-width: 86%; }
 }
+
+/* Recours (bloquer / signaler) dans l'en-tête d'une conversation : à droite
+   du nom, discrets, sans pousser le fil vers le bas. */
+.threadActions { margin-left: auto; }
+.threadActions > div { margin-top: 0; }

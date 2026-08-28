@@ -16,6 +16,7 @@ import {
   type Message,
 } from '../api/messages'
 import styles from './Messagerie.module.css'
+import { ModerationActions } from '../components/ModerationActions'
 
 /** Intervalle de rafraîchissement du fil, en millisecondes. */
 /**
@@ -218,6 +219,19 @@ export default function Conversation() {
               <span className={styles.threadName}>Conversation</span>
             )}
           </div>
+
+          {/* Le second endroit où l'on décide d'arrêter : c'est dans la
+              conversation, pas sur la fiche, qu'un échange dérape. Y renvoyer
+              le membre serait lui demander un détour au pire moment. */}
+          {other && (
+            <div className={styles.threadActions}>
+              <ModerationActions
+                userId={other.id}
+                firstName={other.firstName}
+                onBlocked={() => setTimeout(() => navigate('/messages'), 1800)}
+              />
+            </div>
+          )}
         </div>
 
         <div className={styles.scroller} ref={scroller} onScroll={onScroll}>

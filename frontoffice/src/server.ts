@@ -14,7 +14,6 @@ import { prisma } from './config/prisma';
 import { uploadDir } from './config/upload';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
-import { requireSubscriptionsEnabled } from './middleware/auth';
 
 // Routes
 import authRoutes from './routes/auth.routes';
@@ -164,7 +163,10 @@ app.use('/api/v1', conversationsRoutes); // /conversations/*
 // Tunnel d'abonnement (/pricing, /subscriptions/me, /payments/*) : n'existe
 // que si le système est activé. Les webhooks (montés plus haut) et les routes
 // admin internes restent ouverts pour régulariser un paiement encore en vol.
-app.use('/api/v1', requireSubscriptionsEnabled, paymentsRoutes);
+//
+// Le garde vit DANS le routeur, pas ici : monté sur le préfixe, il s'appliquait
+// à tout `/api/v1` et tuait les routes déclarées après lui.
+app.use('/api/v1', paymentsRoutes);
 app.use('/api/v1', featuresRoutes);    // /events, /moderation, /trusted-circle, /notifications
 
 // SPA fallback — React Router gère le routing côté client.

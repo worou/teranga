@@ -10,6 +10,7 @@ import {
   BODY_TYPE_LABELS, ETHNICITY_LABELS, LANGUAGE_LABELS,
 } from '../api/discovery'
 import styles from './MonProfil.module.css'
+import { moderationApi, type Blocage } from '../api/moderation'
 
 /**
  * Mon profil : édition des informations et gestion des photos.
@@ -85,6 +86,12 @@ export default function MonProfil() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
+
+  // Personnes bloquées. Sans cet écran, `DELETE /moderation/blocks/:id`
+  // resterait inatteignable : un blocage posé par erreur ne se retirerait plus
+  // que depuis la base.
+  const [blocages, setBlocages] = useState<Blocage[] | null>(null)
+  const [blocageBusy, setBlocageBusy] = useState<string | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -93,7 +100,23 @@ export default function MonProfil() {
       .then(data => { setMe(data); setForm(toForm(data)); setInitial(toForm(data)) })
       .catch(err => setError(err instanceof Error ? err.message : 'Chargement impossible.'))
       .finally(() => setLoading(false))
+
+    // Chargement séparé : un échec ici ne doit pas empêcher d'éditer son
+    // profil. La liste s'affiche vide plutôt que de faire tomber la page.
+    moderationApi.listerBlocages().then(setBlocages).catch(() => setBlocages([]))
   }, [navigate])
+
+  async function debloquer(id: string) {
+    setBlocageBusy(id)
+    try {
+      await moderationApi.debloquer(id)
+      setBlocages(prev => (prev ?? []).filter(b => b.blocked.id !== id))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Le déblocage a échoué.')
+    } finally {
+      setBlocageBusy(null)
+    }
+  }
 
   const photos = me?.photos ?? []
   const minPhotos = me?.minPhotos ?? 3
@@ -487,6 +510,43 @@ export default function MonProfil() {
               </p>
             </Field>
           </div>
+        </section>
+
+        {/* ——— Personnes bloquées ———
+            Hors du formulaire, et sans bouton « Enregistrer » : débloquer agit
+            tout de suite. Mêler ce geste aux modifications en attente ferait
+            croire qu'il faut sauvegarder pour qu'il prenne effet. */}
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Personnes bloquées</h2>
+          <p className={styles.sectionLead}>
+            Vous ne voyez plus leur profil et elles ne voient plus le vôtre. Aucun
+            message ne passe, dans un sens comme dans l’autre.
+          </p>
+
+          {blocages === null ? (
+            <p className={styles.hint}>Chargement…</p>
+          ) : blocages.length === 0 ? (
+            <p className={styles.hint}>Vous n’avez bloqué personne.</p>
+          ) : (
+            <ul className={styles.blocList}>
+              {blocages.map(b => (
+                <li key={b.blocked.id} className={styles.blocItem}>
+                  {b.blocked.photos?.length
+                    ? <img src={b.blocked.photos[0].url} alt="" className={styles.blocPhoto} />
+                    : <span className={styles.blocPhotoVide}>{b.blocked.firstName.slice(0, 1)}</span>}
+                  <span className={styles.blocNom}>{b.blocked.firstName}</span>
+                  <button
+                    type="button"
+                    className={styles.blocAction}
+                    disabled={blocageBusy === b.blocked.id}
+                    onClick={() => debloquer(b.blocked.id)}
+                  >
+                    {blocageBusy === b.blocked.id ? 'En cours…' : 'Débloquer'}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
 
         <div className={styles.saveBar}>

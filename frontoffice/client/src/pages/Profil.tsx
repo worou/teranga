@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import MessageComposer from '../components/MessageComposer'
+import { ModerationActions } from '../components/ModerationActions'
 import { SUBSCRIPTIONS_ENABLED } from '../config'
 import { fetchMe, isAuthenticated, type MeResponse } from '../api/auth'
 import {
@@ -269,6 +270,19 @@ export default function Profil() {
                 <div className={styles.fact}><span>Profession</span><strong>{profile.profession}</strong></div>
               )}
             </div>
+
+            {/* Recours, sous la fiche : c'est là qu'on se rend compte qu'on
+                veut y mettre fin. Discrets par construction — les mettre en
+                avant ferait planer un soupçon sur chaque profil. */}
+            {signedIn && !isSelf && (
+              <ModerationActions
+                userId={profile.id}
+                firstName={profile.firstName}
+                // Le membre vient de disparaître de la découverte : rester sur
+                // sa fiche afficherait un profil devenu inatteignable.
+                onBlocked={() => setTimeout(() => navigate('/decouverte'), 1800)}
+              />
+            )}
 
             {signedIn && !isSelf && (
               <ChatBox

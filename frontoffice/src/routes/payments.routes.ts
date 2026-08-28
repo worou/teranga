@@ -1,12 +1,30 @@
 import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { validate } from '../middleware/validate';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, requireSubscriptionsEnabled } from '../middleware/auth';
 import { subscriptionsService } from '../services/subscriptions.service';
 import { paymentsService } from '../services/payments.service';
 import { subscribeSchema } from '../validators';
 
 const router = Router();
+
+/**
+ * Le tunnel d'abonnement n'existe que si le système est activé.
+ *
+ * LES CHEMINS SONT OBLIGATOIRES ICI, et c'est tout le sujet. Ce garde vivait
+ * dans `server.ts`, monté sur le préfixe : `app.use('/api/v1', garde, routeur)`
+ * l'applique à TOUTES les requêtes du préfixe, pas aux seules routes du
+ * routeur. Abonnements désactivés, il appelait `next(erreur)` et tuait tout ce
+ * qui était monté après — `/events`, `/moderation`, `/trusted-circle` et
+ * `/notifications` répondaient « L'abonnement n'est pas disponible », sans le
+ * moindre rapport avec ce qu'on leur demandait.
+ *
+ * Le déplacer ici en `router.use(garde)` SANS chemin ne changeait rien : un
+ * routeur monté sur `/api/v1` est traversé par toutes les requêtes du préfixe,
+ * qu'une de ses routes corresponde ou non. Il fallait nommer ce que ce fichier
+ * possède.
+ */
+router.use(['/pricing', '/subscriptions', '/payments'], requireSubscriptionsEnabled);
 
 /**
  * @openapi
