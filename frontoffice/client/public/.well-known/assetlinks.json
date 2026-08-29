@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "re.teranga.app",
+      "sha256_cert_fingerprints": ["97:CD:C4:E4:24:BF:44:AF:ED:50:8B:C9:8B:1D:D3:A0:E5:4B:BA:56:31:5D:10:EE:7A:26:3F:23:FA:5F:99:40"]
+    }
+  }
+]
