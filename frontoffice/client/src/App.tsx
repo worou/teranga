@@ -12,10 +12,15 @@ import Conversation from './pages/Conversation'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 import Favoris from './pages/Favoris'
+import { InstallerApp } from './components/InstallerApp'
 
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Hors des routes : l'invitation vaut sur toutes les pages, et elle ne
+          s'affiche de toute façon que si le navigateur juge l'installation
+          possible. */}
+      <InstallerApp />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/inscription" element={<Inscription />} />

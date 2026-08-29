@@ -1,0 +1,24 @@
+{
+  "name": "Téranga — Rencontres pour le mariage",
+  "short_name": "Téranga",
+  "description": "Téranga réunit des femmes et des hommes prêts à s'engager, à fonder un foyer, à bâtir une vie à deux.",
+  "lang": "fr",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FDF8F0",
+  "theme_color": "#5B2E0C",
+  "categories": ["social", "lifestyle"],
+  "icons": [
+    { "src": "/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icone-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Découvrir", "url": "/decouverte" },
+    { "name": "Messages", "url": "/messages" },
+    { "name": "Mes favoris", "url": "/favoris" }
+  ]
+}
