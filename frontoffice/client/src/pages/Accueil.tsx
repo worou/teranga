@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import AppHeader from '../components/AppHeader'
 import { SUBSCRIPTIONS_ENABLED } from '../config'
-import { fetchMe, clearTokens, type MeResponse } from '../api/auth'
+import { fetchMe, clearTokens, seDeconnecter, type MeResponse } from '../api/auth'
 import styles from './AuthForms.module.css'
 
 /** Libellés lisibles des formules d'abonnement. */
@@ -39,8 +39,8 @@ export default function Accueil() {
     return () => { alive = false }
   }, [navigate])
 
-  function logout() {
-    clearTokens()
+  async function logout() {
+    await seDeconnecter()
     navigate('/connexion', { replace: true })
   }
 

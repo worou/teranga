@@ -122,6 +122,39 @@ export function clearTokens() {
   localStorage.removeItem(REFRESH_KEY)
 }
 
+/**
+ * Déconnexion — la seule à appeler depuis l'interface.
+ *
+ * Effacer les jetons du navigateur ne suffit pas : le refresh token reste
+ * valable côté serveur, et resterait échangeable contre une session par
+ * quiconque l'aurait recopié. On demande donc sa révocation.
+ *
+ * L'appel est délibérément « au mieux » : hors ligne, ou si le jeton d'accès a
+ * déjà expiré, la requête échoue — et il serait absurde de retenir quelqu'un
+ * sur un compte parce que le réseau est mauvais. Les jetons locaux sont donc
+ * effacés dans tous les cas, y compris en cas d'erreur.
+ */
+export async function seDeconnecter(): Promise<void> {
+  const accessToken = localStorage.getItem(TOKEN_KEY)
+  const refreshToken = localStorage.getItem(REFRESH_KEY)
+  try {
+    if (accessToken && refreshToken) {
+      await fetch(`${BASE}/logout`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ refreshToken }),
+      })
+    }
+  } catch {
+    // Réseau indisponible : on se déconnecte quand même localement.
+  } finally {
+    clearTokens()
+  }
+}
+
 /** Profil renvoyé par GET /users/me (sous-ensemble utilisé par l'UI). */
 export interface MeResponse {
   id: string

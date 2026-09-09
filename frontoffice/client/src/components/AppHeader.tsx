@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { TerangaSymbol } from './Logo'
-import { isAuthenticated } from '../api/auth'
+import { isAuthenticated, seDeconnecter } from '../api/auth'
 import { discoveryApi } from '../api/discovery'
 import { messagesApi } from '../api/messages'
 import styles from './AppHeader.module.css'
@@ -21,11 +21,21 @@ import styles from './AppHeader.module.css'
  *
  * La pastille compte des **messages** non lus, pas des conversations : sur une
  * icône de messagerie, un chiffre annonce du courrier, pas un carnet d'adresses.
+ *
+ * L'avatar ouvre un menu plutôt que de mener droit au profil. La déconnexion y
+ * tient sa place : une sixième icône ne rentrerait pas dans la barre sur un
+ * téléphone, et un glyphe de déconnexion collé au bouton le plus utilisé de
+ * l'application se toucherait par erreur — or revenir demande un code par
+ * e-mail. Un intitulé écrit, dans un menu qu'il faut ouvrir, ne se touche pas
+ * par mégarde.
  */
 export default function AppHeader({ initial }: { initial?: string }) {
   const { pathname } = useLocation()
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unread, setUnread] = useState(0)
+  const [menuOuvert, setMenuOuvert] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const navigate = useNavigate()
   const signedIn = isAuthenticated()
 
   useEffect(() => {
@@ -43,6 +53,30 @@ export default function AppHeader({ initial }: { initial?: string }) {
       .catch(() => { /* idem */ })
     return () => { alive = false }
   }, [pathname, signedIn])
+
+  // Le menu se referme au changement de page : sans cela, il resterait ouvert
+  // par-dessus l'écran suivant.
+  useEffect(() => { setMenuOuvert(false) }, [pathname])
+
+  useEffect(() => {
+    if (!menuOuvert) return
+    const auClic = (e: PointerEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setMenuOuvert(false)
+    }
+    const auClavier = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOuvert(false) }
+    document.addEventListener('pointerdown', auClic)
+    document.addEventListener('keydown', auClavier)
+    return () => {
+      document.removeEventListener('pointerdown', auClic)
+      document.removeEventListener('keydown', auClavier)
+    }
+  }, [menuOuvert])
+
+  async function deconnecter() {
+    setMenuOuvert(false)
+    await seDeconnecter()
+    navigate('/', { replace: true })
+  }
 
   return (
     <header className={styles.header}>
@@ -102,9 +136,39 @@ export default function AppHeader({ initial }: { initial?: string }) {
               {unread > 0 && <span className={styles.badge}>{unread > 99 ? '99+' : unread}</span>}
             </Link>
 
-            <Link to="/mon-profil" className={styles.avatar} aria-label="Mon profil" title="Mon profil">
-              {(initial || '?').slice(0, 1).toUpperCase()}
-            </Link>
+            <div className={styles.compte} ref={menuRef}>
+              <button
+                type="button"
+                className={styles.avatar}
+                onClick={() => setMenuOuvert(o => !o)}
+                aria-haspopup="menu"
+                aria-expanded={menuOuvert}
+                aria-label="Mon compte"
+                title="Mon compte"
+              >
+                {(initial || '?').slice(0, 1).toUpperCase()}
+              </button>
+
+              {menuOuvert && (
+                <div className={styles.menu} role="menu">
+                  <Link to="/mon-profil" className={styles.menuItem} role="menuitem">
+                    Mon profil
+                  </Link>
+                  <Link to="/accueil" className={styles.menuItem} role="menuitem">
+                    Mon espace
+                  </Link>
+                  <div className={styles.menuSep} />
+                  <button
+                    type="button"
+                    className={`${styles.menuItem} ${styles.menuQuitter}`}
+                    role="menuitem"
+                    onClick={deconnecter}
+                  >
+                    Se déconnecter
+                  </button>
+                </div>
+              )}
+            </div>
           </>
         ) : (
           <div className={styles.guest}>
