@@ -49,7 +49,23 @@ export default function TiroirMessages({
   const [chargementListe, setChargementListe] = useState(false)
   const [erreurListe, setErreurListe] = useState('')
 
-  const { messages, loading, error, appendMessages } = useFilConversation(choisie)
+  /**
+   * Fermé, le tiroir n'observe plus rien.
+   *
+   * Sans ce `ouvert ?`, le hook resterait monté sur la dernière conversation
+   * choisie et continuerait de la relire toutes les 45 secondes. Or lire un fil
+   * le marque comme lu côté serveur : les messages reçus après la fermeture
+   * seraient consommés sans que personne ne les ait vus, et la pastille
+   * n'apparaîtrait jamais. C'est exactement ce qu'on refuse à l'ouverture.
+   */
+  const { messages, loading, error, appendMessages } = useFilConversation(ouvert ? choisie : '')
+
+  /** `onLu` est une nouvelle fermeture à chaque rendu du parent : la garder en
+   *  référence évite d'en faire une dépendance, qui bouclerait. */
+  const onLuRef = useRef(onLu)
+  onLuRef.current = onLu
+  /** Une lecture est en cours : sert à repérer sa fin. */
+  const lisait = useRef(false)
 
   const scroller = useRef<HTMLDivElement>(null)
   /** Vrai tant que l'utilisateur n'a pas remonté le fil : on suit alors le bas. */
@@ -105,6 +121,19 @@ export default function TiroirMessages({
     }
   }, [ouvert, onFermer])
 
+  // --- Non-lus consommés ---------------------------------------------------
+  // Le serveur marque le fil comme lu en le servant. On ne peut donc prévenir
+  // l'en-tête qu'une fois la lecture terminée : recompter au clic, comme on le
+  // faisait, interrogeait `/unread-count` avant que le serveur n'ait rien
+  // marqué — et renvoyait donc l'ancien chiffre.
+  useEffect(() => {
+    if (!choisie) return
+    if (loading) { lisait.current = true; return }
+    if (!lisait.current) return
+    lisait.current = false
+    onLuRef.current()
+  }, [choisie, loading])
+
   // --- Défilement ----------------------------------------------------------
   useEffect(() => {
     const el = scroller.current
@@ -120,10 +149,10 @@ export default function TiroirMessages({
   function ouvrir(id: string) {
     colleEnBas.current = true
     setChoisie(id)
-    // Le fil qu'on ouvre sera marqué lu par le serveur : la pastille de
-    // l'en-tête doit suivre, et celle de la vignette disparaître.
+    // La pastille de la vignette tombe tout de suite : on vient d'ouvrir le
+    // fil, l'y laisser serait mentir. Celle de l'en-tête attend la fin de la
+    // lecture (voir l'effet plus haut).
     setConversations(cs => cs.map(c => (c.id === id ? { ...c, unreadCount: 0 } : c)))
-    onLu()
   }
 
   function auEnvoi(message: Message) {
@@ -265,6 +294,12 @@ export default function TiroirMessages({
                 </div>
               ) : (
                 <MessageComposer
+                  /* `key` remonte le composeur à chaque changement
+                     d'interlocuteur. Sans elle, il garde son brouillon en
+                     état interne pendant que `send` capture, lui, la nouvelle
+                     conversation : un message commencé pour l'une partirait à
+                     l'autre. */
+                  key={choisie}
                   send={content => messagesApi.send(choisie, content)}
                   placeholder={autre ? `Écrire à ${autre.firstName}…` : 'Écrire votre message ici…'}
                   onSent={auEnvoi}
