@@ -233,7 +233,11 @@ export default function Connexion() {
     setOtpErrors({})
     setLoading(true)
     try {
-      await authApi.otpRequest({ email: adresse })
+      // Le motif est explicite. Sans lui, le serveur retombe sur son défaut
+      // (`registration`) : tous les codes de connexion étaient enregistrés
+      // comme des codes d'inscription, ce qui rend l'historique illisible dès
+      // qu'on cherche à comprendre un incident de connexion.
+      await authApi.otpRequest({ email: adresse }, 'login')
       setOtpPhase('verify')
       startCountdown()
     } catch (err: unknown) {
@@ -247,7 +251,9 @@ export default function Connexion() {
   async function resendOtp() {
     clearMessages()
     try {
-      await authApi.otpRequest({ email: adresse })
+      // Même motif que la première demande : un renvoi n'est pas une
+      // inscription.
+      await authApi.otpRequest({ email: adresse }, 'login')
       setInfo('Nouveau code envoyé !')
       startCountdown()
       setOtpReset(true)
