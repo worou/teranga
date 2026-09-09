@@ -72,9 +72,9 @@ export default function AppHeader({ initial }: { initial?: string }) {
     }
   }, [menuOuvert])
 
-  async function deconnecter() {
+  function deconnecter() {
     setMenuOuvert(false)
-    await seDeconnecter()
+    seDeconnecter()
     navigate('/', { replace: true })
   }
 
@@ -141,7 +141,7 @@ export default function AppHeader({ initial }: { initial?: string }) {
                 type="button"
                 className={styles.avatar}
                 onClick={() => setMenuOuvert(o => !o)}
-                aria-haspopup="menu"
+                aria-haspopup="true"
                 aria-expanded={menuOuvert}
                 aria-label="Mon compte"
                 title="Mon compte"
@@ -150,18 +150,25 @@ export default function AppHeader({ initial }: { initial?: string }) {
               </button>
 
               {menuOuvert && (
-                <div className={styles.menu} role="menu">
-                  <Link to="/mon-profil" className={styles.menuItem} role="menuitem">
+                <div className={styles.menu}>
+                  <Link
+                    to="/mon-profil"
+                    className={styles.menuItem}
+                    onClick={() => setMenuOuvert(false)}
+                  >
                     Mon profil
                   </Link>
-                  <Link to="/accueil" className={styles.menuItem} role="menuitem">
+                  <Link
+                    to="/accueil"
+                    className={styles.menuItem}
+                    onClick={() => setMenuOuvert(false)}
+                  >
                     Mon espace
                   </Link>
                   <div className={styles.menuSep} />
                   <button
                     type="button"
                     className={`${styles.menuItem} ${styles.menuQuitter}`}
-                    role="menuitem"
                     onClick={deconnecter}
                   >
                     Se déconnecter

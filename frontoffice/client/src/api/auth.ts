@@ -129,30 +129,29 @@ export function clearTokens() {
  * valable côté serveur, et resterait échangeable contre une session par
  * quiconque l'aurait recopié. On demande donc sa révocation.
  *
- * L'appel est délibérément « au mieux » : hors ligne, ou si le jeton d'accès a
- * déjà expiré, la requête échoue — et il serait absurde de retenir quelqu'un
- * sur un compte parce que le réseau est mauvais. Les jetons locaux sont donc
- * effacés dans tous les cas, y compris en cas d'erreur.
+ * Mais on l'efface localement AVANT, et sans attendre la réponse. Attendre le
+ * réseau pour déconnecter, c'est laisser le bouton paraître mort pendant vingt
+ * secondes là où la connexion est mauvaise — or c'est justement là que vivent
+ * nos membres. La session est finie dès l'appel ; la révocation suit si elle
+ * peut. `keepalive` pour qu'elle parte même si l'onglet se ferme dans la
+ * seconde.
  */
-export async function seDeconnecter(): Promise<void> {
+export function seDeconnecter(): void {
   const accessToken = localStorage.getItem(TOKEN_KEY)
   const refreshToken = localStorage.getItem(REFRESH_KEY)
-  try {
-    if (accessToken && refreshToken) {
-      await fetch(`${BASE}/logout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({ refreshToken }),
-      })
-    }
-  } catch {
-    // Réseau indisponible : on se déconnecte quand même localement.
-  } finally {
-    clearTokens()
-  }
+  clearTokens()
+  if (!accessToken || !refreshToken) return
+  void fetch(`${BASE}/logout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify({ refreshToken }),
+    keepalive: true,
+  }).catch(() => {
+    // Réseau indisponible : la déconnexion locale a déjà eu lieu.
+  })
 }
 
 /** Profil renvoyé par GET /users/me (sous-ensemble utilisé par l'UI). */

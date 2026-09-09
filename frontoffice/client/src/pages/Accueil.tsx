@@ -39,8 +39,8 @@ export default function Accueil() {
     return () => { alive = false }
   }, [navigate])
 
-  async function logout() {
-    await seDeconnecter()
+  function logout() {
+    seDeconnecter()
     navigate('/connexion', { replace: true })
   }
 
