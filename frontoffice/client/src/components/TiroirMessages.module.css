@@ -1,0 +1,224 @@
+/* Tiroir de messagerie — voir TiroirMessages.tsx pour les règles d'usage.
+
+   L'en-tête de l'application est en z-index 200 : le tiroir passe au-dessus,
+   sans quoi il s'ouvrirait sous la barre depuis laquelle on l'appelle. */
+
+.fond {
+  position: fixed; inset: 0; z-index: 300;
+  display: flex; justify-content: flex-end;
+  background: rgba(20, 10, 3, 0.42);
+  backdrop-filter: blur(3px);
+  animation: fondu 160ms ease both;
+}
+@keyframes fondu { from { opacity: 0 } to { opacity: 1 } }
+
+/* Le fil et la pile côte à côte : la pile sur le bord de l'écran, comme un
+   carnet posé à côté de la conversation. */
+.tiroir {
+  display: flex;
+  width: min(560px, 100%);
+  height: 100%;
+  background: var(--cream);
+  box-shadow: -18px 0 44px rgba(43, 22, 5, 0.22);
+  animation: glisse 220ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes glisse { from { transform: translateX(24px); opacity: 0.4 } to { transform: none; opacity: 1 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .fond, .tiroir { animation: none; }
+}
+
+.panneau {
+  flex: 1; min-width: 0;
+  display: flex; flex-direction: column;
+}
+
+/* ——— En-tête ——— */
+
+.entete {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(120deg, var(--terra-deep), var(--ocre-deep));
+  color: var(--sand);
+  flex-shrink: 0;
+}
+
+.qui { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+
+/* Le nom est un bouton (il mène à la fiche) mais doit se lire comme un titre. */
+.nom {
+  padding: 0; border: none; background: none;
+  font-family: Georgia, serif; font-size: 17px;
+  color: var(--sand);
+  text-align: left; cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+button.nom:hover { text-decoration: underline; }
+.verifie { margin-left: 5px; font-size: 12px; opacity: 0.9; }
+.meta { font-size: 12px; opacity: 0.82; }
+
+.fermer {
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  width: 34px; height: 34px;
+  border: none; border-radius: 50%;
+  background: rgba(253, 248, 240, 0.16);
+  color: var(--sand);
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.fermer:hover { background: rgba(253, 248, 240, 0.3); }
+.fermer:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
+
+/* ——— Fil ——— */
+
+.corps {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+}
+.cale { flex: 1 0 auto; }
+
+.vide { color: var(--ink-soft); font-size: 13.5px; text-align: center; padding: 20px 0; }
+
+.accueil {
+  align-self: center; max-width: 320px;
+  padding: 22px 20px; margin: auto 0;
+  border-radius: 14px;
+  background: rgba(184, 105, 26, 0.07);
+  border: 1px solid rgba(184, 105, 26, 0.18);
+  text-align: center;
+}
+.accueil strong {
+  display: block; margin-bottom: 8px;
+  font-family: Georgia, serif; font-size: 16px; font-weight: 400;
+  color: var(--terra-deep);
+}
+.accueil p { font-size: 13px; color: var(--ink-soft); line-height: 1.55; margin-bottom: 14px; }
+.accueil p:last-child { margin-bottom: 0; }
+
+.jour {
+  align-self: center;
+  margin: 10px 0 2px;
+  padding: 3px 12px; border-radius: 999px;
+  background: rgba(184, 105, 26, 0.12);
+  color: var(--ink-soft);
+  font-size: 11px; letter-spacing: 0.02em;
+}
+
+.bulle {
+  position: relative;
+  max-width: 78%;
+  padding: 9px 13px 20px;
+  border-radius: 14px;
+  font-size: 14px; line-height: 1.5;
+  white-space: pre-wrap; word-break: break-word;
+}
+.mienne {
+  align-self: flex-end;
+  background: var(--terra-deep); color: var(--sand);
+  border-bottom-right-radius: 4px;
+}
+.sienne {
+  align-self: flex-start;
+  background: #FFF; color: var(--ink);
+  border: 1px solid rgba(184, 105, 26, 0.16);
+  border-bottom-left-radius: 4px;
+}
+.heure {
+  position: absolute; right: 11px; bottom: 5px;
+  font-size: 10px; opacity: 0.66;
+}
+
+/* ——— Pied : composeur et sortie vers l'écran complet ——— */
+
+.pied {
+  flex-shrink: 0;
+  border-top: 1px solid rgba(184, 105, 26, 0.16);
+  background: var(--cream);
+}
+
+.relance { padding: 16px; text-align: center; }
+.relance strong {
+  display: block; margin-bottom: 10px;
+  font-family: Georgia, serif; font-weight: 400; color: var(--terra-deep);
+}
+
+.toutVoir {
+  display: block; padding: 9px 16px;
+  font-size: 12.5px; color: var(--terra-deep);
+  text-align: center; text-decoration: none;
+  border-top: 1px solid rgba(184, 105, 26, 0.12);
+}
+.toutVoir:hover { background: rgba(184, 105, 26, 0.08); }
+
+/* ——— La pile des vignettes ——— */
+
+.pile {
+  flex-shrink: 0;
+  width: 64px;
+  overflow-y: auto; overscroll-behavior: contain;
+  display: flex; flex-direction: column; align-items: center;
+  gap: 10px;
+  padding: 14px 0;
+  background: rgba(184, 105, 26, 0.07);
+  border-left: 1px solid rgba(184, 105, 26, 0.16);
+}
+/* Une barre de défilement classique gâcherait une colonne de 64 px. */
+.pile { scrollbar-width: none; }
+.pile::-webkit-scrollbar { display: none; }
+
+.pileItem {
+  padding: 0; border: none; background: none; cursor: pointer;
+  border-radius: 50%;
+  line-height: 0;
+  transition: transform 0.15s ease;
+}
+.pileItem:hover { transform: scale(1.08); }
+.pileItem:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: 3px; }
+
+/* L'anneau désigne la conversation ouverte : dans une colonne de visages
+   tous ronds, la couleur seule ne suffirait pas à la repérer. */
+.pileActif .vignette { box-shadow: 0 0 0 2.5px var(--ocre-deep); }
+
+.vignette {
+  position: relative;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  overflow: visible;
+  background: var(--terra-deep);
+  flex-shrink: 0;
+}
+.vignette img {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+}
+.initiale {
+  font-family: Georgia, serif; font-size: 16px;
+  color: var(--sand);
+}
+
+.pastille {
+  position: absolute; top: -3px; right: -3px;
+  min-width: 17px; height: 17px; padding: 0 4px;
+  border-radius: 9px;
+  background: var(--ocre-deep);
+  color: var(--cream);
+  font-size: 10px; font-weight: 700; line-height: 17px;
+  text-align: center;
+  border: 2px solid var(--cream);
+  box-sizing: content-box;
+}
+
+/* Sur téléphone le tiroir prend tout l'écran : 560 px n'y tiennent pas. La
+   pile se resserre mais reste — c'est elle qu'on est venu chercher. */
+@media (max-width: 640px) {
+  .tiroir { width: 100%; }
+  .pile { width: 54px; gap: 8px; }
+  .bulle { max-width: 84%; }
+  .corps { padding: 12px; }
+}

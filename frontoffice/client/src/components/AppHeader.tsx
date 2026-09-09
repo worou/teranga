@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { TerangaSymbol } from './Logo'
 import { isAuthenticated, seDeconnecter } from '../api/auth'
+import TiroirMessages from './TiroirMessages'
 import { discoveryApi } from '../api/discovery'
 import { messagesApi } from '../api/messages'
 import styles from './AppHeader.module.css'
@@ -34,6 +35,14 @@ export default function AppHeader({ initial }: { initial?: string }) {
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unread, setUnread] = useState(0)
   const [menuOuvert, setMenuOuvert] = useState(false)
+  const [tiroirOuvert, setTiroirOuvert] = useState(false)
+  /**
+   * Le compteur de non-lus ne se relisait qu'au changement de page. Un tiroir
+   * ne change pas d'URL : sans ce déclencheur, lire une conversation dedans
+   * laissait la pastille afficher son ancien chiffre jusqu'à la navigation
+   * suivante.
+   */
+  const [relire, setRelire] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
   const signedIn = isAuthenticated()
@@ -52,11 +61,11 @@ export default function AppHeader({ initial }: { initial?: string }) {
       .then(r => { if (alive) setUnread((r.data || []).filter(n => !n.readAt).length) })
       .catch(() => { /* idem */ })
     return () => { alive = false }
-  }, [pathname, signedIn])
+  }, [pathname, signedIn, relire])
 
   // Le menu se referme au changement de page : sans cela, il resterait ouvert
   // par-dessus l'écran suivant.
-  useEffect(() => { setMenuOuvert(false) }, [pathname])
+  useEffect(() => { setMenuOuvert(false); setTiroirOuvert(false) }, [pathname])
 
   useEffect(() => {
     if (!menuOuvert) return
@@ -79,6 +88,7 @@ export default function AppHeader({ initial }: { initial?: string }) {
   }
 
   return (
+    <>
     <header className={styles.header}>
       <Link to={signedIn ? '/decouverte' : '/'} className={styles.logo}>
         <TerangaSymbol size={32} />
@@ -101,9 +111,14 @@ export default function AppHeader({ initial }: { initial?: string }) {
           <>
             {/* Le cœur menait à l'espace membre faute de messagerie ; il mène
                 désormais aux conversations. */}
-            <Link
-              to="/messages"
-              className={`${styles.counter} ${pathname.startsWith('/messages') ? styles.active : ''}`}
+            {/* Un bouton, plus un lien : la messagerie s'ouvre en tiroir
+                par-dessus la page qu'on lisait. L'écran complet reste
+                atteignable depuis le pied du tiroir. */}
+            <button
+              type="button"
+              className={`${styles.counter} ${tiroirOuvert || pathname.startsWith('/messages') ? styles.active : ''}`}
+              onClick={() => setTiroirOuvert(o => !o)}
+              aria-expanded={tiroirOuvert}
               aria-label="Mes conversations"
               title="Mes conversations"
             >
@@ -113,7 +128,7 @@ export default function AppHeader({ initial }: { initial?: string }) {
               {unreadMessages > 0 && (
                 <span className={styles.badge}>{unreadMessages > 99 ? '99+' : unreadMessages}</span>
               )}
-            </Link>
+            </button>
 
             {/* Marque-page et non cœur : le cœur sert déjà aux conversations
                 dans cette barre, deux glyphes identiques s'y confondraient. */}
@@ -187,5 +202,18 @@ export default function AppHeader({ initial }: { initial?: string }) {
         )}
       </nav>
     </header>
+
+    {/* HORS du <header> à dessein : celui-ci porte un `backdrop-filter`, qui
+        fait de lui le bloc conteneur de ses descendants `position: fixed`. Un
+        tiroir placé dedans serait enfermé dans une barre de 70 px de haut au
+        lieu de couvrir l'écran. */}
+    {signedIn && (
+      <TiroirMessages
+        ouvert={tiroirOuvert}
+        onFermer={() => setTiroirOuvert(false)}
+        onLu={() => setRelire(n => n + 1)}
+      />
+    )}
+    </>
   )
 }
