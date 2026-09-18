@@ -235,6 +235,7 @@ model User {
   trustedCircleAsOwner TrustedCircle[]  @relation("CircleOwner")
   trustedCircleAsTrustee TrustedCircle[] @relation("CircleTrustee")
   notifications     Notification[]
+  consultations     Consultation[]
 
   @@index([phone])
   @@index([email])
@@ -564,5 +565,87 @@ model Admin {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // ——— Volet « assistant » ———
+  //
+  // Un administrateur peut proposer des consultations payantes aux membres.
+  // Tant que `isAssistant` est faux, rien de ce qui suit n'est montré : c'est
+  // un compte de modération ordinaire.
+  //
+  // ⚠️ AUCUN champ de ce modèle n'est servi tel quel à un membre. Le seul
+  // chemin autorisé est `serializeAssistant()`, qui reconstruit un objet champ
+  // par champ. Une diffusion par étalement exposerait `email` et
+  // `passwordHash` le jour où quelqu'un ajoute une propriété ici.
+  isAssistant     Boolean  @default(false)
+  /// Nom montré aux membres — distinct de `name`, qui est l'identité interne.
+  assistantName   String?
+  /// Reprend l'énumération des membres : le filtre « homme ou femme » compare
+  /// alors deux valeurs de même nature, pas une énumération à du texte libre.
+  assistantGender Gender?
+  bio             String?  @db.Text
+  /// Liste courte séparée par des virgules. Suffisant tant qu'on ne filtre pas
+  /// dessus ; le jour où l'on voudra le faire, il faudra une vraie table.
+  specialities    String?
+  photoUrl        String?
+  /// Coordonnées RÉVÉLÉES UNIQUEMENT après confirmation d'une consultation, et
+  /// seulement à son membre. C'est toute la valeur commerciale du dispositif :
+  /// les servir ailleurs revient à donner le service gratuitement.
+  contactPhone    String?
+  contactWhatsapp String?
+  /// Forfait : un montant pour une durée. Recopiés dans la consultation au
+  /// moment de la demande, pour qu'un changement de tarif ne réécrive pas ce
+  /// qui a été convenu.
+  priceFcfa       Int?
+  durationDays    Int?
+  /// Permet de se retirer temporairement sans perdre sa fiche.
+  isAvailable     Boolean  @default(true)
+
+  consultations   Consultation[]
+
   @@index([email])
+  @@index([isAssistant, isAvailable])
+}
+
+// Demande de consultation d'un membre auprès d'un assistant.
+//
+// Le règlement se fait hors ligne pour l'instant : un administrateur confirme
+// la demande une fois le paiement reçu, et c'est cette confirmation qui ouvre
+// l'accès aux coordonnées. Le jour où CinetPay sera configuré, c'est le
+// webhook de paiement qui confirmera — le reste du parcours ne bouge pas.
+//
+// `status` ne consigne que des décisions HUMAINES. L'expiration, elle, se
+// déduit de `expiresAt` à chaque lecture : sans tâche planifiée dans cette
+// application, un statut « expiré » que rien n'écrit serait un champ qui ment.
+model Consultation {
+  id           String    @id @default(uuid())
+  userId       String
+  adminId      String
+
+  /// PENDING | CONFIRMED | REJECTED | CANCELLED — jamais EXPIRED, voir plus haut.
+  status       String    @default("PENDING")
+
+  /// Instantané du forfait au moment de la demande.
+  priceFcfa    Int
+  durationDays Int
+
+  /// Ce que le membre dit chercher, écrit au moment de la demande.
+  memberNote   String?   @db.Text
+
+  startsAt     DateTime?
+  expiresAt    DateTime?
+  confirmedAt  DateTime?
+  /// Quel administrateur a confirmé — traçabilité d'une décision qui donne
+  /// accès à des coordonnées personnelles.
+  confirmedBy  String?
+  /// Motif d'un refus, montré au membre.
+  refusedFor   String?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  admin        Admin     @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([adminId, status])
+  @@index([status, createdAt])
 }

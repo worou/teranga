@@ -25,6 +25,7 @@ import paymentsRoutes from './routes/payments.routes';
 import adminPaymentsRoutes from './routes/adminPayments.routes';
 import webhooksRoutes from './routes/webhooks.routes';
 import featuresRoutes from './routes/features.routes';
+import assistantsRoutes from './routes/assistants.routes';
 
 // Sockets
 import { initSockets } from './sockets';
@@ -176,6 +177,9 @@ app.use('/api/v1', conversationsRoutes); // /conversations/*
 // à tout `/api/v1` et tuait les routes déclarées après lui.
 app.use('/api/v1', paymentsRoutes);
 app.use('/api/v1', featuresRoutes);    // /events, /moderation, /trusted-circle, /notifications
+// Assistants : les administrateurs qui proposent des consultations payantes.
+// Aucun garde d'abonnement ici — le règlement se fait hors ligne pour l'instant.
+app.use('/api/v1', assistantsRoutes);  // /assistants/*
 
 // SPA fallback — React Router gère le routing côté client.
 //
