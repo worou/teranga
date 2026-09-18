@@ -11,6 +11,7 @@ import {
   GENRE_ASSISTANT,
   type Assistant,
   type Consultation,
+  type Formule,
 } from '../api/assistants'
 import styles from './Assistants.module.css'
 
@@ -215,8 +216,16 @@ export default function Assistants() {
               {a.bio && <p className={styles.bio}>{a.bio}</p>}
 
               <div className={styles.forfait}>
-                <strong>{formatPrix(a.priceFcfa)}</strong>
-                <span>pour {formatDuree(a.durationDays)}</span>
+                <div className={styles.forfaitLigne}>
+                  <strong>{formatPrix(a.priceFcfa)}</strong>
+                  <span>la semaine</span>
+                </div>
+                {a.priceMonthFcfa ? (
+                  <div className={styles.forfaitLigne}>
+                    <strong>{formatPrix(a.priceMonthFcfa)}</strong>
+                    <span>le mois</span>
+                  </div>
+                ) : null}
               </div>
 
               <button
@@ -271,6 +280,7 @@ function FenetreDemande({
   onEnvoye: () => void
 }) {
   const [note, setNote] = useState('')
+  const [formule, setFormule] = useState<Formule>('semaine')
   const [envoi, setEnvoi] = useState(false)
   const [erreur, setErreur] = useState('')
 
@@ -284,7 +294,7 @@ function FenetreDemande({
     setEnvoi(true)
     setErreur('')
     try {
-      await assistantsApi.demander(assistant.id, note)
+      await assistantsApi.demander(assistant.id, note, formule)
       onEnvoye()
     } catch (e) {
       setErreur(e instanceof Error ? e.message : 'Envoi impossible.')
@@ -297,15 +307,38 @@ function FenetreDemande({
       <div className={styles.fenetre} role="dialog" aria-modal="true" aria-label="Demander une consultation">
         <h2 className={styles.fenetreTitre}>Consulter {assistant.name}</h2>
 
-        <div className={styles.recap}>
-          <strong>{formatPrix(assistant.priceFcfa)}</strong> pour {formatDuree(assistant.durationDays)}
-        </div>
+        {/* Le choix ne s'affiche que s'il y a un choix : proposer « au mois »
+            sans tarif mensuel serait promettre un prix qui n'existe pas. */}
+        {assistant.priceMonthFcfa ? (
+          <div className={styles.formules}>
+            <button
+              type="button"
+              className={`${styles.formule} ${formule === 'semaine' ? styles.formuleOn : ''}`}
+              onClick={() => setFormule('semaine')}
+            >
+              <strong>{formatPrix(assistant.priceFcfa)}</strong>
+              <span>la semaine</span>
+            </button>
+            <button
+              type="button"
+              className={`${styles.formule} ${formule === 'mois' ? styles.formuleOn : ''}`}
+              onClick={() => setFormule('mois')}
+            >
+              <strong>{formatPrix(assistant.priceMonthFcfa)}</strong>
+              <span>le mois</span>
+            </button>
+          </div>
+        ) : (
+          <div className={styles.recap}>
+            <strong>{formatPrix(assistant.priceFcfa)}</strong> pour une semaine
+          </div>
+        )}
 
         <p className={styles.fenetreTexte}>
           Rien n'est prélevé maintenant. Votre demande est transmise à notre
           équipe, qui vous contacte pour le règlement. Une fois celui-ci reçu,
           les coordonnées de {assistant.name} vous sont communiquées ici même,
-          pour {formatDuree(assistant.durationDays)}.
+          pour {formule === 'mois' ? 'un mois' : 'une semaine'}.
         </p>
 
         <label className={styles.champLabel} htmlFor="note-consultation">

@@ -64,7 +64,10 @@ function lireFiche(body: any) {
     contactPhone: texte(body?.contactPhone, 40),
     contactWhatsapp: texte(body?.contactWhatsapp, 40),
     priceFcfa: nombre(body?.priceFcfa),
-    durationDays: nombre(body?.durationDays),
+    priceMonthFcfa: nombre(body?.priceMonthFcfa),
+    // Les nouvelles fiches valent 7 : la formule de base est hebdomadaire.
+    // Le champ n'est plus demandé, il reste pour les fiches antérieures.
+    durationDays: nombre(body?.durationDays) || 7,
   };
 }
 
@@ -87,6 +90,7 @@ router.get(
         contactPhone: true,
         contactWhatsapp: true,
         priceFcfa: true,
+        priceMonthFcfa: true,
         durationDays: true,
       },
     });
@@ -110,8 +114,8 @@ router.put(
 
     if (data.isAssistant) {
       if (!data.assistantName) throw AppError.badRequest('Un nom affiché est nécessaire.');
-      if (!data.priceFcfa || !data.durationDays) {
-        throw AppError.badRequest('Un forfait — montant et durée — est nécessaire.');
+      if (!data.priceFcfa) {
+        throw AppError.badRequest('Un tarif à la semaine est nécessaire : c’est la formule de base.');
       }
       if (req.body?.photoUrl && String(req.body.photoUrl).trim() && !data.photoUrl) {
         throw AppError.badRequest(

@@ -1,0 +1,82 @@
+/* Conseils généraux — page publique. Voir Conseils.tsx. */
+
+.page { min-height: 100vh; background: var(--cream); padding-top: 70px; }
+.wrap { max-width: 760px; margin: 0 auto; padding: 30px 32px 90px; }
+
+.head { margin-bottom: 30px; }
+.eyebrow {
+  display: block; margin-bottom: 10px;
+  font-size: 11px; letter-spacing: 0.18em; color: var(--ocre-deep);
+}
+.title {
+  font-family: Georgia, serif; font-size: 38px; font-weight: 400;
+  color: var(--terra-deep); line-height: 1.15;
+}
+.title em { font-style: normal; color: var(--ocre-deep); }
+.lead { color: var(--ink-soft); font-size: 14.5px; margin-top: 8px; line-height: 1.6; }
+
+.alertError {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 14px; margin-bottom: 16px; border-radius: 10px;
+  background: rgba(192, 57, 43, 0.1); border: 1px solid rgba(192, 57, 43, 0.3);
+  color: #8B2A20; font-size: 13.5px;
+}
+.muted { color: var(--ink-soft); font-size: 14px; }
+
+.articles { display: flex; flex-direction: column; gap: 16px; }
+
+.article {
+  padding: 24px 26px;
+  border-radius: 16px;
+  background: #FFF;
+  border: 1px solid rgba(184, 105, 26, 0.16);
+  box-shadow: 0 2px 10px rgba(43, 22, 5, 0.04);
+  /* Ancre atteignable sans passer sous l'en-tête fixe. */
+  scroll-margin-top: 86px;
+}
+.articleTitre {
+  font-family: Georgia, serif; font-size: 21px; font-weight: 400;
+  color: var(--terra-deep); margin-bottom: 12px;
+}
+.articleCorps { font-size: 14.5px; line-height: 1.7; color: var(--ink); }
+.para { margin: 0 0 2px; }
+.para strong { color: var(--terra-deep); }
+/* Une ligne vide dans le texte source : un vrai blanc, pas un paragraphe nul. */
+.espace { height: 10px; margin: 0; }
+
+.vide {
+  padding: 40px 24px; border-radius: 16px; text-align: center;
+  background: rgba(184, 105, 26, 0.07);
+  border: 1px solid rgba(184, 105, 26, 0.18);
+}
+.vide h2 {
+  font-family: Georgia, serif; font-size: 19px; font-weight: 400;
+  color: var(--terra-deep); margin-bottom: 8px;
+}
+.vide p { font-size: 13.5px; color: var(--ink-soft); }
+
+/* On donne d'abord, on propose ensuite — d'où la position, tout en bas. */
+.offre {
+  margin-top: 30px;
+  padding: 26px;
+  border-radius: 16px;
+  background: linear-gradient(120deg, rgba(91, 46, 12, 0.96), rgba(184, 105, 26, 0.94));
+  color: var(--sand);
+  text-align: center;
+}
+.offre strong {
+  display: block; margin-bottom: 10px;
+  font-family: Georgia, serif; font-size: 20px; font-weight: 400;
+}
+.offre p {
+  font-size: 14px; line-height: 1.65; opacity: 0.93;
+  max-width: 480px; margin: 0 auto 18px;
+}
+.note { display: block; margin-top: 10px; font-size: 12px; opacity: 0.8; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 22px 16px 80px; }
+  .title { font-size: 30px; }
+  .article { padding: 20px; }
+  .offre { padding: 22px 18px; }
+}

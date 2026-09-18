@@ -181,6 +181,13 @@ export default function AppHeader({ initial }: { initial?: string }) {
                     Mon espace
                   </Link>
                   <Link
+                    to="/conseils"
+                    className={styles.menuItem}
+                    onClick={() => setMenuOuvert(false)}
+                  >
+                    Conseils généraux
+                  </Link>
+                  <Link
                     to="/assistants"
                     className={styles.menuItem}
                     onClick={() => setMenuOuvert(false)}
@@ -201,6 +208,7 @@ export default function AppHeader({ initial }: { initial?: string }) {
           </>
         ) : (
           <div className={styles.guest}>
+            <Link to="/conseils" className={styles.guestLink}>Conseils</Link>
             <Link to="/connexion" className={styles.guestLink}>Se connecter</Link>
             <Link to="/inscription" className={`btn btn-primary ${styles.guestCta}`}>
               Créer mon compte

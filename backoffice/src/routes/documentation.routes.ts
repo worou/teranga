@@ -23,6 +23,8 @@ const CLE = 'documentation';
 
 interface Section {
   id: string;
+  /** 'aide' est donnee au chatbot ; 'conseils' ne l'est jamais. */
+  categorie: 'aide' | 'conseils';
   titre: string;
   motsCles: string[];
   contenu: string;
@@ -80,7 +82,12 @@ router.put(
         .map((m: any) => String(m).trim().toLowerCase())
         .filter(Boolean);
 
-      return { id, titre, motsCles, contenu };
+      // Toute valeur inconnue retombe sur 'aide'. Se tromper dans ce sens est
+      // sans danger : au pire une section de conseil rejoint le contexte du
+      // chatbot. L'inverse — une page d'aide classee en conseil — la
+      // retirerait silencieusement de ses reponses.
+      const categorie = s?.categorie === 'conseils' ? 'conseils' : 'aide';
+      return { id, categorie, titre, motsCles, contenu };
     });
 
     const value = JSON.stringify(sections);

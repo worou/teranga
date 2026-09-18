@@ -116,6 +116,7 @@ const ASSISTANT_AVEC_CONTACT = {
   specialities: true,
   photoUrl: true,
   priceFcfa: true,
+  priceMonthFcfa: true,
   durationDays: true,
   isAvailable: true,
   contactPhone: true,
@@ -130,7 +131,12 @@ export const consultationsService = {
    * montré au membre, et c'est ce qui l'engage. Modifier son forfait ensuite ne
    * doit pas réécrire un accord déjà pris.
    */
-  async request(userId: string, adminId: string, memberNote?: string) {
+  async request(
+    userId: string,
+    adminId: string,
+    memberNote?: string,
+    formule: 'semaine' | 'mois' = 'semaine',
+  ) {
     const assistant = await prisma.admin.findFirst({
       where: {
         id: adminId,
@@ -140,9 +146,19 @@ export const consultationsService = {
         priceFcfa: { not: null, gt: 0 },
         durationDays: { not: null, gt: 0 },
       },
-      select: { id: true, priceFcfa: true, durationDays: true },
+      select: { id: true, priceFcfa: true, priceMonthFcfa: true, durationDays: true },
     });
     if (!assistant) throw AppError.notFound('Assistant indisponible');
+
+    // La formule choisie décide du couple montant/durée recopié. Le mois n'est
+    // proposé que si l'assistant l'a renseigné : le demander sans tarif
+    // reviendrait à inventer un prix.
+    const auMois = formule === 'mois';
+    if (auMois && !assistant.priceMonthFcfa) {
+      throw AppError.badRequest('Cet assistant ne propose pas de forfait au mois.');
+    }
+    const montant = auMois ? assistant.priceMonthFcfa! : assistant.priceFcfa!;
+    const jours = auMois ? 30 : assistant.durationDays || 7;
 
     // Une demande en cours suffit. Sans ce garde, un membre impatient
     // empilerait les demandes et la file de validation deviendrait illisible.
@@ -162,8 +178,8 @@ export const consultationsService = {
       data: {
         userId,
         adminId,
-        priceFcfa: assistant.priceFcfa!,
-        durationDays: assistant.durationDays!,
+        priceFcfa: montant,
+        durationDays: jours,
         memberNote: memberNote?.trim() || null,
       },
       include: { admin: { select: ASSISTANT_AVEC_CONTACT } },

@@ -144,8 +144,29 @@
   width: 100%;
   display: flex; flex-direction: column; gap: 2px;
 }
+.forfaitLigne { display: flex; align-items: baseline; justify-content: center; gap: 6px; }
 .forfait strong { font-family: Georgia, serif; font-size: 20px; color: var(--ocre-deep); font-weight: 400; }
 .forfait span { font-size: 12px; color: var(--ink-soft); }
+
+/* Choix de la formule : deux boutons de meme poids. Aucun n'est pousse en
+   avant — c'est au membre de savoir de combien de temps il a besoin. */
+.formules { display: flex; gap: 10px; margin-bottom: 16px; }
+.formule {
+  flex: 1;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 14px 10px;
+  border: 1.5px solid rgba(184, 105, 26, 0.3); border-radius: 12px;
+  background: #FFF; font: inherit; cursor: pointer;
+  transition: all 0.18s ease;
+}
+.formule:hover { border-color: var(--ocre-deep); }
+.formule strong {
+  font-family: Georgia, serif; font-size: 19px; font-weight: 400;
+  color: var(--terra-deep);
+}
+.formule span { font-size: 12px; color: var(--ink-soft); }
+.formuleOn { border-color: var(--terra-deep); background: rgba(184, 105, 26, 0.12); }
+.formuleOn strong { color: var(--ocre-deep); }
 
 .demanderBtn { margin-top: 14px; width: 100%; }
 

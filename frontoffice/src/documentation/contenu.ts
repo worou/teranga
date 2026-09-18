@@ -26,6 +26,26 @@
 export interface SectionDoc {
   /** Identifiant stable : sert d'ancre et de clé de mise à jour. */
   id: string;
+  /**
+   * À qui la section s'adresse, et surtout : ce que le chatbot a le droit de
+   * lire.
+   *
+   *   'aide'     — comment le site fonctionne. SEULE catégorie donnée au
+   *                modèle.
+   *   'conseils' — conseils généraux sur la rencontre, publiés sur /conseils.
+   *                Lus par des humains, JAMAIS par le chatbot.
+   *
+   * Cette séparation n'est pas cosmétique. Sur un site matrimonial, une
+   * question de conseil amène tôt ou tard un conjoint violent, une pression
+   * familiale, une histoire de dot ou d'argent. Un automate qui répondrait à
+   * cela depuis une FAQ serait au mieux inutile, au pire dangereux — et il
+   * viderait de son sens l'accompagnement humain, qui est payant. Le chatbot
+   * continue donc de renvoyer ces situations vers un assistant.
+   *
+   * Absente, la catégorie vaut 'aide' : les sections écrites avant l'existence
+   * de ce champ décrivent toutes le fonctionnement du site.
+   */
+  categorie?: 'aide' | 'conseils';
   titre: string;
   /**
    * Mots que quelqu'un taperait pour trouver cette section — y compris les
@@ -331,5 +351,71 @@ export const DOCUMENTATION: SectionDoc[] = [
       "Pour tout le reste — un compte bloqué, un comportement anormal, une question à laquelle " +
       "cette aide ne répond pas — écrivez à notre équipe. Décrivez ce que vous faisiez, " +
       "ce que vous attendiez, et ce qui s’est passé à la place : cela nous fait gagner un aller-retour.",
+  },
+
+  // ——— Conseils généraux ———
+  //
+  // Lus sur /conseils, par des humains. Le chatbot ne les voit pas : voir la
+  // note sur `categorie` en tête de fichier.
+  {
+    id: 'conseil-profil',
+    categorie: 'conseils',
+    titre: 'Un profil qu’on a envie de lire',
+    motsCles: ['profil', 'photo', 'presentation', 'attirer', 'soigner'],
+    contenu:
+      "Une photo de visage, nette, prise à la lumière du jour, en vaut dix prises de loin. " +
+      "On cherche quelqu’un à qui parler, pas une silhouette.\n\n" +
+      "Dans votre présentation, préférez le précis au général. « J’aime la cuisine » ne dit rien ; " +
+      "« je fais le meilleur mafé de mon quartier, et j’en suis assez fier » donne une prise, " +
+      "de quoi vous écrire.\n\n" +
+      "Dites ce que vous cherchez, calmement et sans liste d’exigences. " +
+      "Un profil qui énumère des conditions se lit comme un concours ; un profil qui raconte " +
+      "se lit comme une invitation.",
+  },
+  {
+    id: 'conseil-premier-message',
+    categorie: 'conseils',
+    titre: 'Le premier message',
+    motsCles: ['premier message', 'aborder', 'ecrire', 'commencer', 'salut'],
+    contenu:
+      "« Salut » n’appelle aucune réponse. Il demande à l’autre de faire tout le travail.\n\n" +
+      "Lisez le profil, et accrochez-vous à un détail : un métier, une ville, un centre d’intérêt. " +
+      "Une question précise sur quelque chose que la personne a choisi de montrer prouve que vous " +
+      "avez regardé — c’est déjà beaucoup.\n\n" +
+      "Trois ou quatre lignes suffisent. Un message trop long met la pression ; un message sans " +
+      "question ne laisse pas de porte ouverte.\n\n" +
+      "Et si l’on ne vous répond pas, n’insistez pas. Le silence est une réponse, " +
+      "et la relancer plusieurs fois ne l’a jamais changée.",
+  },
+  {
+    id: 'conseil-rythme',
+    categorie: 'conseils',
+    titre: 'Prendre son temps, sans le perdre',
+    motsCles: ['rythme', 'temps', 'trop vite', 'confiance', 'rencontrer'],
+    contenu:
+      "Les échanges qui durent des mois sans jamais aboutir à un appel ou à une rencontre " +
+      "finissent presque toujours mal. À l’inverse, se précipiter met mal à l’aise.\n\n" +
+      "Un repère simple : après une ou deux semaines d’échanges réguliers, proposez un appel — " +
+      "vidéo de préférence. La voix et le visage disent en cinq minutes ce que cent messages " +
+      "laissent deviner.\n\n" +
+      "Quelqu’un qui refuse systématiquement tout appel, qui a toujours une caméra cassée " +
+      "ou un emploi du temps impossible, vous dit quelque chose. Écoutez-le.",
+  },
+  {
+    id: 'conseil-famille',
+    categorie: 'conseils',
+    titre: 'Présenter quelqu’un à sa famille',
+    motsCles: ['famille', 'parents', 'presenter', 'rencontre', 'tradition', 'dot'],
+    contenu:
+      "Chez nous, une rencontre n’engage pas deux personnes seulement. " +
+      "En parler tôt aux siens évite les surprises ; en parler trop tôt met une pression " +
+      "que la relation ne peut pas encore porter.\n\n" +
+      "Mettez-vous d’accord, tous les deux, sur ce que vous direz et sur le moment. " +
+      "Une famille qui apprend les choses par un tiers les accueille rarement bien.\n\n" +
+      "Les questions de traditions, de dot et d’attentes familiales se discutent entre vous " +
+      "avant d’être portées devant les aînés. Ce sont des sujets où chacun croit que l’autre " +
+      "pense comme lui.\n\n" +
+      "Si ces conversations vous inquiètent, nos assistantes et assistants les ont menées " +
+      "des dizaines de fois.",
   },
 ];

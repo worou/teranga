@@ -11,10 +11,16 @@ export interface Assistant {
   bio: string | null
   specialities: string[]
   photoUrl: string | null
+  /** Tarif a la semaine, toujours propose. */
   priceFcfa: number
   durationDays: number
+  /** Tarif au mois, `null` si l'assistant ne propose que la semaine. */
+  priceMonthFcfa: number | null
   isAvailable: boolean
 }
+
+/** Les deux formules. La semaine existe toujours, le mois est facultatif. */
+export type Formule = 'semaine' | 'mois'
 
 export type StatutConsultation = 'PENDING' | 'CONFIRMED' | 'REJECTED' | 'CANCELLED'
 
@@ -72,10 +78,10 @@ export const assistantsApi = {
     request<{ data: Consultation[] }>('/consultations').then(r => r.data),
 
   /** Demander une consultation. La note est facultative. */
-  demander: (assistantId: string, note?: string) =>
+  demander: (assistantId: string, note?: string, formule: Formule = 'semaine') =>
     request<Consultation>('/consultations', {
       method: 'POST',
-      body: JSON.stringify({ assistantId, note }),
+      body: JSON.stringify({ assistantId, note, formule }),
     }),
 
   /** Annuler une demande encore en attente. */

@@ -12,6 +12,8 @@ const router = Router();
 const demandeSchema = z.object({
   assistantId: z.string().min(1),
   note: z.string().max(1000).optional(),
+  /** Défaut : la semaine, seule formule toujours proposée. */
+  formule: z.enum(['semaine', 'mois']).optional(),
 });
 
 /**
@@ -128,6 +130,7 @@ router.post(
       req.auth!.userId,
       req.body.assistantId,
       req.body.note,
+      req.body.formule ?? 'semaine',
     );
     res.status(201).json(c);
   }),

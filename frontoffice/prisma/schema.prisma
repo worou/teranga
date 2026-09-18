@@ -591,10 +591,15 @@ model Admin {
   /// les servir ailleurs revient à donner le service gratuitement.
   contactPhone    String?
   contactWhatsapp String?
-  /// Forfait : un montant pour une durée. Recopiés dans la consultation au
-  /// moment de la demande, pour qu'un changement de tarif ne réécrive pas ce
-  /// qui a été convenu.
+  /// Forfait À LA SEMAINE : le tarif de base, toujours proposé.
   priceFcfa       Int?
+  /// Forfait AU MOIS, facultatif. Renseigné, le membre choisit entre les deux ;
+  /// laissé vide, seule la semaine est proposée.
+  priceMonthFcfa  Int?
+  /// Durée de la formule hebdomadaire, en jours. Conservée pour les fiches
+  /// créées avant l'introduction du choix semaine/mois, où la durée était
+  /// libre. Les nouvelles valent 7 ; la consultation, elle, garde SA propre
+  /// durée, recopiée au moment de la demande — c'est elle qui fait foi.
   durationDays    Int?
   /// Permet de se retirer temporairement sans perdre sa fiche.
   isAvailable     Boolean  @default(true)

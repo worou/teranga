@@ -50,6 +50,21 @@ export async function lireDocumentation(): Promise<SectionDoc[]> {
   return sections;
 }
 
+/**
+ * Les sections que le CHATBOT a le droit de lire.
+ *
+ * Uniquement `aide` — comment le site fonctionne. Les conseils généraux sont
+ * écrits pour être lus par des humains sur /conseils ; les verser au modèle
+ * en ferait un conseiller sentimental, ce qu'il ne doit pas être. Voir la note
+ * sur `categorie` dans `documentation/contenu.ts`.
+ *
+ * Une section sans catégorie compte comme `aide` : elle a été écrite avant
+ * l'existence du champ, et décrit donc le fonctionnement du site.
+ */
+export function estAide(s: SectionDoc): boolean {
+  return (s.categorie ?? 'aide') === 'aide';
+}
+
 /** Vide le cache — appelé après une écriture, pour ne pas attendre 15 s. */
 export function oublierDocumentation(): void {
   cache = null;
@@ -111,7 +126,8 @@ export interface Resultat {
  * tant que Claude n'est pas branché : mieux vaut ne rien répondre qu'inventer.
  */
 export async function chercher(question: string, maxi = 3): Promise<Resultat[]> {
-  const sections = await lireDocumentation();
+  // Le garde-fou : la recherche du chatbot ne voit que l'aide.
+  const sections = (await lireDocumentation()).filter(estAide);
   const mots = motsUtiles(question);
   if (mots.length === 0) return [];
 
@@ -139,7 +155,8 @@ export async function chercher(question: string, maxi = 3): Promise<Resultat[]> 
 
 /** La documentation entière, mise à plat — ce que lit le modèle. */
 export async function documentationEnTexte(): Promise<string> {
-  const sections = await lireDocumentation();
+  // Idem : le contexte donné au modèle ne contient QUE l'aide.
+  const sections = (await lireDocumentation()).filter(estAide);
   return sections
     .map((s) => `## ${s.titre}\n\n${s.contenu}`)
     .join('\n\n---\n\n');

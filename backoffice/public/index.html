@@ -873,14 +873,20 @@
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={etiquette}>Forfait (F CFA)</label>
+                <label className={etiquette}>Tarif à la semaine (F CFA)</label>
                 <input type="number" min="1" className={champ} value={v.priceFcfa || ''}
                   onChange={e => set('priceFcfa', e.target.value)} placeholder="5000" />
+                <p className="text-xs text-stone-500 mt-1">Obligatoire : c’est la formule de base.</p>
               </div>
               <div>
-                <label className={etiquette}>Durée (jours)</label>
-                <input type="number" min="1" className={champ} value={v.durationDays || ''}
-                  onChange={e => set('durationDays', e.target.value)} placeholder="7" />
+                <label className={etiquette}>
+                  Tarif au mois (F CFA) <span className="font-normal text-stone-400">(facultatif)</span>
+                </label>
+                <input type="number" min="1" className={champ} value={v.priceMonthFcfa || ''}
+                  onChange={e => set('priceMonthFcfa', e.target.value)} placeholder="15000" />
+                <p className="text-xs text-stone-500 mt-1">
+                  Laissé vide, seule la semaine est proposée aux membres.
+                </p>
               </div>
             </div>
 
@@ -1078,7 +1084,7 @@
       }
 
       function ajouter() {
-        setSections([...v, { id: '', titre: '', motsCles: [], contenu: '' }]);
+        setSections([...v, { id: '', categorie: 'aide', titre: '', motsCles: [], contenu: '' }]);
         setOuverte(v.length);
       }
 
@@ -1111,7 +1117,8 @@
                 <button
                   onClick={() => setOuverte(ouverte === i ? null : i)}
                   className="w-full flex items-center justify-between gap-3 p-4 text-left">
-                  <span className="text-sm font-medium truncate">
+                  <span className="text-sm font-medium truncate flex items-center gap-2">
+                    {s.categorie === 'conseils' && <Badge tone="amber">CONSEIL</Badge>}
                     {s.titre || <span className="text-stone-400">Sans titre</span>}
                   </span>
                   <span className="text-xs text-stone-400 shrink-0">{ouverte === i ? '▲' : '▼'}</span>
@@ -1130,6 +1137,22 @@
                         <input className={champ} value={s.titre || ''}
                           onChange={e => modifier(i, 'titre', e.target.value)} />
                       </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-stone-600 mb-1">Catégorie</label>
+                      <select className={champ} value={s.categorie || 'aide'}
+                        onChange={e => modifier(i, 'categorie', e.target.value)}>
+                        <option value="aide">Aide — comment le site fonctionne</option>
+                        <option value="conseils">Conseils généraux — page publique</option>
+                      </select>
+                      <p className="text-xs text-stone-500 mt-1">
+                        Seule l’<strong>aide</strong> est donnée au chatbot. Les conseils
+                        généraux s’affichent sur la page publique et ne sont jamais lus par
+                        l’automate : sur un site matrimonial, une question de conseil amène
+                        vite une violence, une pression familiale ou une histoire d’argent —
+                        cela se traite avec une personne.
+                      </p>
                     </div>
 
                     <div>

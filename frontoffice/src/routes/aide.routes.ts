@@ -71,10 +71,25 @@ function budgetDisponible(): boolean {
  */
 router.get(
   '/aide/documentation',
-  asyncHandler(async (_req, res) => {
+  asyncHandler(async (req, res) => {
+    // `?categorie=conseils` sert la page publique de conseils ; sans filtre,
+    // tout est rendu. Cette route est de la LECTURE : le cloisonnement qui
+    // compte est celui du chatbot, appliqué dans `chercher` et
+    // `documentationEnTexte`.
+    const demandee = String(req.query.categorie || '');
     const sections = await lireDocumentation();
+    const filtrees =
+      demandee === 'aide' || demandee === 'conseils'
+        ? sections.filter((s) => (s.categorie ?? 'aide') === demandee)
+        : sections;
+
     res.json({
-      data: sections.map((s) => ({ id: s.id, titre: s.titre, contenu: s.contenu })),
+      data: filtrees.map((s) => ({
+        id: s.id,
+        categorie: s.categorie ?? 'aide',
+        titre: s.titre,
+        contenu: s.contenu,
+      })),
     });
   }),
 );

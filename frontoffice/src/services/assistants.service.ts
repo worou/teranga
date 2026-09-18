@@ -34,6 +34,7 @@ const CHAMPS_PUBLICS = {
   specialities: true,
   photoUrl: true,
   priceFcfa: true,
+  priceMonthFcfa: true,
   durationDays: true,
   isAvailable: true,
 } as const;
@@ -46,8 +47,11 @@ export interface AssistantPublic {
   bio: string | null;
   specialities: string[];
   photoUrl: string | null;
+  /** Tarif hebdomadaire, toujours présent. */
   priceFcfa: number;
   durationDays: number;
+  /** Tarif mensuel, `null` si l'assistant ne propose que la semaine. */
+  priceMonthFcfa: number | null;
   isAvailable: boolean;
 }
 
@@ -59,6 +63,7 @@ type LigneAdmin = {
   specialities: string | null;
   photoUrl: string | null;
   priceFcfa: number | null;
+  priceMonthFcfa: number | null;
   durationDays: number | null;
   isAvailable: boolean;
 };
@@ -82,7 +87,8 @@ export function serializeAssistant(a: LigneAdmin): AssistantPublic {
       .filter(Boolean),
     photoUrl: a.photoUrl ?? null,
     priceFcfa: a.priceFcfa ?? 0,
-    durationDays: a.durationDays ?? 0,
+    durationDays: a.durationDays ?? 7,
+    priceMonthFcfa: a.priceMonthFcfa ?? null,
     isAvailable: a.isAvailable,
   };
 }

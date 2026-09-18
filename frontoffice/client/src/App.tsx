@@ -11,6 +11,7 @@ import Messages from './pages/Messages'
 import Conversation from './pages/Conversation'
 import Assistants from './pages/Assistants'
 import BulleAide from './components/BulleAide'
+import Conseils from './pages/Conseils'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 import Favoris from './pages/Favoris'
@@ -75,6 +76,11 @@ export default function App() {
             </RequireAuth>
           }
         />
+        {/* Conseils generaux : PUBLIC, sans RequireAuth. Quelqu'un qui hesite
+            a s'inscrire doit pouvoir lire ce qu'on a a dire — c'est aussi la
+            porte d'entree de l'accompagnement payant. */}
+        <Route path="/conseils" element={<Conseils />} />
+
         {/* Assistants : conseil payant. Pas de `requireCompleteProfile` —
             quelqu'un dont le profil coince est justement celui qui a besoin
             d'aide, l'écarter d'ici serait fermer la porte au bon moment. */}
