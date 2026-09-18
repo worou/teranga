@@ -266,6 +266,12 @@ export const DOCUMENTATION: SectionDoc[] = [
       'il m embete', 'elle m embete', 'importune', 'insistant', 'lourd',
       'ne plus voir', 'ne plus recevoir', 'supprimer quelqu un', 'enlever quelqu un',
       'plus de messages de lui', 'plus de messages d elle',
+      // Ces formulations portent le mot « profil », qui vaut à lui seul plus de
+      // points à la section du même nom que « bannir » n'en vaut ici. Sans
+      // elles, « comment bannir un profil » — la façon dont la question se pose
+      // réellement — atterrit sur l'édition de sa propre fiche.
+      'bloquer un profil', 'bannir un profil', 'virer un profil', 'signaler un profil',
+      'bloquer une personne', 'bloquer un membre', 'signaler un membre',
     ],
     contenu:
       "Vous pouvez arrêter n’importe quel membre vous-même, sans passer par nous et sans " +
