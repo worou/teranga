@@ -53,7 +53,14 @@ function lireFiche(body: any) {
     assistantGender: genre === 'FEMALE' || genre === 'MALE' ? (genre as any) : null,
     bio: texte(body?.bio, 2000),
     specialities: texte(body?.specialities, 300),
-    photoUrl: texte(body?.photoUrl, 500),
+    // Une adresse d'image, pas une adresse postale. Sans ce contrôle le champ
+    // accueille n'importe quoi — il a déjà reçu « 7 Rue Jean Moulin » — et la
+    // fiche affiche une image cassée que personne ne comprend.
+    photoUrl: (() => {
+      const u = texte(body?.photoUrl, 500);
+      if (!u) return null;
+      return /^https?:\/\//i.test(u) ? u : null;
+    })(),
     contactPhone: texte(body?.contactPhone, 40),
     contactWhatsapp: texte(body?.contactWhatsapp, 40),
     priceFcfa: nombre(body?.priceFcfa),
@@ -105,6 +112,11 @@ router.put(
       if (!data.assistantName) throw AppError.badRequest('Un nom affiché est nécessaire.');
       if (!data.priceFcfa || !data.durationDays) {
         throw AppError.badRequest('Un forfait — montant et durée — est nécessaire.');
+      }
+      if (req.body?.photoUrl && String(req.body.photoUrl).trim() && !data.photoUrl) {
+        throw AppError.badRequest(
+          'La photo doit être une adresse Internet commençant par http:// ou https://, pas une adresse postale.',
+        );
       }
       if (!data.contactPhone && !data.contactWhatsapp) {
         throw AppError.badRequest(

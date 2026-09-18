@@ -173,6 +173,21 @@ export default function Accueil() {
                 </div>
               )}
 
+              {/* L'accompagnement payant n'était atteignable que par le menu de
+                  l'avatar — invisible en pratique. Un service payant a besoin
+                  d'une porte qu'on voit. */}
+              <div className={styles.conseil}>
+                <strong>Besoin d'un coup de main ?</strong>
+                <p>
+                  Une hésitation, un échange qui s'enlise, une rencontre de familles
+                  à préparer : nos assistantes et assistants vous accompagnent par
+                  téléphone ou WhatsApp.
+                </p>
+                <Link to="/assistants" className={`btn btn-ghost ${styles.btnFull}`}>
+                  Se faire conseiller
+                </Link>
+              </div>
+
               <div className={styles.actions}>
                 <button className={`btn btn-ghost ${styles.btnFull}`} onClick={logout}>
                   Se déconnecter

@@ -463,3 +463,23 @@
 .visibilityOption strong { font-size: 14px; font-weight: 600; color: var(--ink); }
 .visibilityOption em { font-style: normal; font-size: 12px; color: var(--ink-soft); line-height: 1.45; }
 .visibilityNote { font-size: 12px; color: var(--ink-soft); line-height: 1.5; margin-top: 10px; }
+
+/* Invitation à l'accompagnement, sur l'espace membre. Encadrée plutôt que
+   posée comme un bouton de plus : c'est une offre, pas une action de routine,
+   et elle se paie. Le menu de l'avatar la cachait en pratique. */
+.conseil {
+  margin: 18px 0;
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(184, 105, 26, 0.09);
+  border: 1px solid rgba(184, 105, 26, 0.22);
+}
+.conseil strong {
+  display: block; margin-bottom: 6px;
+  font-family: Georgia, serif; font-size: 16px; font-weight: 400;
+  color: var(--terra-deep);
+}
+.conseil p {
+  font-size: 13px; line-height: 1.55; color: var(--ink-soft);
+  margin-bottom: 14px;
+}
