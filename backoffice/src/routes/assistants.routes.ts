@@ -7,7 +7,7 @@ import { AppError } from '../utils/AppError';
 /**
  * Le volet « assistant » d'un administrateur, et la file des demandes.
  *
- * DEUX RÈGLES QUI STRUCTURENT CE FICHIER
+ * TROIS RÈGLES QUI STRUCTURENT CE FICHIER
  *
  * 1. On ne modifie que SA PROPRE fiche. Ce sont les coordonnées personnelles
  *    d'une personne : qu'un administrateur puisse inscrire son numéro sur la
@@ -20,9 +20,14 @@ import { AppError } from '../utils/AppError';
  *    jour où quelqu'un demandera « qui a donné mon numéro à cette personne »,
  *    la réponse doit exister.
  *
- * La file est visible par TOUS les administrateurs, pas seulement par
- * l'assistant concerné : c'est une file d'encaissement, et celui qui reçoit le
- * paiement n'est pas forcément celui qui conseillera.
+ * 3. La file n'est PAS visible par tous les administrateurs. Une demande porte
+ *    ce qu'un membre a écrit de sa difficulté — « je n'arrive pas à », « ma
+ *    famille refuse » — et cela ne regarde que deux personnes : l'assistant
+ *    sollicité, et celui qui encaisse. Un compte de modération ordinaire n'a
+ *    aucune raison de lire ces confidences.
+ *
+ *    Voient donc une demande : l'assistant concerné, et les SUPERADMIN, qui
+ *    tiennent la caisse.
  */
 const router = Router();
 router.use(requireAdmin);
@@ -123,9 +128,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const statut = String(req.query.status || 'PENDING').toUpperCase();
     const connus = ['PENDING', 'CONFIRMED', 'REJECTED', 'CANCELLED'];
+    const moi = (req as any).admin;
 
     const lignes = await prisma.consultation.findMany({
-      where: connus.includes(statut) ? { status: statut } : {},
+      where: {
+        ...(connus.includes(statut) ? { status: statut } : {}),
+        // Un administrateur ordinaire ne voit que les demandes qui lui sont
+        // adressées. Le SUPERADMIN voit tout : c'est lui qui encaisse.
+        ...(moi.role === 'SUPERADMIN' ? {} : { adminId: moi.adminId }),
+      },
       orderBy: { createdAt: 'desc' },
       take: 200,
       include: {
@@ -166,11 +177,18 @@ router.get(
 router.patch(
   '/consultations/:id',
   asyncHandler(async (req, res) => {
-    const adminId = (req as any).admin.adminId;
+    const moi = (req as any).admin;
     const action = String(req.body?.action ?? '');
 
-    const c = await prisma.consultation.findUnique({
-      where: { id: req.params.id },
+    // Même périmètre que la lecture : on ne tranche que sur ce qu'on a le droit
+    // de voir. Sans ce garde, un administrateur pourrait confirmer à l'aveugle
+    // une demande adressée à quelqu'un d'autre — et livrer le numéro d'un
+    // collègue sans avoir vu passer le moindre paiement.
+    const c = await prisma.consultation.findFirst({
+      where: {
+        id: req.params.id,
+        ...(moi.role === 'SUPERADMIN' ? {} : { adminId: moi.adminId }),
+      },
       select: { id: true, status: true, durationDays: true },
     });
     if (!c) throw AppError.notFound('Demande introuvable');
@@ -188,7 +206,7 @@ router.patch(
           startsAt: debut,
           expiresAt: fin,
           confirmedAt: debut,
-          confirmedBy: adminId,
+          confirmedBy: moi.adminId,
         },
       });
       return res.json({ status: 'CONFIRMED', expiresAt: fin });

@@ -45,7 +45,10 @@ export default function Assistants() {
 
   function recharger() {
     return Promise.all([
-      assistantsApi.list(genre || undefined),
+      // Sans filtre : c'est l'écran qui trie. Demander une liste déjà filtrée
+      // empêcherait de savoir quels genres existent, donc de décider s'il vaut
+      // la peine de proposer le choix.
+      assistantsApi.list(),
       assistantsApi.consultations(),
     ])
       .then(([a, c]) => { setAssistants(a); setConsultations(c); setError('') })
@@ -62,14 +65,22 @@ export default function Assistants() {
   useEffect(() => {
     setLoading(true)
     recharger().finally(() => setLoading(false))
-    // `recharger` se reconstruit à chaque rendu ; c'est `genre` qui commande.
+    // Une seule lecture au montage : le tri par genre se fait sur place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [genre])
+  }, [])
 
   // Les consultations qui donnent accès à un contact, en tête d'écran : c'est
   // ce que le membre vient chercher quand il revient.
   const actives = consultations.filter(c => c.active)
   const enAttente = consultations.filter(c => c.status === 'PENDING')
+
+  // Le filtre ne s'affiche que s'il peut trancher. Tant qu'il n'y a qu'une
+  // personne — ou que des femmes, ou que des hommes — proposer « une femme /
+  // un homme » promet un choix qui n'existe pas, et l'une des deux réponses ne
+  // renvoie rien. Une liste vide par construction vaut moins que pas de filtre.
+  const genresPresents = new Set(assistants.map(a => a.gender).filter(Boolean))
+  const filtreUtile = genresPresents.size > 1
+  const visibles = filtreUtile && genre ? assistants.filter(a => a.gender === genre) : assistants
 
   return (
     <div className={styles.page}>
@@ -155,6 +166,7 @@ export default function Assistants() {
           </section>
         )}
 
+        {filtreUtile && (
         <div className={styles.filtres}>
           <span className={styles.filtreLabel}>Je préfère parler à</span>
           <div className={styles.filtreGroupe}>
@@ -172,10 +184,11 @@ export default function Assistants() {
             )}
           </div>
         </div>
+        )}
 
         {loading && <p className={styles.muted}>Chargement…</p>}
 
-        {!loading && !error && assistants.length === 0 && (
+        {!loading && !error && visibles.length === 0 && (
           <div className={styles.vide}>
             <h2>Aucun assistant disponible pour l'instant</h2>
             <p>
@@ -187,7 +200,7 @@ export default function Assistants() {
         )}
 
         <div className={styles.grille}>
-          {assistants.map(a => (
+          {visibles.map(a => (
             <article key={a.id} className={styles.carte}>
               <Avatar assistant={a} taille={64} />
               <h3 className={styles.nom}>{a.name}</h3>
