@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import MessageComposer from './MessageComposer'
+import { ModerationActions } from './ModerationActions'
 import { useFilConversation } from '../hooks/useFilConversation'
 import { SUBSCRIPTIONS_ENABLED } from '../config'
 import { fetchMe, type MeResponse } from '../api/auth'
@@ -165,6 +166,28 @@ export default function TiroirMessages({
     navigate(`/profil/${id}`)
   }
 
+  /**
+   * Après un blocage : retirer la conversation et revenir à la pile.
+   *
+   * Le délai laisse lire la confirmation, que `ModerationActions` affiche à la
+   * place de ses liens — vider la sélection tout de suite la démonterait avec
+   * le reste du bandeau, et le blocage se ferait sans un mot.
+   *
+   * On ne ferme pas le tiroir et on ne navigue nulle part, contrairement à
+   * l'écran de conversation : le tiroir est posé sur la page qu'on lisait, la
+   * quitter punirait celui qui vient de se protéger.
+   */
+  function apresBlocage(conversationId: string) {
+    setTimeout(() => {
+      setChoisie('')
+      // Le serveur ne sert plus ce fil une fois le blocage posé ; l'ôter ici
+      // évite une vignette qui ne mène plus à rien jusqu'au prochain chargement.
+      setConversations(cs => cs.filter(c => c.id !== conversationId))
+      // Ses non-lus ne comptent plus : l'en-tête doit recompter.
+      onLuRef.current()
+    }, 1800)
+  }
+
   if (!ouvert) return null
 
   const active = conversations.find(c => c.id === choisie) ?? null
@@ -220,6 +243,28 @@ export default function TiroirMessages({
               </svg>
             </button>
           </header>
+
+          {/* Signaler et bloquer, sous l'en-tête et hors du fil.
+
+              Le tiroir est devenu la façon normale de lire ses messages : sans
+              ce bandeau, le geste d'arrêter quelqu'un n'existait plus que sur
+              la fiche du profil et sur l'écran de conversation complet, là où
+              l'on ne passe plus. C'est précisément dans le fil qu'un échange
+              dérape.
+
+              Hors de l'en-tête parce que celui-ci est un dégradé sombre :
+              posés dessus, ces liens discrets deviendraient illisibles. Et
+              hors du fil parce qu'il défile — on veut pouvoir arrêter en
+              relisant, pas seulement au dernier message. */}
+          {active && autre && (
+            <div className={styles.moderation}>
+              <ModerationActions
+                userId={autre.id}
+                firstName={autre.firstName}
+                onBlocked={() => apresBlocage(active.id)}
+              />
+            </div>
+          )}
 
           <div className={styles.corps} ref={scroller} onScroll={auDefilement}>
             {/* Cale le fil sur le bas tant qu'il ne remplit pas la hauteur. */}

@@ -70,6 +70,21 @@ button.nom:hover { text-decoration: underline; }
 .fermer:hover { background: rgba(253, 248, 240, 0.3); }
 .fermer:focus-visible { outline: 2px solid var(--sand); outline-offset: 2px; }
 
+/* ——— Bandeau « Signaler · Bloquer » ——— */
+
+/* Fond clair : ModerationActions se dessine en encres sombres, il lui faut du
+   clair sous les pieds. Le `max-height` borne le panneau de signalement, qui
+   porte un formulaire : sans lui, sur un petit écran, il pousserait le fil et
+   le composeur hors du tiroir. Borné, il défile sur lui-même. */
+.moderation {
+  flex-shrink: 0;
+  max-height: 62vh; overflow-y: auto;
+  padding: 0 16px;
+  background: var(--cream);
+  border-bottom: 1px solid rgba(184, 105, 26, 0.16);
+}
+.moderation > div { margin-top: 0; padding: 8px 0 10px; }
+
 /* ——— Fil ——— */
 
 .corps {

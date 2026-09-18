@@ -257,6 +257,37 @@ export const DOCUMENTATION: SectionDoc[] = [
       "un inconnu, et méfiez-vous de quelqu’un qui refuse tout appel vidéo.",
   },
   {
+    id: 'blocage',
+    titre: 'Bloquer ou signaler quelqu’un qui se comporte mal',
+    motsCles: [
+      'bloquer', 'blocage', 'bannir', 'bannissement', 'virer', 'degager', 'exclure',
+      'debloquer', 'deblocage', 'signaler', 'signalement', 'moderation',
+      'se comporte mal', 'mal comporte', 'insultes', 'insulte', 'harcelement',
+      'il m embete', 'elle m embete', 'importune', 'insistant', 'lourd',
+      'ne plus voir', 'ne plus recevoir', 'supprimer quelqu un', 'enlever quelqu un',
+      'plus de messages de lui', 'plus de messages d elle',
+    ],
+    contenu:
+      "Vous pouvez arrêter n’importe quel membre vous-même, sans passer par nous et sans " +
+      "avoir à vous justifier.\n\n" +
+      "**Où se trouve le bouton.** Deux liens discrets, « Signaler » et « Bloquer », sont " +
+      "affichés à trois endroits : sur la **fiche du profil**, dans le **tiroir de messagerie** " +
+      "(sous le nom de la personne) et en haut de l’**écran de conversation**.\n\n" +
+      "**Bloquer** agit tout de suite et dans les deux sens : vous ne verrez plus son profil, " +
+      "elle ou il ne verra plus le vôtre, et plus aucun message ne passera d’un côté comme de " +
+      "l’autre. La personne n’est pas prévenue.\n\n" +
+      "**Signaler** prévient notre équipe de modération et reste confidentiel. Attention : " +
+      "signaler seul ne fait rien disparaître de votre côté. C’est pourquoi la case " +
+      "« Bloquer aussi » est cochée par défaut — laissez-la cochée si vous voulez aussi ne " +
+      "plus être contacté·e.\n\n" +
+      "**Revenir en arrière.** Les personnes que vous avez bloquées sont listées tout en bas " +
+      "de **Mon profil**, avec un bouton pour les débloquer. Un blocage n’est jamais définitif.\n\n" +
+      "**Ce que le blocage ne fait pas.** Il vaut pour vous deux, il ne retire pas la personne " +
+      "du site. C’est notre équipe qui décide d’exclure un compte, et elle le fait à partir des " +
+      "signalements reçus : si quelqu’un se comporte mal, signalez-le, c’est ce geste-là qui " +
+      "protège les autres membres.",
+  },
+  {
     id: 'assistants',
     titre: 'Se faire conseiller par un assistant',
     motsCles: [
