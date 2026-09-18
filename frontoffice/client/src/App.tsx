@@ -9,6 +9,7 @@ import Profil from './pages/Profil'
 import MonProfil from './pages/MonProfil'
 import Messages from './pages/Messages'
 import Conversation from './pages/Conversation'
+import Assistants from './pages/Assistants'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 import Favoris from './pages/Favoris'
@@ -70,6 +71,17 @@ export default function App() {
           element={
             <RequireAuth>
               <Conversation />
+            </RequireAuth>
+          }
+        />
+        {/* Assistants : conseil payant. Pas de `requireCompleteProfile` —
+            quelqu'un dont le profil coince est justement celui qui a besoin
+            d'aide, l'écarter d'ici serait fermer la porte au bon moment. */}
+        <Route
+          path="/assistants"
+          element={
+            <RequireAuth>
+              <Assistants />
             </RequireAuth>
           }
         />

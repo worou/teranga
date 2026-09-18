@@ -180,6 +180,13 @@ export default function AppHeader({ initial }: { initial?: string }) {
                   >
                     Mon espace
                   </Link>
+                  <Link
+                    to="/assistants"
+                    className={styles.menuItem}
+                    onClick={() => setMenuOuvert(false)}
+                  >
+                    Se faire conseiller
+                  </Link>
                   <div className={styles.menuSep} />
                   <button
                     type="button"
