@@ -179,7 +179,10 @@ export default function TiroirMessages({
    */
   function apresBlocage(conversationId: string) {
     setTimeout(() => {
-      setChoisie('')
+      // Pendant ces 1800 ms, on a pu ouvrir quelqu'un d'autre dans la pile.
+      // Vider la sélection sans regarder arracherait le membre au fil qu'il
+      // vient d'ouvrir — seule la conversation bloquée doit se refermer.
+      setChoisie(c => (c === conversationId ? '' : c))
       // Le serveur ne sert plus ce fil une fois le blocage posé ; l'ôter ici
       // évite une vignette qui ne mène plus à rien jusqu'au prochain chargement.
       setConversations(cs => cs.filter(c => c.id !== conversationId))
