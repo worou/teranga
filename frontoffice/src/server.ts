@@ -26,6 +26,7 @@ import adminPaymentsRoutes from './routes/adminPayments.routes';
 import webhooksRoutes from './routes/webhooks.routes';
 import featuresRoutes from './routes/features.routes';
 import assistantsRoutes from './routes/assistants.routes';
+import aideRoutes from './routes/aide.routes';
 
 // Sockets
 import { initSockets } from './sockets';
@@ -162,6 +163,17 @@ app.use('/api/v1/payments/webhook', webhooksRoutes);
 // API v1
 app.use('/api/v1/auth', authLimiter, authRoutes);
 app.use('/api/v1/users', usersRoutes);
+// Aide et assistance automatique : OUVERTES aux visiteurs. Quelqu'un qui hésite
+// à s'inscrire doit pouvoir demander comment le site marche.
+//
+// ⚠️ MONTÉ ICI, ET C'EST OBLIGATOIRE. Plusieurs routeurs montés plus bas sur ce
+// même préfixe portent un `router.use(requireAuth)` SANS CHEMIN
+// (`payments.routes.ts`, `features.routes.ts`) : un tel garde s'applique à
+// toute requête qui traverse le routeur, y compris celles destinées aux
+// routeurs déclarés APRÈS lui. Monté plus bas, `/aide/*` répondrait 401 aux
+// visiteurs sans jamais être atteint. Toute route publique ajoutée à ce préfixe
+// doit donc précéder ces routeurs.
+app.use('/api/v1', aideRoutes);        // /aide/* — public
 // Interne (backoffice → frontoffice) : monté AVANT les routers génériques
 // `/api/v1` dont le `requireAuth` global intercepterait sinon /admin/*.
 app.use('/api/v1/admin', adminPaymentsRoutes); // validation virements

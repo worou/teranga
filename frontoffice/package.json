@@ -17,6 +17,7 @@
     "test": "ts-node --transpile-only tests/run.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.70.0",
     "@prisma/client": "^5.8.0",
     "axios": "^1.6.5",
     "bcryptjs": "^2.4.3",

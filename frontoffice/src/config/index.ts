@@ -167,6 +167,25 @@ export const config = {
     quotaMax: parseInt(process.env.OTP_QUOTA_MAX || '3', 10),
   },
 
+  /**
+   * Assistance automatique.
+   *
+   * `apiKey` absente = Claude inactif, et la recherche par mots-clés prend le
+   * relais. Aucun drapeau séparé : la présence de la clé EST le drapeau. Un
+   * `CHATBOT_ENABLED=true` sans clé n'aurait décrit qu'une intention, et il
+   * aurait fallu vérifier les deux partout.
+   *
+   * `dailyMax` est un plafond de dépense, pas une mesure anti-abus — le
+   * limiteur par adresse IP s'en charge sur la route. Celui-ci borne ce qu'une
+   * mauvaise journée peut coûter, l'endpoint étant ouvert aux visiteurs.
+   */
+  chatbot: {
+    apiKey: process.env.ANTHROPIC_API_KEY || '',
+    model: process.env.CHATBOT_MODEL || 'claude-haiku-4-5',
+    /** Appels au modèle admis par jour, tous visiteurs confondus. */
+    dailyMax: parseInt(process.env.CHATBOT_DAILY_MAX || '500', 10),
+  },
+
   trustProxy: parseInt(process.env.TRUST_PROXY || '0', 10),
 
   /**

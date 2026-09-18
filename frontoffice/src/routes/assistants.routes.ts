@@ -24,8 +24,15 @@ const demandeSchema = z.object({
  *
  * Aucune coordonnée n'est servie ici, quel que soit l'appelant : le téléphone
  * et le WhatsApp ne sortent que par la consultation confirmée de leur membre.
+ *
+ * ⚠️ Le garde est monté SUR SES CHEMINS, pas sur le routeur. Ce routeur est
+ * monté sur le préfixe `/api/v1` : un `router.use(requireAuth)` sans chemin
+ * s'applique alors à TOUTE requête qui le traverse, y compris celles destinées
+ * aux routeurs déclarés après lui — qui répondent 401 sans jamais être
+ * atteints. Le tunnel d'abonnement s'était déjà fait prendre ainsi, et avait
+ * tué quatre familles de routes.
  */
-router.use(requireAuth);
+router.use(['/assistants', '/consultations'], requireAuth);
 
 /**
  * @openapi
