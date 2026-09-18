@@ -21,6 +21,7 @@ import reportsRouter from './routes/reports.routes';
 import adminsRouter from './routes/admins.routes';
 import settingsRouter from './routes/settings.routes';
 import assistantsRouter from './routes/assistants.routes';
+import documentationRouter from './routes/documentation.routes';
 
 const app = express();
 
@@ -73,6 +74,9 @@ app.use('/api/admin/admins', adminsRouter);
 app.use('/api/admin/settings', settingsRouter);
 // Assistants : volet « conseil payant » d'un administrateur, et file des demandes.
 app.use('/api/admin/assistants', assistantsRouter);
+// Documentation du site : c'est elle que lit l'assistance automatique du
+// frontoffice. Corriger ici suffit, il n'y a rien a redeployer.
+app.use('/api/admin/documentation', documentationRouter);
 
 // ── Health check ─────────────────────────────────────────
 app.get('/health', (_req, res) => {

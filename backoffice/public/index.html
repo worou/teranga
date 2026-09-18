@@ -1044,6 +1044,139 @@
       );
     }
 
+
+    // ── Documentation du site ─────────────────────────────
+    //
+    // C'est la source unique de l'assistance automatique. Une section mal
+    // écrite se propage à tous les visiteurs, puisque le chatbot la recopie
+    // fidèlement — d'où les vérifications côté serveur avant enregistrement.
+    function Documentation() {
+      const { loading, error, data, reload } = useAsync(() => api('/documentation'), []);
+      const [sections, setSections] = useState(null);
+      const [busy, setBusy] = useState(false);
+      const [info, setInfo] = useState('');
+      const [err, setErr] = useState('');
+      const [ouverte, setOuverte] = useState(null);
+
+      const v = sections === null ? (data?.sections || []) : sections;
+      const modifier = (i, champ, valeur) => {
+        const copie = v.map((s, j) => (j === i ? { ...s, [champ]: valeur } : s));
+        setSections(copie);
+      };
+
+      async function enregistrer() {
+        setBusy(true); setErr(''); setInfo('');
+        try {
+          const r = await api('/documentation', {
+            method: 'PUT',
+            body: JSON.stringify({ sections: v }),
+          });
+          setInfo(r.sections + ' sections enregistrées. Visible sur le site sous ~' + r.delaiSecondes + ' secondes.');
+          setSections(null); reload();
+        } catch (e) { setErr(e.message); }
+        finally { setBusy(false); }
+      }
+
+      function ajouter() {
+        setSections([...v, { id: '', titre: '', motsCles: [], contenu: '' }]);
+        setOuverte(v.length);
+      }
+
+      function supprimer(i) {
+        if (!window.confirm('Supprimer cette section ? Le chatbot ne pourra plus répondre là-dessus.')) return;
+        setSections(v.filter((_, j) => j !== i));
+        setOuverte(null);
+      }
+
+      if (loading) return <Spinner/>;
+      if (error) return <ErrorBox msg={error}/>;
+
+      const champ = 'w-full text-sm px-3 py-2 border rounded-lg';
+
+      return (
+        <div className="max-w-3xl">
+          <div className="rounded-lg bg-stone-100 border border-stone-200 p-3 mb-4 text-xs text-stone-600">
+            Ce texte est la <strong>seule source</strong> de l’assistance automatique du site.
+            Elle ne répond que sur ce qui est écrit ici — c’est voulu : un automate qui improvise
+            un tarif ou un délai fabrique des litiges. Pour qu’il sache répondre à quelque chose,
+            écrivez-le.
+          </div>
+
+          {err && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">⚠ {err}</div>}
+          {info && <div className="mb-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg p-2">✓ {info}</div>}
+
+          <div className="space-y-2">
+            {v.map((s, i) => (
+              <div key={i} className="bg-white rounded-xl shadow-sm">
+                <button
+                  onClick={() => setOuverte(ouverte === i ? null : i)}
+                  className="w-full flex items-center justify-between gap-3 p-4 text-left">
+                  <span className="text-sm font-medium truncate">
+                    {s.titre || <span className="text-stone-400">Sans titre</span>}
+                  </span>
+                  <span className="text-xs text-stone-400 shrink-0">{ouverte === i ? '▲' : '▼'}</span>
+                </button>
+
+                {ouverte === i && (
+                  <div className="px-4 pb-4 space-y-3 border-t pt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-stone-600 mb-1">Identifiant</label>
+                        <input className={champ} value={s.id || ''}
+                          onChange={e => modifier(i, 'id', e.target.value)} placeholder="photos" />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-stone-600 mb-1">Titre</label>
+                        <input className={champ} value={s.titre || ''}
+                          onChange={e => modifier(i, 'titre', e.target.value)} />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-stone-600 mb-1">
+                        Mots-clés <span className="font-normal text-stone-400">(séparés par des virgules)</span>
+                      </label>
+                      <input className={champ}
+                        value={Array.isArray(s.motsCles) ? s.motsCles.join(', ') : (s.motsCles || '')}
+                        onChange={e => modifier(i, 'motsCles', e.target.value.split(','))} />
+                      <p className="text-xs text-stone-500 mt-1">
+                        Les mots qu’un membre taperait — fautes et formulations maladroites comprises.
+                        Sans clé Claude, c’est sur eux seuls que repose la recherche.
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-stone-600 mb-1">Contenu</label>
+                      <textarea rows={8} className={champ} value={s.contenu || ''}
+                        onChange={e => modifier(i, 'contenu', e.target.value)} />
+                    </div>
+
+                    <div className="flex justify-end">
+                      <button onClick={() => supprimer(i)}
+                        className="text-sm px-3 py-1.5 rounded-lg text-red-700 hover:bg-red-50">
+                        Supprimer cette section
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2 justify-between">
+            <button onClick={ajouter}
+              className="text-sm px-4 py-2 rounded-lg bg-white border text-stone-700 hover:bg-stone-50">
+              + Ajouter une section
+            </button>
+            <button onClick={enregistrer} disabled={busy}
+              className="text-sm px-4 py-2 rounded-lg bg-stone-800 text-white hover:bg-stone-900 disabled:opacity-50">
+              {busy ? 'Enregistrement…' : 'Enregistrer'}
+            </button>
+          </div>
+        </div>
+      );
+    }
+
     // ── Shell (nav + sections) ────────────────────────────
     const SECTIONS = [
       { key:'dashboard', label:'Tableau de bord', icon:'📊', comp: Dashboard },
@@ -1053,6 +1186,7 @@
       { key:'reports', label:'Modération', icon:'🛡️', comp: Moderation },
       { key:'consultations', label:'Consultations', icon:'🤝', comp: Consultations },
       { key:'assistance', label:'Ma fiche assistant', icon:'💬', comp: MonAssistance },
+      { key:'documentation', label:'Documentation', icon:'📖', comp: Documentation },
       { key:'maintenance', label:'Maintenance', icon:'🚧', comp: Maintenance },
       { key:'admins', label:'Admins', icon:'🔑', comp: Admins, superOnly: true },
     ];

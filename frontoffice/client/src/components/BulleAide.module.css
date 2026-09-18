@@ -1,0 +1,129 @@
+/* Bulle d'assistance — voir BulleAide.tsx pour les partis pris.
+
+   z-index 250 : au-dessus de l'en-tête (200), sous le tiroir de messagerie et
+   la fenêtre de demande de consultation (300). Un panneau d'aide n'a pas à
+   passer par-dessus ce qu'on est en train de faire. */
+
+.bulle {
+  position: fixed; right: 20px; bottom: 20px; z-index: 250;
+  display: grid; place-items: center;
+  width: 54px; height: 54px;
+  border: none; border-radius: 50%;
+  background: var(--terra-deep); color: var(--sand);
+  box-shadow: 0 6px 20px rgba(43, 22, 5, 0.3);
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.bulle:hover { transform: scale(1.06); box-shadow: 0 8px 26px rgba(43, 22, 5, 0.38); }
+.bulle:focus-visible { outline: 2px solid var(--ocre-deep); outline-offset: 3px; }
+
+.panneau {
+  position: fixed; right: 20px; bottom: 20px; z-index: 250;
+  width: min(370px, calc(100vw - 32px));
+  height: min(520px, calc(100vh - 100px));
+  display: flex; flex-direction: column;
+  border-radius: 16px;
+  background: var(--cream);
+  border: 1px solid rgba(184, 105, 26, 0.2);
+  box-shadow: 0 16px 44px rgba(43, 22, 5, 0.26);
+  overflow: hidden;
+  animation: monte 200ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes monte { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+@media (prefers-reduced-motion: reduce) { .panneau { animation: none } }
+
+.entete {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 13px 15px;
+  background: linear-gradient(120deg, var(--terra-deep), var(--ocre-deep));
+  color: var(--sand);
+  flex-shrink: 0;
+}
+.entete strong {
+  display: block;
+  font-family: Georgia, serif; font-size: 15px; font-weight: 400;
+}
+.entete span { font-size: 11.5px; opacity: 0.82; }
+
+.fermer {
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  width: 28px; height: 28px;
+  border: none; border-radius: 50%;
+  background: rgba(253, 248, 240, 0.16); color: var(--sand);
+  cursor: pointer;
+}
+.fermer:hover { background: rgba(253, 248, 240, 0.3); }
+
+.fil {
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  display: flex; flex-direction: column; gap: 9px;
+  padding: 14px;
+}
+
+.bullebulle {
+  max-width: 88%;
+  padding: 9px 13px;
+  border-radius: 13px;
+  font-size: 13.5px; line-height: 1.55;
+  white-space: pre-wrap; word-break: break-word;
+}
+.deMoi {
+  align-self: flex-end;
+  background: var(--terra-deep); color: var(--sand);
+  border-bottom-right-radius: 4px;
+}
+.deLAide {
+  align-self: flex-start;
+  background: #FFF; color: var(--ink);
+  border: 1px solid rgba(184, 105, 26, 0.16);
+  border-bottom-left-radius: 4px;
+}
+.attente { opacity: 0.6; letter-spacing: 3px; }
+
+/* Des questions toutes prêtes : devant un champ vide, on ne sait pas ce qu'on
+   a le droit de demander. */
+.suggestions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.suggestion {
+  align-self: flex-start;
+  padding: 7px 12px;
+  border: 1px solid rgba(184, 105, 26, 0.3); border-radius: 999px;
+  background: transparent;
+  font: inherit; font-size: 12.5px; color: var(--terra-deep);
+  text-align: left; cursor: pointer;
+  transition: background 0.15s ease;
+}
+.suggestion:hover { background: rgba(184, 105, 26, 0.1); }
+
+.saisie {
+  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(184, 105, 26, 0.16);
+  background: var(--cream);
+}
+.saisie input {
+  flex: 1; min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid rgba(184, 105, 26, 0.28); border-radius: 999px;
+  background: #FFF; font: inherit; font-size: 13.5px;
+}
+.saisie input:focus { outline: none; border-color: var(--ocre-deep); }
+.saisie button {
+  flex-shrink: 0;
+  display: grid; place-items: center;
+  width: 36px; height: 36px;
+  border: none; border-radius: 50%;
+  background: var(--terra-deep); color: var(--sand);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+.saisie button:disabled { opacity: 0.4; cursor: default; }
+
+/* Sur téléphone, la bulle ne doit pas recouvrir les boutons d'action des
+   cartes de découverte, qui vivent au même endroit. */
+@media (max-width: 640px) {
+  .bulle { right: 14px; bottom: 76px; width: 48px; height: 48px; }
+  .panneau { right: 8px; bottom: 8px; height: calc(100vh - 80px); }
+}

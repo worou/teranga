@@ -10,6 +10,7 @@ import MonProfil from './pages/MonProfil'
 import Messages from './pages/Messages'
 import Conversation from './pages/Conversation'
 import Assistants from './pages/Assistants'
+import BulleAide from './components/BulleAide'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 import Favoris from './pages/Favoris'
@@ -99,6 +100,11 @@ export default function App() {
         )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+
+      {/* Hors des routes, comme l'invitation à installer : l'aide vaut sur
+          toutes les pages, y compris publiques. Quelqu'un qui hésite à
+          s'inscrire est précisément celui qui a des questions. */}
+      <BulleAide />
     </BrowserRouter>
   )
 }
