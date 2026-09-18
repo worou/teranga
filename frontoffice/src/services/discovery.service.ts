@@ -263,8 +263,8 @@ export class DiscoveryService {
   }
 
   /**
-   * Score de compatibilité (0 → ~105) : même ville/pays, intention et religion
-   * communes, proximité d'âge, activité récente, présence de photos.
+   * Score de compatibilité (0 → ~105) : même ville/pays, intentions proches,
+   * religion commune, proximité d'âge, activité récente, présence de photos.
    */
   private compatibilityScore(
     searcher: any,
@@ -280,8 +280,16 @@ export class DiscoveryService {
     if (sameCity) score += 25;
     else if (sameCountry) score += 10;
 
+    // Les trois intentions ne sont pas des destinations concurrentes : sur un
+    // site matrimonial, une relation sérieuse mène au mariage, et le mariage à
+    // une famille. Exiger l'égalité stricte retirait 20 points — autant que
+    // vivre dans une autre ville — à deux personnes qui veulent la même chose
+    // mais n'ont pas coché la même case. Or c'est précisément le choix que les
+    // gens font au hasard quand la question les embarrasse.
+    //
+    // D'où le crédit partiel : identiques, 20 ; simplement compatibles, 12.
     const sameIntent = searcher.intent === c.intent;
-    if (sameIntent) score += 20;
+    score += sameIntent ? 20 : 12;
 
     const sameReligion =
       searcher.religion !== 'UNDISCLOSED' &&

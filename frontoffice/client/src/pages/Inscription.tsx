@@ -528,13 +528,24 @@ export default function Inscription() {
               {error && <div className={styles.alertError}><span>⚠</span> {error}</div>}
 
               <div className={styles.formGrid}>
-                <Field label="Je recherche" error={errors1.intent} className={styles.fullWidth}>
+                {/* « Une relation sérieuse » et « Le mariage » se lisaient
+                    comme deux destinations concurrentes : on ne savait que
+                    cocher, puisqu'une relation sérieuse peut mener au mariage.
+                    Les intitulés disent maintenant où chacun se situe sur la
+                    même route, et la note rappelle qu'aucun ne ferme de
+                    porte. */}
+                <Field
+                  label="Je recherche"
+                  error={errors1.intent}
+                  className={styles.fullWidth}
+                  hint="Aucune de ces réponses n'en exclut une autre, et vous pourrez en changer à tout moment."
+                >
                   <select value={s1.intent} className={errors1.intent ? styles.inputError : ''}
                     onChange={e => setS1(p => ({ ...p, intent: e.target.value as Intent }))}>
                     <option value="">Choisir…</option>
-                    <option value="SERIOUS_RELATIONSHIP">Une relation sérieuse</option>
-                    <option value="MARRIAGE">Le mariage</option>
-                    <option value="FAMILY">Fonder une famille</option>
+                    <option value="SERIOUS_RELATIONSHIP">Une relation sérieuse, et voir où elle mène</option>
+                    <option value="MARRIAGE">Le mariage — c'est un projet concret</option>
+                    <option value="FAMILY">Fonder une famille, avoir des enfants</option>
                   </select>
                 </Field>
 
@@ -761,8 +772,10 @@ export default function Inscription() {
 }
 
 // ——— Helpers ———
-function Field({ label, optional, error, children, className }: {
+function Field({ label, optional, error, hint, children, className }: {
   label: string; optional?: boolean; error?: string
+  /** Note posée SOUS le champ : elle explique, elle ne rallonge pas l'étiquette. */
+  hint?: string
   children: React.ReactNode; className?: string
 }) {
   return (
@@ -773,6 +786,7 @@ function Field({ label, optional, error, children, className }: {
         {error && <span className={styles.fieldErr}> — {error}</span>}
       </label>
       {children}
+      {hint && <p className={styles.fieldHint}>{hint}</p>}
     </div>
   )
 }

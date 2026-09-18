@@ -133,6 +133,14 @@
 .fullWidth { grid-column: 1 / -1; }
 .field label { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
 .optLabel { font-weight: 400; opacity: 0.55; font-style: italic; margin-left: 4px; }
+
+/* Note d'aide sous un champ. Discrète : elle lève un doute, elle ne doit pas
+   peser autant que la question. */
+.fieldHint {
+  margin-top: 6px;
+  font-size: 12px; line-height: 1.45;
+  color: var(--ink-soft); opacity: 0.85;
+}
 .fieldErr { color: var(--error); font-weight: 400; font-size: 12px; }
 
 .field input, .field select {
