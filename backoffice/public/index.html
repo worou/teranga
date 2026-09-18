@@ -778,6 +778,272 @@
       );
     }
 
+
+    // ── Ma fiche d'assistant ──────────────────────────────
+    //
+    // On ne modifie que SA PROPRE fiche : il s'agit de coordonnées
+    // personnelles, et l'on n'inscrit pas son numéro sur la fiche d'un
+    // collègue. D'où `/assistants/me`, sans identifiant.
+    function MonAssistance() {
+      const { loading, error, data, reload } = useAsync(() => api('/assistants/me'), []);
+      const [f, setF] = useState(null);
+      const [busy, setBusy] = useState(false);
+      const [info, setInfo] = useState('');
+      const [err, setErr] = useState('');
+
+      // Même précaution que la maintenance : tant que la lecture n'a pas
+      // abouti, on n'a rien à écraser.
+      const v = f === null ? (data || {}) : f;
+      const set = (k, val) => setF({ ...(f === null ? (data || {}) : f), [k]: val });
+
+      async function enregistrer() {
+        setBusy(true); setErr(''); setInfo('');
+        try {
+          await api('/assistants/me', { method: 'PUT', body: JSON.stringify(v) });
+          setInfo('Fiche enregistrée.');
+          setF(null); reload();
+        } catch (e) { setErr(e.message); }
+        finally { setBusy(false); }
+      }
+
+      if (loading) return <Spinner/>;
+      if (error) return <ErrorBox msg={error}/>;
+
+      const champ = 'w-full text-sm px-3 py-2 border rounded-lg';
+      const etiquette = 'block text-sm font-medium text-stone-700 mb-1';
+
+      return (
+        <div className="max-w-2xl">
+          <div className="bg-white rounded-xl shadow-sm p-5 mb-5">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={!!v.isAssistant}
+                onChange={e => set('isAssistant', e.target.checked)} className="w-4 h-4" />
+              <span className="text-sm font-medium">Je propose des consultations aux membres</span>
+            </label>
+            <p className="text-xs text-stone-500 mt-2">
+              Décoché, rien de ce qui suit n’est montré : votre compte reste un
+              compte de modération ordinaire.
+            </p>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm p-5 space-y-4">
+            <div>
+              <label className={etiquette}>Nom affiché aux membres</label>
+              <input className={champ} maxLength={80} value={v.assistantName || ''}
+                onChange={e => set('assistantName', e.target.value)} placeholder="Tante Aminata" />
+              <p className="text-xs text-stone-500 mt-1">
+                Distinct de votre nom interne, qui n’est jamais montré aux membres.
+              </p>
+            </div>
+
+            <div>
+              <label className={etiquette}>Genre</label>
+              <select className={champ} value={v.assistantGender || ''}
+                onChange={e => set('assistantGender', e.target.value)}>
+                <option value="">Non précisé</option>
+                <option value="FEMALE">Femme</option>
+                <option value="MALE">Homme</option>
+              </select>
+              <p className="text-xs text-stone-500 mt-1">
+                Les membres peuvent filtrer là-dessus : beaucoup préfèrent se
+                confier à un homme, ou à une femme.
+              </p>
+            </div>
+
+            <div>
+              <label className={etiquette}>Présentation</label>
+              <textarea rows={4} maxLength={2000} className={champ} value={v.bio || ''}
+                onChange={e => set('bio', e.target.value)}
+                placeholder="Ce que vous apportez, votre expérience, votre façon d’accompagner." />
+            </div>
+
+            <div>
+              <label className={etiquette}>Spécialités</label>
+              <input className={champ} maxLength={300} value={v.specialities || ''}
+                onChange={e => set('specialities', e.target.value)}
+                placeholder="Premiers échanges, rencontre familiale, confiance" />
+              <p className="text-xs text-stone-500 mt-1">Séparées par des virgules.</p>
+            </div>
+
+            <div>
+              <label className={etiquette}>Photo (adresse)</label>
+              <input className={champ} maxLength={500} value={v.photoUrl || ''}
+                onChange={e => set('photoUrl', e.target.value)} placeholder="https://…" />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className={etiquette}>Forfait (F CFA)</label>
+                <input type="number" min="1" className={champ} value={v.priceFcfa || ''}
+                  onChange={e => set('priceFcfa', e.target.value)} placeholder="5000" />
+              </div>
+              <div>
+                <label className={etiquette}>Durée (jours)</label>
+                <input type="number" min="1" className={champ} value={v.durationDays || ''}
+                  onChange={e => set('durationDays', e.target.value)} placeholder="7" />
+              </div>
+            </div>
+
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-4">
+              <div className="text-sm font-medium text-amber-900 mb-2">Coordonnées</div>
+              <p className="text-xs text-amber-800 mb-3">
+                Montrées UNIQUEMENT au membre dont la consultation a été
+                confirmée, et seulement jusqu’au terme du forfait. Jamais dans
+                la liste publique.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={etiquette}>Téléphone</label>
+                  <input className={champ} maxLength={40} value={v.contactPhone || ''}
+                    onChange={e => set('contactPhone', e.target.value)} placeholder="+221 77 000 00 00" />
+                </div>
+                <div>
+                  <label className={etiquette}>WhatsApp</label>
+                  <input className={champ} maxLength={40} value={v.contactWhatsapp || ''}
+                    onChange={e => set('contactWhatsapp', e.target.value)} placeholder="+221 77 000 00 00" />
+                </div>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input type="checkbox" checked={v.isAvailable !== false}
+                onChange={e => set('isAvailable', e.target.checked)} className="w-4 h-4" />
+              <span className="text-sm">Disponible en ce moment</span>
+            </label>
+            <p className="text-xs text-stone-500 -mt-2">
+              Décoché, votre fiche reste visible mais les membres ne peuvent plus
+              vous solliciter. C’est le moyen de souffler sans tout effacer.
+            </p>
+
+            {err && <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">⚠ {err}</div>}
+            {info && <div className="text-sm text-green-800 bg-green-50 border border-green-200 rounded-lg p-2">✓ {info}</div>}
+
+            <div className="flex justify-end">
+              <button onClick={enregistrer} disabled={busy}
+                className="text-sm px-4 py-2 rounded-lg bg-stone-800 text-white hover:bg-stone-900 disabled:opacity-50">
+                {busy ? 'Enregistrement…' : 'Enregistrer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── File des consultations ────────────────────────────
+    //
+    // Confirmer, c'est livrer un numéro contre un règlement reçu hors ligne.
+    // C'est donc un acte : on consigne qui l'a fait et quand.
+    function Consultations() {
+      const [onglet, setOnglet] = useState('PENDING');
+      const { loading, error, data, reload } = useAsync(
+        () => api('/assistants/consultations?status=' + onglet), [onglet]);
+      const [busy, setBusy] = useState('');
+      const [err, setErr] = useState('');
+
+      const ONGLETS = [
+        { cle:'PENDING',   label:'En attente' },
+        { cle:'CONFIRMED', label:'Confirmées' },
+        { cle:'REJECTED',  label:'Refusées' },
+        { cle:'CANCELLED', label:'Annulées' },
+      ];
+
+      async function agir(id, action) {
+        const motif = action === 'reject'
+          ? (window.prompt('Motif du refus (montré au membre, facultatif) :') || '')
+          : '';
+        setBusy(id); setErr('');
+        try {
+          await api('/assistants/consultations/' + id, {
+            method: 'PATCH', body: JSON.stringify({ action, motif }),
+          });
+          reload();
+        } catch (e) { setErr(e.message); }
+        finally { setBusy(''); }
+      }
+
+      return (
+        <div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {ONGLETS.map(o => (
+              <button key={o.cle} onClick={() => setOnglet(o.cle)}
+                className={'text-sm px-3 py-1.5 rounded-lg ' + (onglet === o.cle ? 'bg-stone-800 text-white' : 'bg-white text-stone-600 hover:bg-stone-100')}>
+                {o.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="rounded-lg bg-stone-100 border border-stone-200 p-3 mb-4 text-xs text-stone-600">
+            Le règlement se fait hors ligne. Confirmez une demande <strong>une fois
+            le paiement reçu</strong> : c’est la confirmation qui donne au membre
+            accès aux coordonnées de l’assistant, pour la durée du forfait.
+          </div>
+
+          {err && <div className="mb-3 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-2">⚠ {err}</div>}
+          {loading && <Spinner/>}
+          {error && <ErrorBox msg={error}/>}
+
+          {!loading && !error && (data?.data || []).length === 0 && (
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center text-sm text-stone-500">
+              Aucune demande dans cet état.
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {(data?.data || []).map(c => (
+              <div key={c.id} className="bg-white rounded-xl shadow-sm p-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium text-sm">
+                      {c.member?.firstName} {c.member?.lastName || ''}
+                      <span className="text-stone-400 font-normal"> → {c.assistant?.name}</span>
+                    </div>
+                    <div className="text-xs text-stone-500 mt-0.5">
+                      {c.member?.phone}{c.member?.email ? ' · ' + c.member.email : ''}
+                    </div>
+                    <div className="text-xs text-stone-600 mt-2">
+                      <strong>{c.priceFcfa.toLocaleString('fr-FR')} F CFA</strong> pour {c.durationDays} jour{c.durationDays > 1 ? 's' : ''}
+                    </div>
+                    {c.memberNote && (
+                      <div className="text-sm text-stone-700 mt-2 bg-stone-50 rounded-lg p-2 whitespace-pre-wrap">
+                        {c.memberNote}
+                      </div>
+                    )}
+                    {c.status === 'CONFIRMED' && (
+                      <div className="text-xs text-stone-500 mt-2">
+                        {c.expired ? 'Terme dépassé le ' : 'Valable jusqu’au '}
+                        {c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('fr-FR') : '—'}
+                      </div>
+                    )}
+                    {c.refusedFor && (
+                      <div className="text-xs text-stone-500 mt-2">Motif : {c.refusedFor}</div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    {c.status === 'CONFIRMED' && <Badge tone={c.expired ? 'stone' : 'green'}>{c.expired ? 'ÉCHUE' : 'EN COURS'}</Badge>}
+                    {c.status === 'REJECTED' && <Badge tone="red">REFUSÉE</Badge>}
+                    {c.status === 'CANCELLED' && <Badge tone="stone">ANNULÉE</Badge>}
+                    {c.status === 'PENDING' && (
+                      <>
+                        <button onClick={() => agir(c.id, 'confirm')} disabled={busy === c.id}
+                          className="text-sm px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
+                          Paiement reçu
+                        </button>
+                        <button onClick={() => agir(c.id, 'reject')} disabled={busy === c.id}
+                          className="text-sm px-3 py-1.5 rounded-lg bg-white border text-stone-600 hover:bg-stone-50 disabled:opacity-50">
+                          Refuser
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     // ── Shell (nav + sections) ────────────────────────────
     const SECTIONS = [
       { key:'dashboard', label:'Tableau de bord', icon:'📊', comp: Dashboard },
@@ -785,6 +1051,8 @@
       { key:'subs', label:'Abonnements', icon:'⭐', comp: Subscriptions, subsOnly: true },
       { key:'payments', label:'Paiements', icon:'💳', comp: Payments, subsOnly: true },
       { key:'reports', label:'Modération', icon:'🛡️', comp: Moderation },
+      { key:'consultations', label:'Consultations', icon:'🤝', comp: Consultations },
+      { key:'assistance', label:'Ma fiche assistant', icon:'💬', comp: MonAssistance },
       { key:'maintenance', label:'Maintenance', icon:'🚧', comp: Maintenance },
       { key:'admins', label:'Admins', icon:'🔑', comp: Admins, superOnly: true },
     ];

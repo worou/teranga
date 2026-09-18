@@ -2,8 +2,17 @@ import { Router } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import { requireAuth } from '../middleware/auth';
 import { assistantsService } from '../services/assistants.service';
+import { consultationsService } from '../services/consultations.service';
+import { z } from 'zod';
+import { validate } from '../middleware/validate';
 
 const router = Router();
+
+/** La note est facultative, et bornée : c'est un besoin, pas un dossier. */
+const demandeSchema = z.object({
+  assistantId: z.string().min(1),
+  note: z.string().max(1000).optional(),
+});
 
 /**
  * Les assistants, côté membre.
@@ -69,6 +78,69 @@ router.get(
   '/assistants/:id',
   asyncHandler(async (req, res) => {
     res.json(await assistantsService.get(req.params.id));
+  }),
+);
+
+/**
+ * @openapi
+ * /consultations:
+ *   get:
+ *     tags: [Assistants]
+ *     summary: Mes demandes de consultation
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200:
+ *         description: |
+ *           Les coordonnées de l'assistant ne sont présentes que sur une
+ *           consultation confirmée et non échue.
+ */
+router.get(
+  '/consultations',
+  asyncHandler(async (req, res) => {
+    res.json({ data: await consultationsService.listForUser(req.auth!.userId) });
+  }),
+);
+
+/**
+ * @openapi
+ * /consultations:
+ *   post:
+ *     tags: [Assistants]
+ *     summary: Demander une consultation
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       201: { description: "Demande enregistrée, en attente de validation" }
+ *       404: { description: "Assistant indisponible" }
+ *       409: { description: "Demande déjà en cours avec cet assistant" }
+ */
+router.post(
+  '/consultations',
+  validate(demandeSchema),
+  asyncHandler(async (req, res) => {
+    const c = await consultationsService.request(
+      req.auth!.userId,
+      req.body.assistantId,
+      req.body.note,
+    );
+    res.status(201).json(c);
+  }),
+);
+
+/**
+ * @openapi
+ * /consultations/{id}:
+ *   delete:
+ *     tags: [Assistants]
+ *     summary: Annuler une demande en attente
+ *     security: [{ bearerAuth: [] }]
+ *     responses:
+ *       200: { description: "Annulée" }
+ *       400: { description: "Seule une demande en attente peut être annulée" }
+ */
+router.delete(
+  '/consultations/:id',
+  asyncHandler(async (req, res) => {
+    res.json(await consultationsService.cancel(req.auth!.userId, req.params.id));
   }),
 );
 
