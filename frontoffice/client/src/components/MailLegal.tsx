@@ -2,9 +2,14 @@
  * Adresses de contact citées par les documents légaux.
  *
  * ⚠️ À FAIRE AVANT LA MISE EN LIGNE — ces quatre boîtes doivent exister et
- * être relevées. Aucune n'est configurée dans le dépôt à ce jour : la seule
- * adresse qu'on y trouve est `dev@teranga.africa`, dans la configuration
- * Swagger.
+ * être relevées. Aucune n'est configurée dans le dépôt à ce jour.
+ *
+ * LE DOMAINE EST `teranga.re`, celui du site en production. Une première
+ * version de ce fichier portait `teranga.africa`, repris de
+ * `frontoffice/.env.example` (CORS_ORIGIN) et de la configuration Swagger :
+ * ce domaine N'EXISTE PAS (NXDOMAIN). Les quatre canaux de signalement
+ * renvoyaient donc dans le vide. Ces deux références du dépôt restent à
+ * corriger ; ne pas les reprendre comme source.
  *
  * Ce n'est pas un détail cosmétique. Publier un canal de signalement qui
  * rebondit est PIRE que de ne pas en publier : l'article 16 du DSA et
@@ -20,13 +25,13 @@
  */
 export const BOITES = {
   /** Signalement de contenus et comportements illicites. Priorité absolue. */
-  signalement: 'signalement@teranga.africa',
+  signalement: 'signalement@teranga.re',
   /** Contestation d'une décision de modération (réexamen humain, art. 22 RGPD). */
-  moderation: 'moderation@teranga.africa',
+  moderation: 'moderation@teranga.re',
   /** Délégué à la protection des données — exercice des droits RGPD. */
-  dpo: 'dpo@teranga.africa',
+  dpo: 'dpo@teranga.re',
   /** Contact général, rétractation, réclamation préalable. */
-  contact: 'contact@teranga.africa',
+  contact: 'contact@teranga.re',
 } as const
 
 /** Lien `mailto:` vers l'une des boîtes ci-dessus, affichant l'adresse. */
