@@ -37,7 +37,9 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
     `.trim(),
     contact: {
       name: 'Équipe Téranga',
-      email: 'dev@teranga.africa',
+      // Pas d'adresse ici tant qu'aucune boîte n'est relevée : `dev@teranga.africa`
+      // y figurait, sur un domaine qui n'existe pas (NXDOMAIN). Les adresses de
+      // contact publiques sont celles de `client/src/components/MailLegal.tsx`.
     },
     license: {
       name: 'Propriétaire',
@@ -45,7 +47,10 @@ carte bancaire et facturation opérateur — via CinetPay principalement.
   },
   servers: [
     { url: config.apiBaseUrl + '/api/v1', description: 'Serveur local / développement' },
-    { url: 'https://api.teranga.africa/v1', description: 'Production' },
+    // L'API est montée sur la MÊME origine que le site, sous /api/v1 (server.ts).
+    // L'entrée précédente, « https://api.teranga.africa/v1 », était fausse deux
+    // fois : le domaine n'existe pas, et le chemin omettait /api.
+    { url: 'https://teranga.re/api/v1', description: 'Production' },
   ],
   tags: [
     { name: 'Auth', description: "Inscription, connexion, OTP SMS, vérification d'identité" },
