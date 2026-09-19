@@ -1,0 +1,115 @@
+/* Pages légales — Mentions légales, CGU, Confidentialité. Voir PageLegale.tsx.
+   Calqué sur Conseils.module.css : même gabarit de page publique en colonne
+   étroite, mêmes variables de couleur. Un document qu'on doit pouvoir lire
+   longtemps ; d'où une ligne plus aérée que sur le reste du site. */
+
+.page { min-height: 100vh; background: var(--cream); padding-top: 70px; }
+.wrap { max-width: 800px; margin: 0 auto; padding: 30px 32px 90px; }
+
+.head { margin-bottom: 26px; }
+.eyebrow {
+  display: block; margin-bottom: 10px;
+  font-size: 11px; letter-spacing: 0.18em; color: var(--ocre-deep);
+}
+.title {
+  font-family: Georgia, serif; font-size: 38px; font-weight: 400;
+  color: var(--terra-deep); line-height: 1.15;
+}
+.title em { font-style: normal; color: var(--ocre-deep); }
+.lead { color: var(--ink-soft); font-size: 14.5px; margin-top: 10px; line-height: 1.6; }
+.version {
+  margin-top: 14px; font-size: 12.5px; color: var(--ink-soft);
+  padding-top: 12px; border-top: 1px solid rgba(184, 105, 26, 0.16);
+}
+
+/* Sommaire — un document long sans sommaire ne se lit pas, il se survole. */
+.sommaire {
+  margin-bottom: 26px; padding: 20px 24px; border-radius: 16px;
+  background: #FFF; border: 1px solid rgba(184, 105, 26, 0.16);
+}
+.sommaire h2 {
+  font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ocre-deep); margin-bottom: 12px; font-weight: 600;
+}
+.sommaire ol { margin: 0; padding-left: 20px; }
+.sommaire li { margin: 5px 0; font-size: 14px; line-height: 1.5; }
+.sommaire a { color: var(--terra-deep); text-decoration: none; }
+.sommaire a:hover { text-decoration: underline; }
+
+.sections { display: flex; flex-direction: column; gap: 16px; }
+
+.section {
+  padding: 24px 26px; border-radius: 16px; background: #FFF;
+  border: 1px solid rgba(184, 105, 26, 0.16);
+  box-shadow: 0 2px 10px rgba(43, 22, 5, 0.04);
+  /* Ancre atteignable sans passer sous l'en-tête fixe. */
+  scroll-margin-top: 86px;
+}
+.sectionTitre {
+  font-family: Georgia, serif; font-size: 21px; font-weight: 400;
+  color: var(--terra-deep); margin-bottom: 14px;
+}
+.corps { color: var(--ink); font-size: 14.5px; line-height: 1.75; }
+.corps p { margin: 0 0 12px; }
+.corps p:last-child { margin-bottom: 0; }
+.corps ul { margin: 0 0 12px; padding-left: 22px; }
+.corps li { margin: 6px 0; }
+.corps strong { color: var(--terra-deep); }
+.corps h3 {
+  font-family: Georgia, serif; font-size: 16px; font-weight: 400;
+  color: var(--terra-deep); margin: 20px 0 10px;
+}
+.corps a { color: var(--ocre-deep); }
+
+/* Encadré d'avertissement — pour ce qui engage vraiment la personne. */
+.avertissement {
+  margin: 16px 0; padding: 16px 18px; border-radius: 12px;
+  background: rgba(192, 57, 43, 0.07);
+  border: 1px solid rgba(192, 57, 43, 0.28);
+  border-left-width: 3px;
+  font-size: 14px; line-height: 1.7; color: #7A2A20;
+}
+.avertissement strong { color: #8B2A20; }
+
+/* Encadré neutre — définitions, rappels, coordonnées. */
+.encadre {
+  margin: 16px 0; padding: 16px 18px; border-radius: 12px;
+  background: rgba(184, 105, 26, 0.07);
+  border: 1px solid rgba(184, 105, 26, 0.2);
+  font-size: 14px; line-height: 1.7;
+}
+
+/* À remplir par l'éditeur avant mise en ligne. Volontairement voyant. */
+.aCompleter {
+  display: inline-block; padding: 1px 7px; border-radius: 6px;
+  background: rgba(192, 57, 43, 0.12); border: 1px dashed rgba(192, 57, 43, 0.5);
+  color: #8B2A20; font-size: 13px; font-weight: 600;
+}
+
+/* Tableaux (données collectées, durées de conservation, destinataires). */
+.tableWrap { overflow-x: auto; margin: 0 0 14px; }
+.table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 460px; }
+.table th, .table td {
+  text-align: left; padding: 9px 12px; vertical-align: top;
+  border-bottom: 1px solid rgba(184, 105, 26, 0.16); line-height: 1.6;
+}
+.table th {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ocre-deep); font-weight: 600;
+}
+.table tr:last-child td { border-bottom: none; }
+
+.pied {
+  margin-top: 26px; padding-top: 18px;
+  border-top: 1px solid rgba(184, 105, 26, 0.16);
+  display: flex; flex-wrap: wrap; gap: 8px 20px;
+  font-size: 13.5px;
+}
+.pied a { color: var(--ocre-deep); text-decoration: none; }
+.pied a:hover { text-decoration: underline; }
+
+@media (max-width: 640px) {
+  .wrap { padding: 24px 20px 70px; }
+  .title { font-size: 30px; }
+  .section { padding: 20px 18px; }
+}

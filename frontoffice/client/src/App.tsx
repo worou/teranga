@@ -12,6 +12,9 @@ import Conversation from './pages/Conversation'
 import Assistants from './pages/Assistants'
 import BulleAide from './components/BulleAide'
 import Conseils from './pages/Conseils'
+import MentionsLegales from './pages/MentionsLegales'
+import CGU from './pages/CGU'
+import Confidentialite from './pages/Confidentialite'
 import RequireAuth from './components/RequireAuth'
 import { SUBSCRIPTIONS_ENABLED } from './config'
 import Favoris from './pages/Favoris'
@@ -80,6 +83,15 @@ export default function App() {
             a s'inscrire doit pouvoir lire ce qu'on a a dire — c'est aussi la
             porte d'entree de l'accompagnement payant. */}
         <Route path="/conseils" element={<Conseils />} />
+
+        {/* Pages legales : PUBLIQUES, et sans RequireAuth. Un texte qu'il
+            faudrait un compte pour lire ne vaudrait pas consentement eclaire —
+            or c'est precisement avant de s'inscrire qu'on doit pouvoir les
+            lire. Les anciens chemins restent rediriges plus bas par le
+            catch-all. */}
+        <Route path="/mentions-legales" element={<MentionsLegales />} />
+        <Route path="/conditions-generales" element={<CGU />} />
+        <Route path="/confidentialite" element={<Confidentialite />} />
 
         {/* Assistants : conseil payant. Pas de `requireCompleteProfile` —
             quelqu'un dont le profil coince est justement celui qui a besoin

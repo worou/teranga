@@ -508,7 +508,12 @@ export default function Inscription() {
                 </button>
               </div>
               <p className={styles.formFooter}>
-                En créant un compte, vous acceptez nos <a href="#">Conditions d'utilisation</a> et notre <a href="#">Politique de confidentialité</a>.
+                {/* Ouverts dans un onglet a part, et non par un Link : quitter la
+                    page ici viderait le formulaire a moitie rempli. Personne ne
+                    relit des CGU au prix de sa saisie. */}
+                En créant un compte, vous acceptez nos{' '}
+                <a href="/conditions-generales" target="_blank" rel="noreferrer">Conditions générales d'utilisation</a> et notre{' '}
+                <a href="/confidentialite" target="_blank" rel="noreferrer">Politique de confidentialité</a>.
               </p>
             </div>
           )}

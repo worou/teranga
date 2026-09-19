@@ -439,10 +439,14 @@ export default function Landing() {
           </div>
           <div className={styles.footerCol}>
             <h4>Légal</h4>
-            <a href="#">CGU</a>
-            <a href="#">Confidentialité</a>
-            <a href="#">Protection des données</a>
-            <a href="#">Modération</a>
+            <Link to="/mentions-legales">Mentions légales</Link>
+            <Link to="/conditions-generales">CGU</Link>
+            <Link to="/confidentialite">Confidentialité</Link>
+            {/* « Protection des donnees » et « Moderation » ne meritent pas
+                deux pages de plus : ce sont des sections des documents
+                existants, et une ancre y mene directement. */}
+            <Link to="/confidentialite#droits">Protection des données</Link>
+            <Link to="/conditions-generales#moderation">Modération</Link>
           </div>
         </div>
         <div className={styles.footerBottom}>
